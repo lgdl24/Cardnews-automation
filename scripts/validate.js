@@ -104,6 +104,27 @@ function validate(productId) {
 
   const imageFiles = new Set(input ? input.images.map((i) => i.file) : []);
 
+  // 글자 수: 전체 기준 + 줄바꿈(\n)을 직접 넣었을 때 줄 수·한 줄 기준
+  //   자동 줄바꿈은 전체 기준 안이면 maxLines 안에 들어가도록 측정해 둠 (npm run calibrate)
+  //   직접 넣은 줄바꿈은 한 줄이 길면 자동으로 한 번 더 꺾여 넘칠 수 있어 따로 확인
+  const checkLength = (text, maxChars, rule, fw) => {
+    if (countChars(text) > maxChars) {
+      report.error('CHAR_LIMIT', fw, `${countChars(text)}자 / 기준 ${maxChars}자`);
+      return;
+    }
+    if (!text.includes('\n')) return;
+    const lines = text.split('\n');
+    if (rule.maxLines && lines.length > rule.maxLines) {
+      report.error('CHAR_LIMIT', fw, `줄바꿈으로 ${lines.length}줄이 됐어요 / 최대 ${rule.maxLines}줄`);
+      return;
+    }
+    lines.forEach((line, i) => {
+      if (rule.maxCharsPerLine && countChars(line) > rule.maxCharsPerLine) {
+        report.error('CHAR_LIMIT', fw, `${i + 1}번째 줄 ${countChars(line)}자 / 한 줄 기준 ${rule.maxCharsPerLine}자 (줄바꿈 위치를 옮기거나 줄여 주세요)`);
+      }
+    });
+  };
+
   data.cards.forEach((card, idx) => {
     const where = `${idx + 1}번 카드`;
     if (card.no !== idx + 1) report.error('SCHEMA_ERROR', `${where}.no`, `번호가 ${idx + 1}이어야 해요 (현재: ${card.no})`);
@@ -125,7 +146,9 @@ function validate(productId) {
     if (tpl.image === 'none' && card.image) {
       report.warn(`${where}.image`, `${tpl.label} 템플릿은 이미지를 쓰지 않아요 (무시됨)`);
     }
-    if (card.image && input && !imageFiles.has(card.image)) {
+    if (card.image && path.basename(String(card.image)) !== card.image) {
+      report.error('SCHEMA_ERROR', `${where}.image`, `파일명만 쓸 수 있어요: ${card.image}`);
+    } else if (card.image && input && !imageFiles.has(card.image)) {
       report.error('SCHEMA_ERROR', `${where}.image`, `입력 양식에 없는 이미지예요: ${card.image}`);
     }
 
@@ -147,9 +170,7 @@ function validate(productId) {
         if (v.length > rule.maxItems) report.error('CHAR_LIMIT', fw, `항목은 최대 ${rule.maxItems}개예요 (현재 ${v.length}개)`);
         v.forEach((item, i) => {
           if (!isNonEmptyString(item)) report.error('SCHEMA_ERROR', `${fw}[${i}]`, '비어 있어요');
-          else if (countChars(item) > rule.maxCharsPerItem) {
-            report.error('CHAR_LIMIT', `${fw}[${i}]`, `${countChars(item)}자 / 기준 ${rule.maxCharsPerItem}자`);
-          }
+          else checkLength(item, rule.maxCharsPerItem, rule, `${fw}[${i}]`);
         });
         continue;
       }
@@ -158,10 +179,10 @@ function validate(productId) {
         continue;
       }
       if (typeof v !== 'string') { report.error('SCHEMA_ERROR', fw, '문자열이어야 해요'); continue; }
-      if (countChars(v) > rule.maxChars) report.error('CHAR_LIMIT', fw, `${countChars(v)}자 / 기준 ${rule.maxChars}자`);
+      checkLength(v, rule.maxChars, rule, fw);
     }
     for (const field of Object.keys(copy)) {
-      if (!(field in tpl.fields)) report.warn(`${where}.copy.${field}`, `${tpl.label} 템플릿에 없는 필드예요 (출력되지 않음)`);
+      if (!(field in tpl.fields)) report.error('SCHEMA_ERROR', `${where}.copy.${field}`, `${tpl.label} 템플릿에 없는 필드예요. 출력되지 않으니 필드 이름을 확인해 주세요 (${Object.keys(tpl.fields).join(', ')})`);
     }
   });
 
@@ -206,4 +227,4 @@ if (require.main === module) {
   process.exit(report.errors.length ? 1 : 0);
 }
 
-module.exports = { validate, quality };
+module.exports = { validate, quality, STAGES, ROLES, EVIDENCE_REQUIRED_ROLES };

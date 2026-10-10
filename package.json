@@ -1,18 +1,21 @@
 {
   "name": "cardnews-automation",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Claude Code 기반 카드뉴스 제작 자동화",
   "scripts": {
-    "test": "node --test tests/check-input.test.js tests/validate.test.js tests/cli.test.js",
-    "test:render": "node --test tests/render.test.js",
+    "test": "node --test tests/check-input.test.js tests/validate.test.js tests/cli.test.js tests/spec.test.js",
+    "test:render": "node --test tests/render.test.js tests/calibrate.test.js",
     "check": "node scripts/check-input.js",
     "validate": "node scripts/validate.js",
     "render": "node scripts/render.js",
     "log": "node scripts/log.js",
     "compare": "node scripts/compare.js",
-    "new-run": "node scripts/new-run.js"
+    "new-run": "node scripts/new-run.js",
+    "new-product": "node scripts/new-product.js",
+    "calibrate": "node scripts/calibrate.js"
   },
   "devDependencies": {
+    "ajv": "^8.20.0",
     "playwright": "^1.64.0",
     "pretendard": "^1.3.9"
   },

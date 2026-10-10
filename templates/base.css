@@ -45,7 +45,7 @@ body {
   padding: 0 24px;
   border-radius: 26px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font-size: 26px;
   font-weight: 600;
   overflow: hidden;

@@ -1,9 +1,19 @@
-# 카드 구성 데이터(JSON) 규격 — 초안 v0.1
+# 카드 구성 데이터(JSON) 규격 — v0.1
 
 콘텐츠 생성 단계(팀원2)와 출력 단계(팀원1)를 잇는 공통 규격입니다.
 이 규격을 바꿀 때는 두 사람이 함께 확인하고 버전을 올립니다.
 
 파일 위치: `products/<제품ID>/cards.json`
+
+## 규격의 원본
+
+| 파일 | 담당하는 내용 |
+|---|---|
+| `schemas/cards.schema.json` | 형식: 필드·타입·허용 값·템플릿별 copy 필드 (JSON Schema 2020-12). 웹 서버·Agent SDK에서 그대로 쓸 수 있어요 |
+| `config/templates.json` | 템플릿별 글자 수 기준 (전체·한 줄·최대 줄 수) |
+| `scripts/validate.js` | 다른 파일과 비교하는 검사: 원문 인용 일치, 근거 ID 연결, 카드 수, 입력 양식의 이미지, 글자 수, 주의 표현 |
+
+이 문서와 세 파일이 다르면 `npm test`(`tests/spec.test.js`)가 실패해요. 규격을 고칠 때는 세 곳과 이 문서를 함께 고쳐요.
 
 ## 전체 구조
 
@@ -67,20 +77,27 @@
 | `role` | O | `cover` · `feature` · `usage` · `detail` · `closing` |
 | `template` | O | `config/templates.json`의 키: `cover` · `image` · `description` |
 | `intent` | O | 구성안 단계에서 쓰는 카드의 역할 설명 (출력되지 않음) |
-| `image` | 템플릿별 | `images/` 안의 파일명. `image` 템플릿은 필수, `description`은 사용 안 함 |
+| `image` | 템플릿별 | `images/` 안의 파일명(경로 없이). 입력 양식 이미지 목록에 있어야 함. `image` 템플릿은 필수, `description`은 사용 안 함 |
 | `evidence` | 역할별 | `feature` · `usage` · `detail`은 1개 이상 필수 |
 | `copy` | `stage`가 `copy` 이후면 필수 | 템플릿별 필드는 아래 표 |
 
 ### 템플릿별 `copy` 필드
 
-| 템플릿 | 필드 | 글자 수(공백 포함) |
-|---|---|---|
-| `cover` | `title`(필수), `subtitle`, `badge` | 22 / 34 / 12 |
-| `image` | `title`(필수), `caption` | 18 / 40 |
-| `description` | `title`(필수), `items`(필수, 1~3개 배열) | 18 / 항목당 30 |
+| 템플릿 | 필드 | 필수 | 전체 | 한 줄 | 최대 줄 수 |
+|---|---|---|---|---|---|
+| `cover` | `title` | O | 20 | 13 | 2 |
+| `cover` | `subtitle` |  | 34 | 29 | 2 |
+| `cover` | `badge` |  | 12 | 12 | 1 |
+| `image` | `title` | O | 18 | 17 | 2 |
+| `image` | `caption` |  | 40 | 32 | 2 |
+| `description` | `title` | O | 18 | 17 | 2 |
+| `description` | `items` | O | 30 | 21 | 2 |
 
-- 줄바꿈이 필요하면 문자열 안에 `\n`을 넣습니다. 글자 수에는 포함되지 않습니다.
-- 글자 수 기준의 원본은 `config/templates.json`이며, 이 표는 설명용입니다.
+- 글자 수는 공백을 포함하고 줄바꿈은 빼고 셉니다. `description`의 `items`는 항목 1~3개이고, 기준은 항목 하나당이에요.
+- **전체**: 이 안이면 자동 줄바꿈으로 최대 줄 수 안에 들어가요.
+- **한 줄 · 최대 줄 수**: 문자열 안에 `\n`을 직접 넣어 줄을 나눌 때만 확인해요. 한 줄이 길면 자동으로 한 번 더 꺾여 넘치기 때문이에요.
+- 템플릿에 없는 필드를 쓰면 출력되지 않으므로 `SCHEMA_ERROR`예요. (예: `subTitle`)
+- 기준값은 `npm run calibrate`로 실제 출력에서 잰 최대 글자 수에서 여유를 두고 정했어요. 템플릿 CSS를 바꾸면 다시 재요. 원본은 `config/templates.json`이에요.
 
 ## 관련 파일
 

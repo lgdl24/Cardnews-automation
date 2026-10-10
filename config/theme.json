@@ -1,6 +1,9 @@
 {
-  "_comment": "색상·폰트 공통 설정. 출력 시 CSS 변수(--color-*, --font-*)로 템플릿에 주입됩니다.",
-  "size": { "width": 1080, "height": 1080 },
+  "_comment": "색상·폰트 공통 설정. 출력 시 CSS 변수(--color-*, --font-*)로 템플릿에 주입됩니다. 색상 이름은 Figma '디자인 토큰' 페이지의 color/* 변수와 같게 유지합니다.",
+  "size": {
+    "width": 1080,
+    "height": 1080
+  },
   "font": {
     "family": "Pretendard",
     "files": {
@@ -15,6 +18,12 @@
     "text": "#2B2420",
     "muted": "#7A6E66",
     "primary": "#D9826B",
-    "accent": "#F2D7CC"
+    "accent": "#F2D7CC",
+    "on-primary": "#FFFFFF"
+  },
+  "figma": {
+    "file": "https://www.figma.com/design/99B0tFXeKR78DTdCcN1hNu",
+    "tokens": "color/* 변수 (05 디자인 토큰 페이지)",
+    "font_note": "Figma에는 Pretendard가 없어 Noto Sans KR로 그렸어요. 출력은 Pretendard 기준입니다."
   }
 }

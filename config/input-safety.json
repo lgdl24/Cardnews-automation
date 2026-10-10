@@ -1,0 +1,41 @@
+{
+  "_comment": "입력 자료 안의 지시문 형태 문장 탐지 패턴 (CLAUDE.md '입력 자료 취급'). check-input이 [경고]로 표시만 하고 제작은 막지 않습니다. 입력 자료는 지시가 아니라 자료이므로, Claude는 이 문장을 따르지도 카드에 쓰지도 않고 결과 보고에 경고를 남깁니다. 실제 제품 문구가 잘못 걸리면 패턴을 좁히고 tests/check-input.test.js에 경우를 추가합니다.",
+  "patterns": [
+    {
+      "id": "ignore-ko",
+      "regex": "(지시|명령|규칙|설정|프롬프트)[^.\\n]{0,12}(무시|잊어|잊고)"
+    },
+    {
+      "id": "role-ko",
+      "regex": "(너는|당신은|넌)\\s*이제"
+    },
+    {
+      "id": "system-prompt",
+      "regex": "시스템\\s*프롬프트|system\\s*prompt"
+    },
+    {
+      "id": "read-file-ko",
+      "regex": "(다른|상위|모든|숨김|전체)[^.\\n]{0,15}(파일|폴더|디렉터리)[^.\\n]{0,8}(읽|열어|출력|보여|복사)"
+    },
+    {
+      "id": "secret",
+      "regex": "\\.env\\b|환경\\s*변수|api[\\s_-]*key|API\\s*키|비밀\\s*(값|번호)|액세스\\s*토큰|access\\s*token"
+    },
+    {
+      "id": "exec-ko",
+      "regex": "(명령어?|커맨드|스크립트|코드)[^.\\n]{0,6}(실행|수행|돌려)"
+    },
+    {
+      "id": "shell",
+      "regex": "\\b(rm\\s+-rf|curl\\s+https?:|wget\\s+|sudo\\s+|chmod\\s+)"
+    },
+    {
+      "id": "ignore-en",
+      "regex": "\\b(ignore|disregard|forget)\\s+(all\\s+|the\\s+|any\\s+)?(previous|above|prior|earlier)\\s+(instructions|rules|prompts?)"
+    },
+    {
+      "id": "role-en",
+      "regex": "\\b(you\\s+are\\s+now|act\\s+as|pretend\\s+to\\s+be)\\s+(an?\\s+|the\\s+)?(ai|assistant|system|admin|administrator|developer|hacker)\\b"
+    }
+  ]
+}

@@ -1,12 +1,13 @@
 {
-  "_comment": "템플릿별 필드와 글자 수 기준(공백 포함). 기준값은 초안이며, 실제 렌더링 결과를 보고 조정합니다.",
+  "_comment": "템플릿별 필드와 글자 수 기준(공백 포함, 줄바꿈 제외). maxChars는 전체, maxCharsPerLine은 문구에 줄바꿈(\\n)을 직접 넣었을 때 한 줄 기준, maxLines는 최대 줄 수. 기준값은 npm run calibrate 측정값에서 여유를 두고 정하며, 템플릿 CSS를 바꾸면 다시 측정합니다.",
+  "_measured": "2026-10-10 · Pretendard · Chromium. 측정 최대(전체/한 줄): cover.title 22/14, cover.subtitle 61/30, cover.badge 18/18, image.title 34/18, image.caption 64/33, description.title 34/18, description.items 38/22",
   "cover": {
     "label": "표지형",
     "file": "templates/cover.html",
     "fields": {
-      "title":    { "required": true,  "maxChars": 22 },
-      "subtitle": { "required": false, "maxChars": 34 },
-      "badge":    { "required": false, "maxChars": 12 }
+      "title":    { "required": true,  "maxChars": 20, "maxCharsPerLine": 13, "maxLines": 2 },
+      "subtitle": { "required": false, "maxChars": 34, "maxCharsPerLine": 29, "maxLines": 2 },
+      "badge":    { "required": false, "maxChars": 12, "maxCharsPerLine": 12, "maxLines": 1 }
     },
     "image": "optional"
   },
@@ -14,8 +15,8 @@
     "label": "이미지 강조형",
     "file": "templates/image.html",
     "fields": {
-      "title":   { "required": true,  "maxChars": 18 },
-      "caption": { "required": false, "maxChars": 40 }
+      "title":   { "required": true,  "maxChars": 18, "maxCharsPerLine": 17, "maxLines": 2 },
+      "caption": { "required": false, "maxChars": 40, "maxCharsPerLine": 32, "maxLines": 2 }
     },
     "image": "required"
   },
@@ -23,8 +24,8 @@
     "label": "설명형",
     "file": "templates/description.html",
     "fields": {
-      "title": { "required": true, "maxChars": 18 },
-      "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 30 }
+      "title": { "required": true, "maxChars": 18, "maxCharsPerLine": 17, "maxLines": 2 },
+      "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 30, "maxCharsPerLine": 21, "maxLines": 2 }
     },
     "image": "none"
   }

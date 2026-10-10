@@ -4,7 +4,7 @@
 HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝트입니다.
 제작 과정은 기록으로 남아 시간·수정·품질 지표를 분석할 수 있습니다.
 
-> 현재 버전: v0.3 (기본 틀 + 두 실행 방식 규칙 + 제작 기록·품질 지표 + 자동 테스트). `products/toneup-sunscreen`은 구조 확인용 **가상 예시 제품**이에요.
+> 현재 버전: v0.4 (기본 틀 + 두 실행 방식 규칙 + 제작 기록·품질 지표 + 자동 테스트 + 규격 파일·지시문 탐지 + 측정 기반 글자 수 기준). `products/toneup-sunscreen`은 구조 확인용 **가상 예시 제품**이에요.
 
 ## 두 가지 실행 방식
 
@@ -22,8 +22,8 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 ```bash
 npm install
 npx playwright install chromium   # PNG 출력용 브라우저 (최초 1회)
-npm test                          # 검사 기능 테스트 (오류 코드별 경우 39개)
-npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드 1장 재출력)
+npm test                          # 검사·규격 테스트 (입력 누락, 형식·근거·글자 수 오류, 지시문 탐지, 규격 일치)
+npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드 1장 재출력, 글자 수 기준을 꽉 채워도 넘치지 않는지)
 ```
 
 브랜치·커밋·PR 규칙과 테스트 추가 방법은 [`CONTRIBUTING.md`](CONTRIBUTING.md)를 봐 주세요.
@@ -41,14 +41,16 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 
 | 명령 | 하는 일 |
 |---|---|
-| `npm run check -- <제품ID>` | 입력 양식 필수 항목, 이미지 파일·사용 가능 여부 확인 |
-| `npm run validate -- <제품ID>` | JSON 형식, 필수 필드, 카드 수, 원문 근거 일치, 글자 수, 주의 표현 검사 + 품질 지표 |
+| `npm run new-product -- <제품ID>` | 새 제품 폴더와 빈 입력 양식 만들기 |
+| `npm run check -- <제품ID>` | 입력 양식 필수 항목, 이미지 파일·사용 가능 여부, 지시문 형태 문장 확인 |
+| `npm run validate -- <제품ID>` | JSON 형식, 필수 필드, 카드 수, 원문 근거 일치, 글자 수(전체·한 줄·줄 수), 주의 표현 검사 + 품질 지표 |
 | `npm run render -- <제품ID>` | HTML·PNG 출력 + 글자 넘침·이미지 로드 점검 |
 | `npm run render -- <제품ID> --card 3` | 3번 카드만 재출력 |
 | `npm run log -- <제품ID> <이벤트> ...` | 작업 시작·끝, 승인, 수정 요청 기록 |
 | `npm run log -- <제품ID> --summary` | 단계별 시간, 수정 유형, 자동 수정, 1회 통과, 품질 지표 요약 (`--json` 가능) |
 | `npm run new-run -- <원본ID> <새ID>` | 같은 입력으로 실험용 제작 폴더 만들기 |
 | `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성 |
+| `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
 미리보기: `products/<제품ID>/output/html/index.html`을 브라우저로 열면 전체 카드를 한 번에 볼 수 있어요.
 
@@ -74,9 +76,12 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── cardnews-content/SKILL.md     # 콘텐츠 생성 Skill: 입력 확인 ~ 데이터 검증, 수정 요청
 │   └── cardnews-render/SKILL.md      # 카드 출력 Skill: 템플릿 적용 ~ 재출력
 ├── prompts/                          # 서비스 모드 작업 지시문 (plan, copy, revise)
+├── schemas/cards.schema.json         # 카드 구성 데이터 JSON 스키마 (형식 규격)
 ├── config/
-│   ├── templates.json                # 템플릿별 필드·글자 수 기준
-│   ├── theme.json                    # 색상·폰트 공통 설정
+│   ├── input-form.json               # 입력 양식 항목 정의 (검사·빈 양식·웹 입력 폼 공통)
+│   ├── input-safety.json             # 입력 자료 속 지시문 탐지 패턴
+│   ├── templates.json                # 템플릿별 필드·글자 수 기준 (측정값 기반)
+│   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름)
 │   ├── caution-expressions.json      # 주의 표현 목록 (초안)
 │   ├── revision-types.json           # 수정 요청 유형 코드
 │   └── skill-version.json            # 규칙 버전
@@ -91,7 +96,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
 ├── CONTRIBUTING.md                   # 협업 규칙
 ├── .env.example                      # 서비스 모드 환경변수 예시
-└── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록
+└── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료)
 ```
 
 ## 담당 범위 (계획서 기준)
@@ -115,9 +120,9 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | 1. 기반 정비·자동 테스트 | 오류 코드별 테스트(`npm test`), 출력 테스트, 협업 규칙 파일 | 완료 (v0.3) |
-| 2. 입력·데이터 규격 확정 | JSON 규격 파일, 입력 양식 확정, 지시문 탐지, 입력 누락·지시문 테스트 자료 | 다음 |
-| 3. 템플릿 3종·디자인 반영 | Figma 디자인 토큰 → `theme.json`, 템플릿 다듬기, 글자 수 기준 조정 | |
-| 4. 첫 실제 제작 (개발 모드) | 실제 톤업 선크림 자료로 구성안~출력, 제작 기록 남기기 | |
+| 2. 입력·데이터 규격 확정 | JSON 스키마, 입력 양식 정의 파일, 지시문 탐지, 입력 누락·지시문 테스트 자료, 규격 일치 테스트 | 완료 (v0.4) |
+| 3. 템플릿 3종·디자인 반영 | Figma 토큰 ↔ `theme.json`, 글자 수 측정 도구(`calibrate`)로 기준 조정, 줄바꿈 기준, 이미지 겹침 점검 | 완료 (v0.4) |
+| 4. 첫 실제 제작 (개발 모드) | 실제 톤업 선크림 자료로 구성안~출력, 제작 기록 남기기 | 다음 |
 | 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 (`docs/service-mode.md`) | |
 
 웹 화면·서버는 5단계 결과를 보고 따로 계획합니다. 멘토 확인 사항(평가 기준, API 비용, 배포 환경, Agent SDK 활용 인정 여부)은 노션 작업 트래커에서 관리합니다.

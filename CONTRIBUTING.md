@@ -40,6 +40,8 @@ feat: 설명형 템플릿 항목 4개까지 허용
 ## PR 전에 확인
 
 - [ ] `npm test` 통과 (템플릿·출력을 고쳤다면 `npm run test:render`도)
+- [ ] 템플릿 CSS를 고쳤다면 `npm run calibrate`로 다시 재고, 필요하면 `config/templates.json` 기준과 `docs/card-data-spec.md` 표를 함께 고침
+- [ ] 규격(입력 양식·카드 데이터)을 고쳤다면 `config/input-form.json`·`schemas/cards.schema.json`·문서를 함께 고침 (`tests/spec.test.js`가 확인)
 - [ ] 노션 작업 트래커의 해당 하위 작업을 PR에 적음
 - [ ] 결과에 영향을 주는 규칙(`CLAUDE.md`, Skill, `config/`)을 바꿨다면 `config/skill-version.json` 버전 변경을 팀과 논의함
 - [ ] `products/<제품ID>/output/`, `.env`, 실제 API 키가 커밋에 없음
@@ -61,9 +63,11 @@ feat: 설명형 템플릿 항목 4개까지 허용
 
 | 파일 | 확인하는 것 |
 |---|---|
-| `tests/check-input.test.js` | 입력 누락 (`INPUT_MISSING`) |
+| `tests/check-input.test.js` | 입력 누락 (`INPUT_MISSING`), 지시문 형태 문장 탐지·오탐, 테스트용 입력 자료(`products/test-*`) |
 | `tests/validate.test.js` | 형식·근거·글자 수 오류, 주의 표현, 품질 지표 |
 | `tests/cli.test.js` | 명령 종료 코드, 제작 기록 자동 저장, `log.js` |
+| `tests/spec.test.js` | 규격 파일(JSON 스키마·입력 양식 정의·글자 수 기준)과 검사 코드·문서가 같은지, 템플릿이 색 토큰만 쓰는지 |
 | `tests/render.test.js` | PNG 크기·장수, 카드 1장 재출력, 레이아웃 기록 |
+| `tests/calibrate.test.js` | 모든 칸을 글자 수 기준까지 채워도 넘치거나 이미지와 겹치지 않는지 |
 
 테스트는 `CARDNEWS_PRODUCTS_DIR`로 임시 폴더를 쓰므로 실제 `products/`와 제작 기록을 건드리지 않습니다.

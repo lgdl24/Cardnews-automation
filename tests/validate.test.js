@@ -125,8 +125,49 @@ const cases = [
   },
   {
     name: '줄바꿈은 글자 수에 넣지 않는다',
-    edit: (ws) => ws.editCards((d) => { d.cards[1].copy.title = '핑크 베이지로\n\n톤을 자연스럽게'; }),
+    edit: (ws) => ws.editCards((d) => { d.cards[1].copy.title = '핑크 베이지로\n톤을 아주 자연스럽게'; }),
     expect: [],
+  },
+  {
+    name: '줄바꿈으로 최대 줄 수를 넘기면 CHAR_LIMIT',
+    edit: (ws) => ws.editCards((d) => { d.cards[1].copy.title = '핑크\n베이지로\n톤업'; }),
+    expect: ['CHAR_LIMIT'],
+    where: '2번 카드.copy.title',
+  },
+  {
+    name: '빈 줄도 한 줄로 센다',
+    edit: (ws) => ws.editCards((d) => { d.cards[1].copy.title = '핑크 베이지로\n\n톤을 자연스럽게'; }),
+    expect: ['CHAR_LIMIT'],
+    where: '2번 카드.copy.title',
+  },
+  {
+    name: '직접 줄바꿈한 한 줄이 한 줄 기준을 넘으면 CHAR_LIMIT (전체 기준 안이어도)',
+    edit: (ws) => ws.editCards((d) => { d.cards[0].copy.title = '자외선\n차단에 자연스러운 톤업까지요'; }),
+    expect: ['CHAR_LIMIT'],
+    where: '1번 카드.copy.title',
+  },
+  {
+    name: '줄바꿈 없는 문구는 한 줄 기준을 넘어도 전체 기준 안이면 통과 (자동 줄바꿈)',
+    edit: (ws) => ws.editCards((d) => { d.cards[0].copy.title = '자외선 차단에 자연스러운 톤업까지'; }),
+    expect: [],
+  },
+  {
+    name: '뱃지는 한 줄만 쓸 수 있다',
+    edit: (ws) => ws.editCards((d) => { d.cards[0].copy.badge = 'NEW\n한정'; }),
+    expect: ['CHAR_LIMIT'],
+    where: '1번 카드.copy.badge',
+  },
+  {
+    name: '템플릿에 없는 copy 필드(오타)는 SCHEMA_ERROR',
+    edit: (ws) => ws.editCards((d) => { d.cards[0].copy.subTitle = d.cards[0].copy.subtitle; delete d.cards[0].copy.subtitle; }),
+    expect: ['SCHEMA_ERROR'],
+    where: '1번 카드.copy.subTitle',
+  },
+  {
+    name: '카드 이미지에 폴더 경로를 쓰면 SCHEMA_ERROR',
+    edit: (ws) => ws.editCards((d) => { d.cards[1].image = '../secret.png'; }),
+    expect: ['SCHEMA_ERROR'],
+    where: '2번 카드.image',
   },
 ];
 

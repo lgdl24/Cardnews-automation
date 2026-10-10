@@ -1,0 +1,37 @@
+{
+  "_comment": "입력 양식(input.md) 항목 정의. check-input(필수 항목 검사), new-product(빈 양식 만들기), 웹 입력 폼(W3)이 모두 이 파일을 기준으로 합니다. 항목을 바꾸면 docs/input-form.md도 함께 고치고 npm test로 확인합니다.",
+  "version": "1.0",
+  "groups": [
+    {
+      "title": "제품 정보",
+      "source": true,
+      "fields": [
+        { "key": "제품명", "required": true, "type": "text", "guide": "예: 데일리 톤업 선크림" },
+        { "key": "브랜드", "required": false, "type": "text", "guide": "" },
+        { "key": "카테고리", "required": false, "type": "text", "guide": "예: 선케어" },
+        { "key": "제품 설명", "required": true, "type": "paragraph", "guide": "제품 소개 문단을 그대로 붙여 넣습니다." },
+        { "key": "주요 특징", "required": true, "type": "list", "guide": "한 줄에 하나씩", "example": ["특징 1", "특징 2"] },
+        { "key": "사용 방법", "required": true, "type": "paragraph", "guide": "" },
+        { "key": "주의사항", "required": false, "type": "paragraph", "guide": "제품에 표기된 사용상 주의사항" },
+        {
+          "key": "이미지",
+          "required": true,
+          "type": "images",
+          "guide": "한 줄에 하나씩: 파일명 | 설명 | 출처 | 사용 가능 여부(가능/불가/확인 중)",
+          "example": ["main.png | 제품 단독 컷 | 직접 촬영 | 가능"],
+          "extensions": [".jpg", ".jpeg", ".png"],
+          "usage": ["가능", "불가", "확인 중"]
+        }
+      ]
+    },
+    {
+      "title": "제작 조건",
+      "source": false,
+      "fields": [
+        { "key": "콘텐츠 목적", "required": true, "type": "text", "guide": "예: 신제품 소개, 사용법 안내" },
+        { "key": "강조 정보", "required": false, "type": "text", "guide": "꼭 들어가야 할 정보" },
+        { "key": "카드 수", "required": true, "type": "number", "guide": "숫자만. 예: 5", "min": 3, "max": 8 }
+      ]
+    }
+  ]
+}

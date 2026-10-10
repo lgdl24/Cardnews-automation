@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lgdl24/Cardnews-automation/schemas/cards.schema.json",
+  "title": "카드 구성 데이터 (cards.json)",
+  "description": "형식(필드·타입·허용 값)만 정의합니다. 원문 인용 일치, 카드 수, 템플릿별 글자 수처럼 다른 파일과 비교하는 검사는 scripts/validate.js가 합니다. 규격 설명: docs/card-data-spec.md",
+  "type": "object",
+  "required": ["spec_version", "product_id", "stage", "sources", "analysis", "cards"],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "product_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "stage": { "enum": ["plan", "copy", "approved"] },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "section", "quote"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/sourceId" },
+          "section": { "type": "string", "minLength": 1 },
+          "quote": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "required": ["core_message", "core_evidence", "features", "usage"],
+      "additionalProperties": false,
+      "properties": {
+        "core_message": { "type": "string", "minLength": 1 },
+        "core_evidence": { "$ref": "#/$defs/evidence", "minItems": 1 },
+        "features": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/analysisItem" } },
+        "usage": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/analysisItem" } }
+      }
+    },
+    "cards": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/card" }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "stage": { "enum": ["copy", "approved"] } } },
+      "then": { "properties": { "cards": { "items": { "required": ["copy"] } } } }
+    }
+  ],
+  "$defs": {
+    "sourceId": { "type": "string", "pattern": "^S\\d+$" },
+    "evidence": { "type": "array", "items": { "$ref": "#/$defs/sourceId" } },
+    "analysisItem": {
+      "type": "object",
+      "required": ["summary", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "evidence": { "$ref": "#/$defs/evidence", "minItems": 1 }
+      }
+    },
+    "text": { "type": "string", "minLength": 1 },
+    "card": {
+      "type": "object",
+      "required": ["no", "role", "template", "intent"],
+      "additionalProperties": false,
+      "properties": {
+        "no": { "type": "integer", "minimum": 1 },
+        "role": { "enum": ["cover", "feature", "usage", "detail", "closing"] },
+        "template": { "enum": ["cover", "image", "description"] },
+        "intent": { "type": "string", "minLength": 1 },
+        "image": { "type": ["string", "null"], "pattern": "^[^/\\\\]+\\.(png|jpe?g|PNG|JPE?G)$" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "copy": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "role": { "enum": ["feature", "usage", "detail"] } } },
+          "then": { "required": ["evidence"], "properties": { "evidence": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "template": { "const": "cover" } } },
+          "then": {
+            "properties": {
+              "copy": {
+                "type": "object",
+                "required": ["title"],
+                "additionalProperties": false,
+                "properties": {
+                  "title": { "$ref": "#/$defs/text" },
+                  "subtitle": { "type": "string" },
+                  "badge": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "template": { "const": "image" } } },
+          "then": {
+            "required": ["image"],
+            "properties": {
+              "image": { "type": "string" },
+              "copy": {
+                "type": "object",
+                "required": ["title"],
+                "additionalProperties": false,
+                "properties": {
+                  "title": { "$ref": "#/$defs/text" },
+                  "caption": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "template": { "const": "description" } } },
+          "then": {
+            "properties": {
+              "copy": {
+                "type": "object",
+                "required": ["title", "items"],
+                "additionalProperties": false,
+                "properties": {
+                  "title": { "$ref": "#/$defs/text" },
+                  "items": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "$ref": "#/$defs/text" } }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

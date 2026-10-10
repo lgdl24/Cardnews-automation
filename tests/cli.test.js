@@ -116,3 +116,23 @@ test('log: 수정 요청은 정해진 유형 코드만 받는다', () => {
     ws.cleanup();
   }
 });
+
+test('new-product: 빈 양식을 만들고, 이미 있는 제품ID는 거절한다', () => {
+  const ws = makeWorkspace();
+  try {
+    const r = ws.run('new-product.js');
+    assert.notEqual(r.status, 0, '이미 있는 폴더는 덮어쓰지 않아야 해요');
+    const { spawnSync } = require('child_process');
+    const path = require('path');
+    const env = { ...process.env, CARDNEWS_PRODUCTS_DIR: ws.dir };
+    const root = path.resolve(__dirname, '..');
+    const made = spawnSync(process.execPath, [path.join(root, 'scripts', 'new-product.js'), 'brand-new'], { cwd: root, encoding: 'utf8', env });
+    assert.equal(made.status, 0, made.stderr);
+    assert.ok(fs.existsSync(path.join(ws.dir, 'brand-new', 'input.md')));
+    assert.ok(fs.existsSync(path.join(ws.dir, 'brand-new', 'images')));
+    const check = spawnSync(process.execPath, [path.join(root, 'scripts', 'check-input.js'), 'brand-new'], { cwd: root, encoding: 'utf8', env });
+    assert.equal(check.status, 1, '빈 양식은 입력 누락으로 멈춰야 해요');
+  } finally {
+    ws.cleanup();
+  }
+});
