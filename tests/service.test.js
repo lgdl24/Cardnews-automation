@@ -194,3 +194,22 @@ test('결과에 섞인 API 키는 보고서에서 가려진다', async () => {
     t.cleanup();
   }
 });
+
+test('API 오류(크레딧 부족 등)로 끝나면 성공으로 보지 않고 원인 코드를 남긴다', async () => {
+  const t = tempEnv();
+  try {
+    async function* creditError({ options }) {
+      yield { type: 'system', subtype: 'init', model: 'fake', cwd: options.cwd, tools: [], skills: options.skills };
+      yield { type: 'result', subtype: 'success', is_error: true, num_turns: 1, total_cost_usd: 0, modelUsage: {}, permission_denials: [], result: 'Credit balance is too low' };
+      throw new Error('Claude Code returned an error result: Credit balance is too low');
+    }
+    const r = await job.runJob({
+      kind: 'plan', projectId: 'svc-test', projectDir: t.projectDir, jobsDir: t.jobsDir, reportsDir: t.reportsDir,
+      env: { PATH: process.env.PATH }, queryFn: creditError,
+    });
+    assert.equal(r.ok, false);
+    assert.equal(r.error_code, 'API_CREDIT');
+  } finally {
+    t.cleanup();
+  }
+});

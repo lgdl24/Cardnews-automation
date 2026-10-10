@@ -34,54 +34,51 @@
 3. 성공이면 `cards.json`, `output/`(PNG, `quality.json`, `render-report*.json`)을 프로젝트 폴더에 반영하고, 카드 버전(`CARD_VERSION`)을 저장합니다.
 4. `job_finished`에 토큰·비용을 기록하고 작업 폴더를 지웁니다.
 
-## Agent SDK 실행 옵션 (TypeScript 예시)
+## Agent SDK 실행 옵션
 
-`@anthropic-ai/claude-agent-sdk`의 타입 정의(0.3.x)를 보고 쓴 예시입니다. 실제 동작은 PoC에서 확인합니다.
+실제 구현은 `scripts/service/job.js`의 `buildQueryOptions()`예요. `@anthropic-ai/claude-agent-sdk` 0.3.296의 타입 정의로 확인했어요.
 
-```ts
-import { query } from '@anthropic-ai/claude-agent-sdk';
-
-const pid = project.id; // products/<pid>/ 폴더명 = cards.json의 product_id
-const allowed = [
-  'Read', 'Glob', 'Grep',
-  `Edit(./products/${pid}/cards.json)`, `Write(./products/${pid}/cards.json)`,
-  `Bash(npm run check -- ${pid})`,
-  `Bash(npm run validate -- ${pid})`,
-  `Bash(npm run render -- ${pid}:*)`,
-];
-
-for await (const msg of query({
-  prompt, // prompts/plan.md 등을 채운 문자열
-  options: {
-    cwd: jobDir,
-    settingSources: ['project'],                  // 이 폴더의 CLAUDE.md·.claude/만 불러옴 (사용자 설정 제외)
-    skills: ['cardnews-content', 'cardnews-render'],
-    tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash', 'Skill'],
-    allowedTools: allowed,
-    permissionMode: 'dontAsk',                    // 허용 목록 밖 도구 호출은 묻지 않고 거부
-    maxTurns: Number(process.env.AGENT_MAX_TURNS ?? 30),
-    maxBudgetUsd: Number(process.env.AGENT_MAX_BUDGET_USD ?? 1),
-    env: {                                        // 지정하면 환경변수 전체를 대체함 → 필요한 값만 넘김
-      PATH: process.env.PATH,
-      HOME: jobDir,
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-      CHROMIUM_PATH: process.env.CHROMIUM_PATH,
-      CARDNEWS_MODE: 'service',
-      CARDNEWS_JOB_ID: String(job.id),
-      CARDNEWS_JOB_KIND: job.kind,
-    },
+```js
+const options = {
+  cwd: jobDir,
+  settingSources: ['project'],                          // 작업 폴더의 CLAUDE.md·.claude/만 (사용자 설정 제외). CLAUDE.md를 읽으려면 'project'가 있어야 함
+  systemPrompt: { type: 'preset', preset: 'claude_code' },
+  skills: ['cardnews-content', 'cardnews-render'],      // Skill 켜기. allowedTools에 'Skill'을 넣을 필요 없음
+  tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash'],   // 모델이 쓸 수 있는 도구 자체를 제한
+  allowedTools: [                                       // 묻지 않고 허용하는 것 (나머지는 dontAsk로 거부)
+    'Read(./**)', 'Glob', 'Grep',
+    `Edit(./products/${pid}/cards.json)`, `Write(./products/${pid}/cards.json)`,
+    `Bash(npm run check -- ${pid})`, `Bash(npm run validate -- ${pid})`,
+    `Bash(npm run render -- ${pid})`, `Bash(npm run render -- ${pid}:*)`,
+  ],
+  permissionMode: 'dontAsk',                            // 허용 목록 밖은 묻지 않고 거부 → result.permission_denials에 기록
+  maxTurns: Number(process.env.AGENT_MAX_TURNS ?? 30),
+  maxBudgetUsd: Number(process.env.AGENT_MAX_BUDGET_USD ?? 1),
+  model: process.env.AGENT_MODEL,                       // 선택. 예: 'sonnet'
+  env: {                                                // 지정하면 환경변수 전체를 대체함 → 필요한 값만
+    PATH, ANTHROPIC_API_KEY,
+    HOME: `${jobDir}/.home`,                            // 작업마다 따로. 프로젝트 .claude와 겹치지 않게 별도 폴더
+    CARDNEWS_MODE: 'service', CARDNEWS_JOB_ID: jobId, CARDNEWS_JOB_KIND: kind,
+    PLAYWRIGHT_BROWSERS_PATH,                           // HOME을 바꾸면 기본 브라우저 위치를 못 찾으므로 원래 위치를 넘김
   },
-})) {
-  if (msg.type === 'result') {
-    // msg.subtype: 'success' | 'error_max_turns' | 'error_max_budget_usd' | 'error_during_execution' ...
-    // 비용: msg.total_cost_usd / 토큰: msg.modelUsage[모델].inputTokens·outputTokens (합산)
-    // 결과 보고: msg.subtype === 'success'면 msg.result (CLAUDE.md '서비스 모드 결과 보고' 형식)
-  }
-}
+};
 ```
 
+- 결과 메시지: `subtype`(`success` · `error_max_turns` · `error_max_budget_usd` · `error_during_execution`), `is_error`, `total_cost_usd`, `modelUsage`(모델별 토큰), `permission_denials`(거부된 도구 호출), `result`(마지막 답변).
+- API 오류(예: 크레딧 부족)는 `subtype: 'success'`, `is_error: true`인 결과를 낸 뒤 예외가 나요. 실행기는 이 경우를 `API_CREDIT`·`error_during_execution`으로 기록하고 반영하지 않아요.
 - 관리자 비밀번호 해시, 세션 비밀값 같은 웹 서버 환경변수는 `env`에 넘기지 않습니다.
-- `HOME`을 작업 폴더로 두면 작업 사이에 사용자 설정·메모리가 섞이지 않는지 PoC에서 확인합니다.
+- 인증은 API 키만 씁니다. Anthropic이 따로 승인하지 않으면 SDK로 만든 제품에 claude.ai 로그인·구독 사용량을 쓸 수 없어요. ([Agent SDK 개요](https://code.claude.com/docs/en/agent-sdk/overview))
+
+## 실행해 보기 (PoC)
+
+```bash
+# 저장소 루트 .env에 ANTHROPIC_API_KEY (DATA_DIR 줄은 지우면 저장소의 data/ 사용)
+npm run job -- plan poc-toneup --from toneup-sunscreen --model sonnet   # 작업 하나
+npm run poc -- --model sonnet                                             # 확인 항목 전체 (약 1~3달러)
+```
+
+- 프로젝트 저장소는 `data/projects/<ID>`, 작업 폴더는 `data/jobs/<작업ID>`(끝나면 삭제, `--keep`이면 남김), 보고서는 `data/reports/<작업ID>.json`. `data/`는 커밋되지 않아요.
+- 보고서에는 API 키가 섞여 들어와도 `[REDACTED]`로 가려요. 권한 점검(C5)은 실제 비밀이 아닌 가짜 파일만 노려요.
 
 ## 환경변수
 

@@ -264,6 +264,17 @@ function mergeJob({ productDir, projectDir, ok }) {
   return applied;
 }
 
+// 실패 원인 코드: Claude 결과 보고의 오류 코드 > API·실행 오류 > SDK 종료 사유 > 서버 재검증 실패
+function errorCodeOf({ report, sdk, crash, verify }) {
+  const fromReport = report.오류.map((e) => (e.match(/\b[A-Z][A-Z_]{4,}\b/) || [])[0]).find(Boolean);
+  if (fromReport) return fromReport;
+  if (crash) return /credit balance/i.test(crash) ? 'API_CREDIT' : 'error_during_execution';
+  if (sdk && sdk.subtype !== 'success') return sdk.subtype;
+  if (sdk && sdk.is_error) return 'error_during_execution';
+  if (!verify.ok) return 'VERIFY_FAILED';
+  return 'error_during_execution';
+}
+
 // ── 작업 하나 실행
 async function runJob({
   kind, projectId, projectDir, vars = {}, queryFn, keep = false,
@@ -288,11 +299,11 @@ async function runJob({
 
   const verify = verifyJob({ ...ws, projectId, kind });
   const inspected = inspect ? inspect(ws) : undefined;
-  const sdkOk = collector.result && collector.result.subtype === 'success';
-  const ok = Boolean(sdkOk && verify.ok);
+  const sdkOk = Boolean(collector.result && collector.result.subtype === 'success' && !collector.result.is_error && !crash);
+  const ok = sdkOk && verify.ok;
   const applied = mergeJob({ productDir: ws.productDir, projectDir, ok });
   const report = parseResultReport(collector.result && collector.result.text);
-  const errorCode = ok ? null : (report.오류[0] && (report.오류[0].match(/[A-Z_]{5,}/) || [])[0]) || (collector.result ? collector.result.subtype : 'error_during_execution');
+  const errorCode = ok ? null : errorCodeOf({ report, sdk: collector.result, crash, verify });
   appendLines(path.join(projectDir, 'log.jsonl'), [serverEvent(projectId, jobId, 'job_finished', {
     kind,
     ok,
