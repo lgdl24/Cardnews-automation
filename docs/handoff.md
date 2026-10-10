@@ -22,7 +22,7 @@
 ## 현재 작업
 
 - 확인일·작성 도구: 2026-10-10 · Claude.
-- 이슈·PR: [#3](https://github.com/lgdl24/Cardnews-automation/issues/3) · PR은 이 브랜치 push 후 생성. **`main` 병합은 관리자 결정 대기.**
+- 이슈·PR: [#3](https://github.com/lgdl24/Cardnews-automation/issues/3) · [PR #4](https://github.com/lgdl24/Cardnews-automation/pull/4). **`main` 병합은 관리자 결정 대기.**
 - 상태: 완료 (PR 검토 대기). 실제 Agent SDK 실행 확인은 API 크레딧이 생기면 이어서 함.
 - 목표·완료 조건: 서비스 모드 작업 하나를 작업 폴더 → 실행 → 서버 재검증 → 반영 → 기록 순서로 실행할 수 있고, 확인 결과가 `docs/service-mode.md` 'PoC에서 확인할 것'에 남아 있어야 함.
 - 작업 브랜치: `feat/3-agent-sdk-poc` · 기준 커밋 `594f244` (PR #2 병합).
@@ -58,7 +58,7 @@
 
 ## 다음 행동
 
-1. 관리자가 #3 PR을 검토해 `main` 병합 여부를 결정한다.
+1. 관리자가 PR #4를 검토해 `main` 병합 여부를 결정한다.
 2. API 크레딧이 생기면 `npm run poc -- --model sonnet`으로 SDK 확인 항목(권한·비용·Skill 호출)을 채운다. 그 전에는 `--executor manual`로 흐름을 확인한다.
 3. 다음 작업 후보: 6단계 관리자 웹 서버 뼈대(입력 폼 → 작업 등록 → 실행기 호출 → 확인 화면). 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다.
 4. 실제 톤업 선크림 자료를 받으면 대화 모드로 첫 제작(`npm run new-product`) 후 노션 '톤업 선크림 · 첫 제작' 행에 기록한다.
