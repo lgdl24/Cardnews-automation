@@ -1,6 +1,8 @@
 # 협업 규칙
 
-팀원 3명이 같은 저장소에서 작업할 때 지키는 최소 규칙입니다. 진행 상황은 노션 '작업 트래커'에서 관리합니다.
+팀원이 같은 저장소에서 작업할 때 지키는 최소 규칙입니다. 진행 상황은 노션 '작업 트래커'에서 관리합니다.
+
+Claude Code·Codex의 교대 개발은 [공통 맥락](docs/project-context.md)의 '개발 작업 규칙'을 따르고, 현재 목표·검증 결과·다음 행동과 최근 변경은 [인수인계](docs/handoff.md)에 기록합니다. 노션에는 팀 진행 상황을, 인수인계에는 다음 도구가 이어갈 최신 개발 상태를 남깁니다.
 
 ## 처음 받을 때
 
@@ -14,10 +16,20 @@ npm test                         # 검사 기능 테스트
 npm run test:render              # 출력 테스트 (브라우저 필요)
 ```
 
+## 작업 흐름: 이슈 → 브랜치 → PR
+
+사람이든 Claude Code·Codex든 같은 순서로 작업합니다.
+
+1. **이슈**: 할 일·완료 조건을 GitHub 이슈로 만듭니다. (예: `#1 Claude Code·Codex 교대 개발 문서 정리`)
+2. **브랜치**: 최신 `main`에서 `<종류>/<이슈번호>-<짧은-설명>` 브랜치를 만듭니다. 예: `docs/1-agent-handoff`, `feat/7-agent-sdk-poc`
+3. **커밋**: 메시지 끝에 `(#이슈번호)`를 붙입니다.
+4. **push·PR**: 브랜치를 push하고 PR을 엽니다. 본문에 `Closes #이슈번호`, 검증 결과, 노션 하위 작업을 적습니다.
+5. **병합**: `main` 병합은 저장소 관리자가 PR을 검토한 뒤 결정합니다. 도구(Claude Code·Codex)는 병합하지 않습니다.
+
 ## 브랜치
 
 - `main`은 항상 `npm test`가 통과하는 상태로 둡니다. 직접 push하지 않고 PR로 합칩니다.
-- 브랜치 이름: `<종류>/<짧은-설명>` — 예: `feat/json-schema`, `fix/char-count`, `docs/input-form`
+- 브랜치 이름: `<종류>/<이슈번호>-<짧은-설명>` — 예: `feat/12-json-schema`, `fix/15-char-count`, `docs/1-agent-handoff`
 
 | 종류 | 쓰는 때 |
 |---|---|
@@ -32,7 +44,7 @@ npm run test:render              # 출력 테스트 (브라우저 필요)
 `<종류>: <무엇을 했는지>` 한 줄, 필요하면 빈 줄 뒤에 이유를 적습니다.
 
 ```
-feat: 설명형 템플릿 항목 4개까지 허용
+feat: 설명형 템플릿 항목 4개까지 허용 (#12)
 
 글자 수 기준 조정 결과 4개도 넘침 없이 들어가서 maxItems를 4로 올림
 ```
@@ -43,6 +55,7 @@ feat: 설명형 템플릿 항목 4개까지 허용
 - [ ] 템플릿 CSS를 고쳤다면 `npm run calibrate`로 다시 재고, 필요하면 `config/templates.json` 기준과 `docs/card-data-spec.md` 표를 함께 고침
 - [ ] 규격(입력 양식·카드 데이터)을 고쳤다면 `config/input-form.json`·`schemas/cards.schema.json`·문서를 함께 고침 (`tests/spec.test.js`가 확인)
 - [ ] 노션 작업 트래커의 해당 하위 작업을 PR에 적음
+- [ ] [인수인계](docs/handoff.md)의 현재 작업·최근 변경을 갱신함
 - [ ] 결과에 영향을 주는 규칙(`CLAUDE.md`, Skill, `config/`)을 바꿨다면 `config/skill-version.json` 버전 변경을 팀과 논의함
 - [ ] `products/<제품ID>/output/`, `.env`, 실제 API 키가 커밋에 없음
 
