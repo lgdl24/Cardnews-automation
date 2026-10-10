@@ -1,8 +1,10 @@
 {
   "name": "cardnews-automation",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Claude Code 기반 카드뉴스 제작 자동화",
   "scripts": {
+    "test": "node --test tests/check-input.test.js tests/validate.test.js tests/cli.test.js",
+    "test:render": "node --test tests/render.test.js",
     "check": "node scripts/check-input.js",
     "validate": "node scripts/validate.js",
     "render": "node scripts/render.js",
@@ -16,6 +18,6 @@
   },
   "private": true,
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

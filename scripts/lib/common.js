@@ -4,10 +4,14 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
+// 제품 폴더 위치. 테스트는 CARDNEWS_PRODUCTS_DIR로 임시 폴더를 지정해 실제 products/를 건드리지 않음
+const productsDir = () => process.env.CARDNEWS_PRODUCTS_DIR || path.join(ROOT, 'products');
+
 const paths = {
   root: ROOT,
   config: (name) => path.join(ROOT, 'config', name),
-  product: (id, ...rest) => path.join(ROOT, 'products', id, ...rest),
+  products: productsDir,
+  product: (id, ...rest) => path.join(productsDir(), id, ...rest),
 };
 
 function readJson(file) {

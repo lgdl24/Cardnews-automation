@@ -93,6 +93,7 @@ for await (const msg of query({
 | `CARDNEWS_JOB_ID`, `CARDNEWS_JOB_KIND` | 스크립트가 남기는 `validate_result`에 작업 ID를 붙임 |
 | `CARDNEWS_NO_LOG=1` | 검증 결과를 기록하지 않음 (`--no-log`와 같음) |
 | `CHROMIUM_PATH` | 시스템 Chromium을 쓸 때 실행 파일 경로 |
+| `CARDNEWS_PRODUCTS_DIR` | 제품 폴더 위치 (기본 `products/`). 테스트가 임시 폴더를 쓸 때 사용 |
 
 ## PoC에서 확인할 것
 

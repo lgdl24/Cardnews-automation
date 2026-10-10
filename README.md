@@ -4,7 +4,7 @@
 HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝트입니다.
 제작 과정은 기록으로 남아 시간·수정·품질 지표를 분석할 수 있습니다.
 
-> 현재 버전: v0.2 (기본 틀 + 두 실행 방식 규칙 + 제작 기록·품질 지표). `products/toneup-sunscreen`은 구조 확인용 **가상 예시 제품**이에요.
+> 현재 버전: v0.3 (기본 틀 + 두 실행 방식 규칙 + 제작 기록·품질 지표 + 자동 테스트). `products/toneup-sunscreen`은 구조 확인용 **가상 예시 제품**이에요.
 
 ## 두 가지 실행 방식
 
@@ -22,7 +22,11 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 ```bash
 npm install
 npx playwright install chromium   # PNG 출력용 브라우저 (최초 1회)
+npm test                          # 검사 기능 테스트 (오류 코드별 경우 39개)
+npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드 1장 재출력)
 ```
+
+브랜치·커밋·PR 규칙과 테스트 추가 방법은 [`CONTRIBUTING.md`](CONTRIBUTING.md)를 봐 주세요.
 
 ## 사용 방법 (개발 모드)
 
@@ -84,6 +88,8 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   └── service-mode.md               # 웹 서버 ↔ Agent SDK 연결 규격
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
 ├── scripts/                          # check-input, validate, render, log, compare, new-run, lib/
+├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
+├── CONTRIBUTING.md                   # 협업 규칙
 ├── .env.example                      # 서비스 모드 환경변수 예시
 └── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록
 ```
@@ -104,11 +110,14 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 검증 프로그램이 문자열 일치로 확인하므로, AI가 원문을 바꿔 인용하거나 없는 내용을 근거로 달면 `EVIDENCE_ERROR`가 납니다.
 단, 문구(`copy`)가 근거의 의미를 넘어서는지는 자동으로 판단할 수 없어 최종 검토에서 사람이 확인합니다.
 
-## 다음 할 일
+## 초기 작업 단계
 
-- [ ] 실제 톤업 선크림 자료로 `input.md`·이미지 교체 (출처·사용 가능 여부 기재)
-- [ ] 글자 수 기준을 실제 렌더링 결과를 보며 조정 (`config/templates.json`)
-- [ ] 주의 표현 목록을 식약처 화장품 표시·광고 가이드라인 원문 기준으로 확정
-- [ ] 입력 누락 테스트용 자료, 지시문을 넣은 테스트 자료 준비
-- [ ] Agent SDK PoC (`docs/service-mode.md`의 확인 항목)
-- [ ] 멘토 확인: 평가 기준, API 비용 부담, 배포 환경, Agent SDK 활용 인정 여부
+| 단계 | 내용 | 상태 |
+|---|---|---|
+| 1. 기반 정비·자동 테스트 | 오류 코드별 테스트(`npm test`), 출력 테스트, 협업 규칙 파일 | 완료 (v0.3) |
+| 2. 입력·데이터 규격 확정 | JSON 규격 파일, 입력 양식 확정, 지시문 탐지, 입력 누락·지시문 테스트 자료 | 다음 |
+| 3. 템플릿 3종·디자인 반영 | Figma 디자인 토큰 → `theme.json`, 템플릿 다듬기, 글자 수 기준 조정 | |
+| 4. 첫 실제 제작 (개발 모드) | 실제 톤업 선크림 자료로 구성안~출력, 제작 기록 남기기 | |
+| 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 (`docs/service-mode.md`) | |
+
+웹 화면·서버는 5단계 결과를 보고 따로 계획합니다. 멘토 확인 사항(평가 기준, API 비용, 배포 환경, Agent SDK 활용 인정 여부)은 노션 작업 트래커에서 관리합니다.

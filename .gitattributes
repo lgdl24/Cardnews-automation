@@ -1,0 +1,7 @@
+# 줄바꿈을 LF로 통일 (Windows·Mac 팀원 간 원문 인용 비교가 달라지지 않도록)
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.woff2 binary
