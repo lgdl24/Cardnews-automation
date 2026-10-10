@@ -10,7 +10,7 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 
 같은 `CLAUDE.md`·Skill·스크립트를 두 방식으로 실행합니다.
 
-| | 개발 모드 | 서비스 모드 |
+| | 대화 모드 | 서비스 모드 |
 |---|---|---|
 | 쓰는 사람 | 팀원 (개발·실험) | 기업 관리자 (관리자 웹) |
 | 실행 | 터미널의 Claude Code | 웹 서버가 Agent SDK로 실행 (`docs/service-mode.md`) |
@@ -30,17 +30,18 @@ npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드
 
 ## Claude Code · Codex로 교대 개발
 
-두 도구 모두 이 저장소 폴더를 작업 위치로 사용합니다. 프로젝트를 개발할 때 [공통 맥락](docs/project-context.md)과 [인수인계](docs/handoff.md)를 읽고 같은 목표·완료 조건을 이어갑니다. Codex의 진입점은 [AGENTS.md](AGENTS.md), Claude의 진입점은 [CLAUDE.md](CLAUDE.md)입니다.
+두 도구 모두 이 저장소 폴더에서 작업합니다. 진입점은 Claude Code가 [CLAUDE.md](CLAUDE.md), Codex가 [AGENTS.md](AGENTS.md)이고, 둘 다 [공통 맥락](docs/project-context.md)과 [인수인계](docs/handoff.md)를 함께 봅니다.
 
-- 작은 작업 완료·중단마다 인수인계를 갱신합니다. 한도 소진 직전까지 기록을 미루지 않습니다.
-- 교대 전 기존 도구의 편집·실행을 끝내고, 다음 도구가 현재 브랜치와 실제 변경 상태를 확인합니다. 같은 폴더에서는 한 도구만 수정합니다.
-- 인수인계는 개발 목표·검증 결과를 위한 문서입니다. 카드 제작의 승인 단계와 서비스 실행 규칙은 `CLAUDE.md`를 따릅니다.
+- 작업은 이슈 → 브랜치 → PR 순서로 하고, `main` 병합은 관리자가 결정합니다. ([CONTRIBUTING.md](CONTRIBUTING.md))
+- 작은 작업이 끝나거나 중단될 때마다 인수인계를 갱신합니다. 규칙·용어·파일이 바뀌면 '최근 변경'에 남겨 다음 도구가 알 수 있게 합니다.
+- 교대 전에 편집·실행을 끝내고, 같은 폴더에서는 한 도구만 수정합니다.
+- 카드 제작(대화 모드·서비스 모드)의 승인 절차는 `CLAUDE.md`가 기준이며, 인수인계가 대신하지 않습니다.
 
 새 세션에서 요청할 예시:
 
 > 이 저장소의 지침과 docs/project-context.md, docs/handoff.md를 읽고 실제 브랜치·변경 상태를 대조해 이어서 작업해. 현재 목표와 완료 조건을 유지하고, 필요한 자료만 확인해. 완료하거나 중단할 때 인수인계를 갱신해.
 
-## 사용 방법 (개발 모드)
+## 사용 방법 (대화 모드)
 
 Claude Code에서 이렇게 요청합니다.
 
@@ -69,7 +70,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 ## 제작 기록과 분석
 
 - `validate`·`render`는 결과를 `products/<제품ID>/log.jsonl`에 자동으로 남기고, 품질 지표를 `output/quality.json`에 저장합니다.
-- 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 개발 모드에서 Claude가, 서비스 모드에서 서버가 남깁니다.
+- 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 서비스 모드에서 서버가 남깁니다.
 - 모든 기록에 규칙 버전(`config/skill-version.json`)이 붙습니다. 규칙을 고치면 버전을 올려 v1·v2 결과를 비교합니다.
 - 형식과 지표 정의: `docs/event-log-spec.md`
 
@@ -84,6 +85,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 
 ```
 ├── CLAUDE.md                         # 공통 규칙 (실행 방식, 작업 단위, 입력 자료 취급, 내용 규칙, 오류 처리, 기록)
+├── AGENTS.md                         # Codex 진입점 (규칙은 CLAUDE.md·공통 맥락을 가리킴)
 ├── .claude/skills/
 │   ├── cardnews-content/SKILL.md     # 콘텐츠 생성 Skill: 입력 확인 ~ 데이터 검증, 수정 요청
 │   └── cardnews-render/SKILL.md      # 카드 출력 Skill: 템플릿 적용 ~ 재출력
@@ -102,13 +104,15 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── card-data-spec.md             # 카드 구성 데이터(JSON) 규격
 │   ├── style-guide.md                # 카드 구성·문체 기준
 │   ├── event-log-spec.md             # 제작 기록·지표 규격
-│   └── service-mode.md               # 웹 서버 ↔ Agent SDK 연결 규격
+│   ├── service-mode.md               # 웹 서버 ↔ Agent SDK 연결 규격
+│   ├── project-context.md            # 교대 개발 공통 맥락 (용어·설계 이유·개발 작업 규칙)
+│   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
 ├── scripts/                          # check-input, validate, render, log, compare, new-run, lib/
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
 ├── CONTRIBUTING.md                   # 협업 규칙
 ├── .env.example                      # 서비스 모드 환경변수 예시
-└── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 개발 모드 실행 기록)
+└── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 대화 모드 실행 기록)
 ```
 
 ## 담당 범위 (계획서 기준)
@@ -134,7 +138,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 | 1. 기반 정비·자동 테스트 | 오류 코드별 테스트(`npm test`), 출력 테스트, 협업 규칙 파일 | 완료 (v0.3) |
 | 2. 입력·데이터 규격 확정 | JSON 스키마, 입력 양식 정의 파일, 지시문 탐지, 입력 누락·지시문 테스트 자료, 규격 일치 테스트 | 완료 (v0.4) |
 | 3. 템플릿 3종·디자인 반영 | Figma 토큰 ↔ `theme.json`, 글자 수 측정 도구(`calibrate`)로 기준 조정, 줄바꿈 기준, 이미지 겹침 점검 | 완료 (v0.4) |
-| 4. 첫 실제 제작 (개발 모드) | 개발 모드 전체 흐름(구성안 → 승인 → 문구·출력 → 최종 승인 → 기록) 점검, 입력 누락·지시문 자료로 안전 규칙 확인 | 흐름 점검 완료 (v0.5, 가상 자료) · 실제 자료 제작은 자료 받은 뒤 |
+| 4. 첫 실제 제작 (대화 모드) | 대화 모드 전체 흐름(구성안 → 승인 → 문구·출력 → 최종 승인 → 기록) 점검, 입력 누락·지시문 자료로 안전 규칙 확인 | 흐름 점검 완료 (v0.5, 가상 자료) · 실제 자료 제작은 자료 받은 뒤 |
 | 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 (`docs/service-mode.md`) | |
 
 웹 화면·서버는 5단계 결과를 보고 따로 계획합니다. 멘토 확인 사항(평가 기준, API 비용, 배포 환경, Agent SDK 활용 인정 여부)은 노션 작업 트래커에서 관리합니다.

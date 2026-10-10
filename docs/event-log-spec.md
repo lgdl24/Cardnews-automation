@@ -1,6 +1,6 @@
 # 제작 기록(이벤트)·지표 규격 — v0.1
 
-데이터 분석(A1~A7)의 원본 데이터 형식입니다. 개발 모드는 `products/<제품ID>/log.jsonl`에 한 줄씩,
+데이터 분석(A1~A7)의 원본 데이터 형식입니다. 대화 모드는 `products/<제품ID>/log.jsonl`에 한 줄씩,
 서비스 모드는 같은 형식을 DB 이벤트 테이블(`EVENT.type`, `EVENT.payload_json`)에 저장합니다.
 계산 코드: `scripts/lib/metrics.js`(품질 지표), `scripts/lib/analysis.js`(과정 지표).
 
@@ -11,7 +11,7 @@
 | `ts` | 기록 시각 (ISO 8601, UTC) |
 | `event` | 이벤트 이름 |
 | `project_id` | 제품ID (서비스 모드는 프로젝트 ID) |
-| `job_id` | 작업 ID. 작업 밖 이벤트는 `null`. 개발 모드는 `cli-YYYYMMDD-HHMMSS-xxx` |
+| `job_id` | 작업 ID. 작업 밖 이벤트는 `null`. 대화 모드는 `cli-YYYYMMDD-HHMMSS-xxx` |
 | `skill_version` | `config/skill-version.json`의 `version` |
 
 ## 이벤트

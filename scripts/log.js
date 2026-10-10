@@ -1,7 +1,7 @@
 // 제작 기록: 이벤트를 products/<제품ID>/log.jsonl에 한 줄씩 추가하고, 과정·품질 지표를 요약
 // 형식: docs/event-log-spec.md
 //
-// 사용법 (개발 모드)
+// 사용법 (대화 모드)
 //   node scripts/log.js <제품ID> input_submitted
 //   node scripts/log.js <제품ID> job_started --kind plan|copy|revise
 //   node scripts/log.js <제품ID> job_finished --ok true|false [--error 오류코드] [--memo "..."]

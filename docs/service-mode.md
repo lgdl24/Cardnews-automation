@@ -23,7 +23,7 @@
 
 | 경로 | 만드는 방법 |
 |---|---|
-| `CLAUDE.md`, `.claude/`, `config/`, `docs/`, `templates/`, `scripts/`, `package.json` | 앱 폴더에서 복사 (규칙 한 벌) |
+| `CLAUDE.md`, `.claude/`, `config/`, `docs/`, `templates/`, `scripts/`, `package.json` | 앱 폴더에서 복사 (규칙 한 벌). 개발용 `AGENTS.md`, `docs/project-context.md`, `docs/handoff.md`는 빼고 복사 |
 | `node_modules/` | 앱 폴더로 심볼릭 링크 (Playwright·Pretendard) |
 | `products/<project_id>/` | `/data/projects/<project_id>/`에서 복사. 단, `log.jsonl`·`.job.json`은 빼고 복사 |
 
@@ -98,6 +98,7 @@ for await (const msg of query({
 ## PoC에서 확인할 것
 
 - [ ] `settingSources: ['project']`로 작업 폴더의 `CLAUDE.md`와 두 Skill이 불러와지고 Skill이 실제로 호출되는지
+- [ ] 서비스 실행이 개발 문서(`docs/project-context.md`, `docs/handoff.md`, `AGENTS.md`)를 읽지 않는지. 작업 폴더에 이 파일들을 복사하지 않는 것도 방법 (`CLAUDE.md` '요청 종류')
 - [ ] `tools`에 `Skill`을 넣어야 하는지, `skills` 옵션만으로 되는지
 - [ ] `permissionMode: 'dontAsk'` + `allowedTools`로 허용 밖 명령(`ls`, `cat .env`, `curl` 등)이 막히는지
 - [ ] `Edit(./products/<pid>/cards.json)` 규칙이 작업 폴더 기준 경로로 동작하는지, 다른 파일 쓰기가 막히는지

@@ -1,18 +1,26 @@
-# 카드뉴스 제작 자동화 — 에이전트 안내
+# 카드뉴스 제작 자동화 — 에이전트 안내 (Codex)
 
-Claude Code와 Codex는 같은 목표·완료 조건·인수인계 기록으로 작업한다. 사용자의 현재 요청으로 작업 종류를 먼저 판단한다.
+Claude Code와 Codex는 같은 목표·완료 조건·인수인계로 이 저장소를 교대로 개발한다. Claude Code의 진입점은 [CLAUDE.md](CLAUDE.md), Codex의 진입점은 이 파일이다. 규칙 원본은 아래 링크 한 곳씩이며, 이 파일에 규칙을 복사하지 않는다.
 
-## 작업 종류
+## 시작할 때
 
-- **서비스 실행**: 지시문이 `[서비스 모드]`로 시작하면 [CLAUDE.md](CLAUDE.md)의 서비스 규칙과 지정된 제작 Skill만 따른다. 개발용 공통 맥락·인수인계 문서를 읽거나 갱신하지 않는다.
-- **프로젝트 개발**: 코드·웹·설정·문서를 구현하거나 고치는 요청은 [공통 맥락](docs/project-context.md)과 [인수인계](docs/handoff.md)를 먼저 읽는다. 이후 필요한 파일만 추가로 확인한다. 브랜치·검증·PR 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md)를 따른다.
-- **카드뉴스 제작·수정**: 특정 제품의 카드를 만드는 요청은 [CLAUDE.md](CLAUDE.md)의 제작 절차를 따른다. 콘텐츠 작업은 [.claude/skills/cardnews-content/SKILL.md](.claude/skills/cardnews-content/SKILL.md), 출력 작업은 [.claude/skills/cardnews-render/SKILL.md](.claude/skills/cardnews-render/SKILL.md)를 해당 단계에서 읽는다. Codex에서도 이 파일의 절차를 참조하며 별도 사본을 만들지 않는다.
+1. [인수인계](docs/handoff.md)의 **최근 변경**과 **현재 작업**을 읽는다. 마지막 작업 이후 바뀐 규칙·용어·파일이 여기에 있다.
+2. `git status --short --branch`, `git log --oneline -5`로 실제 상태를 인수인계와 대조한다. 다르면 실제 상태를 기준으로 인수인계를 바로잡는다.
+3. 요청 종류를 판단한다.
 
-`CLAUDE.md`의 “개발 모드”는 팀원이 대화로 **카드를 제작하는 실행 방식**이다. 그 제작 중 쓰기·명령 제한을 프로젝트 코드 개발 전체에 적용하지 않는다. 반대로 서비스 실행의 제한을 개발 지침으로 완화하지 않는다.
+## 요청 종류
 
-## 교대
+| 요청 | 따를 것 |
+|---|---|
+| 작업 지시문이 `[서비스 모드]`로 시작 | [CLAUDE.md](CLAUDE.md)의 서비스 모드 규칙과 지정된 Skill만. 개발 문서(`docs/project-context.md`, `docs/handoff.md`)는 읽지도 고치지도 않는다. |
+| 특정 제품의 카드 제작·수정 | [CLAUDE.md](CLAUDE.md)의 대화 모드 절차. 콘텐츠는 [cardnews-content](.claude/skills/cardnews-content/SKILL.md), 출력은 [cardnews-render](.claude/skills/cardnews-render/SKILL.md)를 해당 단계에서 읽는다. Codex도 이 Skill 파일을 그대로 참조하고 사본을 만들지 않는다. |
+| 코드·웹·설정·문서 개발 (프로젝트 개발) | [공통 맥락](docs/project-context.md)의 '개발 작업 규칙'과 [CONTRIBUTING.md](CONTRIBUTING.md)의 이슈·브랜치·PR 흐름. |
 
-- 공통 운영 규칙은 `docs/project-context.md`, 현재 목표와 검증 상태는 `docs/handoff.md` 한 곳에서 관리한다.
-- 프로젝트 개발을 시작할 때 실제 브랜치·파일 변경을 인수인계와 대조한다. 기존 변경을 보존한다.
-- 작은 작업의 완료·중단 지점마다 인수인계를 갱신한다. 교대 전 편집·실행을 끝내고, 같은 체크아웃에서 두 도구가 동시에 수정하지 않는다.
-- 카드 제작만 수행한 경우 제작 상태·승인은 `cards.json`과 제작 로그가 기준이다. 개발 인수인계를 대신 갱신하거나 승인 기록을 추정하지 않는다.
+용어: **대화 모드**는 팀원이 터미널 대화로 카드를 만드는 제작 방식, **서비스 모드**는 관리자 웹이 Agent SDK로 실행하는 제작 방식, **프로젝트 개발**은 이 저장소의 코드·문서를 고치는 작업이다. 카드 제작 중의 쓰기 제한(`cards.json`만)은 프로젝트 개발에 적용하지 않고, 서비스 모드의 제한을 개발 지침으로 완화하지도 않는다.
+
+## 작업 흐름 요약
+
+- `main`에 직접 push하지 않는다. 이슈 → 브랜치(`<종류>/<이슈번호>-<설명>`) → 커밋(`#이슈번호`) → push → PR. **`main` 병합은 저장소 관리자가 결정한다.**
+- 작은 작업이 끝나거나 중단될 때마다 [인수인계](docs/handoff.md)를 갱신하고, 바뀐 규칙·용어·파일은 **최근 변경**에 한 줄로 남긴다.
+- 같은 폴더에서 두 도구가 동시에 수정하지 않는다. 교대 전에 편집·실행을 끝낸다.
+- 카드 제작만 했다면 제작 상태·승인은 `cards.json`과 제작 기록이 기준이다. 인수인계로 승인을 대신하거나 추정하지 않는다.
