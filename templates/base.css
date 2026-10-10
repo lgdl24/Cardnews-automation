@@ -1,0 +1,70 @@
+/* 모든 템플릿 공통 스타일. 색상·폰트 변수(--color-*, --font-family)는 출력 프로그램이 config/theme.json에서 주입합니다. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1080px; overflow: hidden; background: var(--color-bg); }
+body {
+  font-family: var(--font-family), 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  color: var(--color-text);
+  word-break: keep-all;          /* 한글 단어 중간 줄바꿈 방지 */
+  overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  position: relative;
+  width: 1080px;
+  height: 1080px;
+  padding: 88px 96px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+/* 상단: 뱃지·페이지 번호 */
+.card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px;
+  flex: none;
+  position: relative;
+  z-index: 2;
+}
+.pager {
+  margin-left: auto;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--color-muted);
+  letter-spacing: 0.04em;
+}
+.badge {
+  display: inline-block;
+  max-width: 420px;
+  height: 52px;
+  line-height: 52px;
+  padding: 0 24px;
+  border-radius: 26px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.badge:empty { visibility: hidden; }
+
+/* 하단: 제품명 */
+.card__footer {
+  flex: none;
+  height: 36px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-muted);
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 2;
+}
+
+/* 글자 영역 공통: 높이를 고정하고 넘치면 출력 프로그램이 OVERFLOW로 판정 */
+[data-fit] { overflow: hidden; }
+[data-fit]:empty { display: none; }

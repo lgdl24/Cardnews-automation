@@ -1,0 +1,20 @@
+{
+  "_comment": "색상·폰트 공통 설정. 출력 시 CSS 변수(--color-*, --font-*)로 템플릿에 주입됩니다.",
+  "size": { "width": 1080, "height": 1080 },
+  "font": {
+    "family": "Pretendard",
+    "files": {
+      "400": "node_modules/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2",
+      "600": "node_modules/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2",
+      "800": "node_modules/pretendard/dist/web/static/woff2/Pretendard-ExtraBold.woff2"
+    }
+  },
+  "color": {
+    "bg": "#FBF6F1",
+    "surface": "#FFFFFF",
+    "text": "#2B2420",
+    "muted": "#7A6E66",
+    "primary": "#D9826B",
+    "accent": "#F2D7CC"
+  }
+}

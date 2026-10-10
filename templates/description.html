@@ -1,0 +1,60 @@
+<!-- 설명형: 제목(필수) · 항목 1~3개(필수) -->
+<style>
+  .desc__title {
+    flex: none;
+    margin-top: 40px;
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.03em;
+    max-height: 160px;           /* 2줄 */
+    white-space: pre-line;
+  }
+  .desc__list {
+    list-style: none;
+    margin-top: 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    counter-reset: item;
+  }
+  .desc__item {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 36px 40px;
+    border-radius: 28px;
+    background: var(--color-surface);
+    counter-increment: item;
+  }
+  .desc__item::before {
+    content: counter(item, decimal-leading-zero);
+    flex: none;
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: var(--color-primary);
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .desc__text {
+    font-size: 38px;
+    font-weight: 600;
+    line-height: 1.45;
+    max-height: 111px;           /* 2줄 */
+    white-space: pre-line;
+  }
+  .card--description .card__footer { margin-top: auto; }
+</style>
+<div class="card card--description">
+  <header class="card__top">
+    <span class="badge" data-fit></span>
+    <span class="pager">{{page}} / {{total}}</span>
+  </header>
+  <h2 class="desc__title" data-fit>{{title}}</h2>
+  <ol class="desc__list">{{items}}</ol>
+  <footer class="card__footer">{{product}}</footer>
+</div>

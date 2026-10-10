@@ -1,0 +1,11 @@
+{
+  "_comment": "규칙 버전. CLAUDE.md, .claude/skills/, config/의 기준(글자 수·주의 표현 등)을 바꿔 결과에 영향이 생기면 버전을 올리고 history에 바뀐 점을 적습니다. 모든 제작 기록(log.jsonl)에 이 값이 함께 남아 Skill 버전 비교(A5)에 쓰입니다.",
+  "version": "v1",
+  "history": [
+    {
+      "version": "v1",
+      "date": "2026-10-10",
+      "changes": "기본 규칙: CLAUDE.md(두 실행 방식, 작업 단위, 입력 자료 취급), cardnews-content·cardnews-render Skill, 템플릿 글자 수 기준 초안, 주의 표현 목록 초안"
+    }
+  ]
+}

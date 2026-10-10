@@ -1,0 +1,13 @@
+{
+  "_comment": "수정 요청 유형. 웹(카드 검토 화면)과 CLI 기록에서 같은 코드를 씁니다. fix_target은 Skill 버전을 올릴 때 규칙을 보완할 위치예요.",
+  "types": [
+    { "code": "LEN", "label": "길이", "example": "제목 더 짧게", "fix_target": "config/templates.json 글자 수 기준, docs/style-guide.md" },
+    { "code": "TONE", "label": "톤·문체", "example": "더 부드럽게", "fix_target": "docs/style-guide.md" },
+    { "code": "FACT", "label": "사실·표기 오류", "example": "SPF 표기가 원문과 다름", "fix_target": "CLAUDE.md 내용 규칙, cardnews-content Skill" },
+    { "code": "EXAG", "label": "과장 표현", "example": "'완벽' 빼줘", "fix_target": "config/caution-expressions.json, CLAUDE.md 내용 규칙" },
+    { "code": "MISS", "label": "내용 누락", "example": "덧바르기 안내가 빠짐", "fix_target": "cardnews-content Skill 구성안 단계" },
+    { "code": "ORDER", "label": "순서·구성", "example": "2번을 뒤로", "fix_target": "docs/style-guide.md 기본 카드 구성" },
+    { "code": "DESIGN", "label": "디자인·배치", "example": "이미지가 작음", "fix_target": "templates/, config/theme.json" },
+    { "code": "ETC", "label": "기타", "example": "", "fix_target": "메모를 보고 판단" }
+  ]
+}

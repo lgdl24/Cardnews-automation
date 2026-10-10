@@ -1,0 +1,63 @@
+<!-- 표지형: 제목(필수) · 부제(선택) · 뱃지(선택) · 이미지(선택) -->
+<style>
+  .card--cover { background: var(--color-accent); }
+  .cover__deco {
+    position: absolute;
+    width: 760px; height: 760px;
+    right: -220px; top: -200px;
+    border-radius: 50%;
+    background: var(--color-bg);
+    opacity: 0.7;
+  }
+  .cover__image {
+    position: absolute;
+    right: 96px; top: 168px;
+    width: 440px; height: 440px;
+    object-fit: contain;
+    z-index: 1;
+  }
+  .no-image .cover__image { display: none; }
+  .cover__body {
+    margin-top: auto;
+    margin-bottom: 56px;
+    position: relative;
+    z-index: 2;
+  }
+  .cover__title {
+    font-size: 80px;
+    font-weight: 800;
+    line-height: 1.22;
+    letter-spacing: -0.03em;
+    max-height: 196px;           /* 2줄 */
+    white-space: pre-line;
+  }
+  .cover__subtitle {
+    margin-top: 28px;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--color-text);
+    max-height: 105px;           /* 2줄 */
+    white-space: pre-line;
+  }
+  .cover__rule {
+    width: 72px; height: 8px;
+    border-radius: 4px;
+    background: var(--color-primary);
+    margin-bottom: 36px;
+  }
+</style>
+<div class="card card--cover {{imageClass}}">
+  <div class="cover__deco"></div>
+  <img class="cover__image" src="{{image}}" alt="">
+  <header class="card__top">
+    <span class="badge" data-fit>{{badge}}</span>
+    <span class="pager">{{page}} / {{total}}</span>
+  </header>
+  <div class="cover__body">
+    <div class="cover__rule"></div>
+    <h1 class="cover__title" data-fit>{{title}}</h1>
+    <p class="cover__subtitle" data-fit>{{subtitle}}</p>
+  </div>
+  <footer class="card__footer">{{product}}</footer>
+</div>

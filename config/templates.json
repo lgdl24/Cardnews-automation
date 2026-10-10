@@ -1,0 +1,31 @@
+{
+  "_comment": "템플릿별 필드와 글자 수 기준(공백 포함). 기준값은 초안이며, 실제 렌더링 결과를 보고 조정합니다.",
+  "cover": {
+    "label": "표지형",
+    "file": "templates/cover.html",
+    "fields": {
+      "title":    { "required": true,  "maxChars": 22 },
+      "subtitle": { "required": false, "maxChars": 34 },
+      "badge":    { "required": false, "maxChars": 12 }
+    },
+    "image": "optional"
+  },
+  "image": {
+    "label": "이미지 강조형",
+    "file": "templates/image.html",
+    "fields": {
+      "title":   { "required": true,  "maxChars": 18 },
+      "caption": { "required": false, "maxChars": 40 }
+    },
+    "image": "required"
+  },
+  "description": {
+    "label": "설명형",
+    "file": "templates/description.html",
+    "fields": {
+      "title": { "required": true, "maxChars": 18 },
+      "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 30 }
+    },
+    "image": "none"
+  }
+}
