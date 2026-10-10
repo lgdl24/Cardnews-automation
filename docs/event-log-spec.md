@@ -41,11 +41,11 @@
 
 | 지표 | 키 | 계산 |
 |---|---|---|
-| 원문 커버리지 | `coverage` | '주요 특징' 목록 항목과 '사용 방법' 문장 중, 카드 `evidence`가 가리키는 인용을 포함하거나(또는 인용에 포함되는) 항목의 비율 |
+| 원문 커버리지 | `coverage` | '주요 특징' 목록 항목과 '사용 방법' 문장 중, 카드 `evidence`가 가리키는 인용을 포함하거나(또는 인용에 포함되는) 항목의 비율. 지시문 형태 문장(`config/input-safety.json`)은 대상에서 빼고 `coverage_detail.excluded`에 남김 |
 | 근거 연결률 | `evidence_rate` | `evidence`가 1개 이상인 카드 ÷ 전체 카드 |
 | 글자 수 활용률 | `char_usage`, `char_usage_max` | 필드별 글자 수 ÷ 기준을 카드별로 평균 → 전체 평균. 최대값은 넘침 위험 확인용 (문구 단계만) |
 | 주의 표현 | `caution.total`, `in_source`, `not_in_source` | 주의 표현 목록과 일치한 건수, 원문에 같은 표현이 있는지 구분 (문구 단계만) |
-| 빠진 원문 항목 수 | `missing_items` | 커버리지에서 빠진 항목 수. 목록은 `quality.json`의 `coverage_detail.missing` |
+| 빠진 원문 항목 수 | `missing_items`, `excluded_items` | 커버리지에서 빠진 항목 수, 지시문 형태라 대상에서 뺀 항목 수. 목록은 `quality.json`의 `coverage_detail.missing`·`excluded` |
 
 ## 과정 지표 (`npm run log -- <제품ID> --summary [--json]`)
 

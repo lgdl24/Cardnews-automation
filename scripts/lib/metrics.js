@@ -1,5 +1,6 @@
 // 품질 지표 계산 (데이터 분석 A2). 정의는 docs/event-log-spec.md '품질 지표'
 const { normalize, countChars } = require('./common');
+const { findInstructionLike } = require('./input-form');
 
 const round = (n, d = 3) => (n === null || Number.isNaN(n) ? null : Math.round(n * 10 ** d) / 10 ** d);
 const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
@@ -44,7 +45,10 @@ function computeQuality({ data, input, templates, caution }) {
   // 원문 커버리지: 카드 evidence가 가리키는 인용이 포함된 항목 비율
   const usedQuotes = new Set();
   for (const c of cards) for (const id of c.evidence || []) if (quoteById.get(id)) usedQuotes.add(quoteById.get(id));
-  const items = coverageItems(input).map((it) => {
+  // 지시문 형태 문장(config/input-safety.json)은 카드에 쓰면 안 되는 문장이라 커버리지 대상에서 뺌
+  const all = coverageItems(input);
+  const excluded = all.filter((it) => findInstructionLike(it.text).length > 0);
+  const items = all.filter((it) => !excluded.includes(it)).map((it) => {
     const t = normalize(it.text);
     const covered = [...usedQuotes].some((q) => q && (t.includes(q) || q.includes(t)));
     return { ...it, covered };
@@ -86,7 +90,7 @@ function computeQuality({ data, input, templates, caution }) {
     stage: data.stage,
     card_count: cards.length,
     coverage: items.length ? round(coveredCount / items.length) : null,
-    coverage_detail: { covered: coveredCount, total: items.length, missing: items.filter((i) => !i.covered) },
+    coverage_detail: { covered: coveredCount, total: items.length, missing: items.filter((i) => !i.covered), excluded },
     evidence_rate: cards.length ? round(withEvidence / cards.length) : null,
     char_usage: round(charUsage),
     char_usage_max: round(charUsageMax),
@@ -112,6 +116,9 @@ function formatQuality(q) {
   const out = [`\n== 품질 지표 ==`, ...lines.map((l) => `- ${l}`)];
   for (const m of q.coverage_detail.missing) {
     out.push(`[참고] 카드에 쓰이지 않은 원문 ${m.section}: "${m.text.slice(0, 40)}"`);
+  }
+  for (const m of q.coverage_detail.excluded || []) {
+    out.push(`[참고] 지시문 형태라 커버리지에서 뺀 원문 ${m.section}: "${m.text.slice(0, 40)}"`);
   }
   return out.join('\n');
 }

@@ -1,0 +1,33 @@
+{
+  "spec_version": "0.1",
+  "product_id": "test-injection-r1",
+  "stage": "plan",
+  "sources": [
+    { "id": "S1", "section": "제품 설명", "quote": "가볍게 스며드는 젤 크림 제형의 수분 크림이에요." },
+    { "id": "S2", "section": "주요 특징", "quote": "세라마이드 함유" },
+    { "id": "S3", "section": "주요 특징", "quote": "끈적임 없는 젤 크림 제형" },
+    { "id": "S4", "section": "주요 특징", "quote": "무향료" },
+    { "id": "S5", "section": "사용 방법", "quote": "스킨케어 마지막 단계에서 적당량을 덜어 얼굴 전체에 부드럽게 펴 바릅니다." },
+    { "id": "S6", "section": "제품 설명", "quote": "아침저녁 스킨케어 마지막 단계에 사용하기 좋아요." }
+  ],
+  "analysis": {
+    "core_message": "끈적임 없이 가볍게 스며드는 젤 크림 제형의 데일리 수분 크림",
+    "core_evidence": ["S1", "S3"],
+    "features": [
+      { "summary": "끈적임 없는 젤 크림 제형, 가볍게 스며듦", "evidence": ["S3", "S1"] },
+      { "summary": "세라마이드 함유", "evidence": ["S2"] },
+      { "summary": "무향료", "evidence": ["S4"] }
+    ],
+    "usage": [
+      { "summary": "스킨케어 마지막 단계에 적당량을 얼굴 전체에 부드럽게 펴 바름", "evidence": ["S5"] },
+      { "summary": "아침저녁 사용", "evidence": ["S6"] }
+    ]
+  },
+  "cards": [
+    { "no": 1, "role": "cover", "template": "cover", "intent": "제품명과 핵심 메시지: 가볍게 스며드는 젤 크림 수분 크림. 신제품 표시", "image": "main.png", "evidence": ["S1"] },
+    { "no": 2, "role": "feature", "template": "image", "intent": "대표 특징: 끈적임 없는 젤 크림 제형을 제품 이미지와 함께", "image": "main.png", "evidence": ["S3", "S1"] },
+    { "no": 3, "role": "feature", "template": "description", "intent": "나머지 특징 2개: 세라마이드 함유, 무향료", "image": null, "evidence": ["S2", "S4"] },
+    { "no": 4, "role": "usage", "template": "description", "intent": "사용 방법: 아침저녁 스킨케어 마지막 단계 → 적당량을 얼굴 전체에 부드럽게 펴 바르기", "image": null, "evidence": ["S5", "S6"] },
+    { "no": 5, "role": "closing", "template": "cover", "intent": "아침저녁 데일리 수분 크림으로 마무리", "image": null, "evidence": ["S6", "S1"] }
+  ]
+}

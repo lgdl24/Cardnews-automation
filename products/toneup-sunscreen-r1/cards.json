@@ -1,0 +1,194 @@
+{
+  "spec_version": "0.1",
+  "product_id": "toneup-sunscreen-r1",
+  "stage": "approved",
+  "sources": [
+    {
+      "id": "S1",
+      "section": "제품 설명",
+      "quote": "피부 톤을 자연스럽게 밝혀 주는 톤업 선크림이에요."
+    },
+    {
+      "id": "S2",
+      "section": "주요 특징",
+      "quote": "SPF50+ PA++++ 자외선 차단"
+    },
+    {
+      "id": "S3",
+      "section": "제품 설명",
+      "quote": "가벼운 로션 제형이라 끈적임 없이 펴 발리고"
+    },
+    {
+      "id": "S4",
+      "section": "주요 특징",
+      "quote": "핑크 베이지 컬러로 피부 톤을 자연스럽게 보정"
+    },
+    {
+      "id": "S5",
+      "section": "주요 특징",
+      "quote": "가벼운 로션 제형으로 백탁 없이 밀착"
+    },
+    {
+      "id": "S6",
+      "section": "주요 특징",
+      "quote": "피부 결 정돈에 도움을 주는 판테놀 함유"
+    },
+    {
+      "id": "S7",
+      "section": "사용 방법",
+      "quote": "스킨케어 마지막 단계에서 적당량을 덜어 얼굴 전체에 결을 따라 펴 바릅니다."
+    },
+    {
+      "id": "S8",
+      "section": "사용 방법",
+      "quote": "외출 30분 전에 바르고, 땀을 흘린 뒤에는 덧발라 줍니다."
+    },
+    {
+      "id": "S9",
+      "section": "제품 설명",
+      "quote": "메이크업 전 단계에 사용하기 좋아요."
+    }
+  ],
+  "analysis": {
+    "core_message": "SPF50+ PA++++ 자외선 차단에 자연스러운 톤업을 더해 메이크업 전에 바르는 데일리 선크림",
+    "core_evidence": [
+      "S1",
+      "S2",
+      "S9"
+    ],
+    "features": [
+      {
+        "summary": "SPF50+ PA++++ 자외선 차단",
+        "evidence": [
+          "S2"
+        ]
+      },
+      {
+        "summary": "핑크 베이지 컬러로 피부 톤을 자연스럽게 보정",
+        "evidence": [
+          "S4",
+          "S1"
+        ]
+      },
+      {
+        "summary": "가벼운 로션 제형, 끈적임·백탁 없이 밀착",
+        "evidence": [
+          "S5",
+          "S3"
+        ]
+      },
+      {
+        "summary": "피부 결 정돈에 도움을 주는 판테놀 함유",
+        "evidence": [
+          "S6"
+        ]
+      }
+    ],
+    "usage": [
+      {
+        "summary": "스킨케어 마지막 단계에 적당량을 얼굴 전체에 결 따라 펴 바름",
+        "evidence": [
+          "S7"
+        ]
+      },
+      {
+        "summary": "외출 30분 전에 바르고 땀 흘린 뒤 덧바름",
+        "evidence": [
+          "S8"
+        ]
+      },
+      {
+        "summary": "메이크업 전 단계에 사용",
+        "evidence": [
+          "S9"
+        ]
+      }
+    ]
+  },
+  "cards": [
+    {
+      "no": 1,
+      "role": "cover",
+      "template": "cover",
+      "intent": "제품명과 핵심 메시지: 자외선 차단(SPF50+ PA++++)과 자연스러운 톤업을 함께. 신제품 표시",
+      "image": "main.png",
+      "evidence": [
+        "S1",
+        "S2"
+      ],
+      "copy": {
+        "badge": "NEW",
+        "title": "자외선은 막고\n톤은 자연스럽게",
+        "subtitle": "SPF50+ PA++++ 데일리 톤업 선크림"
+      }
+    },
+    {
+      "no": 2,
+      "role": "feature",
+      "template": "image",
+      "intent": "강조 정보 ①: SPF50+ PA++++ 자외선 차단을 제품 이미지와 함께 보여줌",
+      "image": "main.png",
+      "evidence": [
+        "S2"
+      ],
+      "copy": {
+        "title": "SPF50+ PA++++",
+        "caption": "매일 바르는 톤업 선크림의 자외선 차단 지수예요"
+      }
+    },
+    {
+      "no": 3,
+      "role": "feature",
+      "template": "description",
+      "intent": "나머지 특징 3개: 핑크 베이지 톤 보정, 백탁 없는 가벼운 로션 제형, 판테놀 함유",
+      "image": null,
+      "evidence": [
+        "S4",
+        "S5",
+        "S6"
+      ],
+      "copy": {
+        "title": "가볍게, 자연스럽게",
+        "items": [
+          "핑크 베이지 컬러로 톤을 자연스럽게 보정해요",
+          "가벼운 로션 제형으로 백탁 없이 밀착돼요",
+          "판테놀이 피부 결 정돈에 도움을 줘요"
+        ]
+      }
+    },
+    {
+      "no": 4,
+      "role": "usage",
+      "template": "description",
+      "intent": "사용 방법을 순서대로: 스킨케어 마지막 단계 → 얼굴 전체에 펴 바르기 → 외출 30분 전·땀 흘린 뒤 덧바르기",
+      "image": null,
+      "evidence": [
+        "S7",
+        "S8"
+      ],
+      "copy": {
+        "title": "이렇게 발라요",
+        "items": [
+          "스킨케어 마지막 단계에 적당량을 덜어요",
+          "얼굴 전체에 결을 따라 펴 발라요",
+          "외출 30분 전에 바르고, 땀 흘린 뒤 덧발라요"
+        ]
+      }
+    },
+    {
+      "no": 5,
+      "role": "closing",
+      "template": "cover",
+      "intent": "강조 정보 ②: 끈적임 없이 펴 발려 메이크업 전 단계에 쓰기 좋은 데일리 선크림으로 마무리",
+      "image": null,
+      "evidence": [
+        "S9",
+        "S3"
+      ],
+      "copy": {
+        "title": "메이크업 전에\n가볍게 톤업",
+        "subtitle": "끈적임 없이 펴 발리는 데일리 글로우 톤업 선크림"
+      }
+    }
+  ]
+}

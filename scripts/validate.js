@@ -221,7 +221,7 @@ if (require.main === module) {
     const { coverage_detail, ...metrics } = q || {};
     appendEvent(id, 'validate_result', resultFields('data', report, {
       stage: data ? data.stage : null,
-      metrics: q ? { ...metrics, missing_items: coverage_detail.missing.length } : null,
+      metrics: q ? { ...metrics, missing_items: coverage_detail.missing.length, excluded_items: coverage_detail.excluded.length } : null,
     }));
   }
   process.exit(report.errors.length ? 1 : 0);
