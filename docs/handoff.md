@@ -19,7 +19,7 @@
 ## 현재 작업
 
 - 확인일·작성 도구: 2026-10-10 · Claude (Codex 작업을 이어받아 정리).
-- 이슈·PR: [#1](https://github.com/lgdl24/Cardnews-automation/issues/1) · PR은 이 브랜치 push 후 생성. **`main` 병합은 관리자 결정 대기.**
+- 이슈·PR: [#1](https://github.com/lgdl24/Cardnews-automation/issues/1) · [PR #2](https://github.com/lgdl24/Cardnews-automation/pull/2). **`main` 병합은 관리자 결정 대기.**
 - 상태: 완료 (PR 검토 대기).
 - 목표·완료 조건: 두 진입 지침(`CLAUDE.md`, `AGENTS.md`)이 같은 목표·인수인계를 가리키고, 카드 제작(대화·서비스 모드)과 프로젝트 개발의 규칙 범위가 겹치지 않으며, 다음 도구가 최근 변경을 보고 이어갈 수 있어야 함.
 - 작업 브랜치: `docs/1-agent-handoff` · 기준 커밋 `92ea3de` (v0.5).
@@ -36,7 +36,7 @@
 
 ## 검증
 
-- `npm test` 통과 여부와 문서 링크 확인 결과는 PR 본문에 적음.
+- `npm test` 75개 통과, 문서 상대 링크 깨짐 0개, `git diff --check` 통과.
 - 서비스 실행이 개발 문서를 읽지 않는지는 실제 Agent SDK 실행 전이라 미검증 → `docs/service-mode.md` PoC 확인 항목에 추가함.
 
 ## 프로젝트 기준 상태 (2026-10-10)
@@ -54,6 +54,6 @@
 
 ## 다음 행동
 
-1. 관리자가 #1 PR을 검토해 `main` 병합 여부를 결정한다. 병합 전에는 다른 작업도 최신 `main`이 아니라 이 브랜치 기준인지 확인한다.
+1. 관리자가 PR #2를 검토해 `main` 병합 여부를 결정한다. 병합 전에는 다른 작업도 최신 `main`이 아니라 이 브랜치 기준인지 확인한다.
 2. 다음 작업 후보: 5단계 Agent SDK PoC (규칙/Skill 로딩 → 구성안 생성·검증 → 승인 대기 종료·입력 누락 중단 확인). 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다.
 3. 실제 톤업 선크림 자료를 받으면 대화 모드로 첫 제작(`npm run new-product`) 후 노션 '톤업 선크림 · 첫 제작' 행에 기록한다.
