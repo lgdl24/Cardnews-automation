@@ -64,6 +64,8 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run new-run -- <원본ID> <새ID>` | 같은 입력으로 실험용 제작 폴더 만들기 |
 | `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성 |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
+| `npm run job -- <plan\|copy\|revise> <프로젝트ID>` | 서비스 모드 작업 하나 실행 (Agent SDK, API 키 필요). `--executor manual`이면 키 없이 Claude Code 대화가 작업 → `npm run job -- finish <작업ID> --report <파일>` (`docs/service-mode.md`) |
+| `npm run poc` | Agent SDK 확인 항목 전체 실행 (API 키 필요, 약 1~3달러) |
 
 미리보기: `products/<제품ID>/output/html/index.html`을 브라우저로 열면 전체 카드를 한 번에 볼 수 있어요.
 
@@ -108,7 +110,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── project-context.md            # 교대 개발 공통 맥락 (용어·설계 이유·개발 작업 규칙)
 │   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
-├── scripts/                          # check-input, validate, render, log, compare, new-run, lib/
+├── scripts/                          # check-input, validate, render, log, compare, new-run, lib/, service/(서비스 실행기)
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
 ├── CONTRIBUTING.md                   # 협업 규칙
 ├── .env.example                      # 서비스 모드 환경변수 예시
@@ -122,7 +124,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 | 템플릿·출력 | `templates/`, `config/theme.json`, `config/templates.json`, `scripts/render.js`, `cardnews-render` Skill |
 | 콘텐츠·검증 | `docs/input-form.md`, `docs/card-data-spec.md`, `scripts/check-input.js`, `scripts/validate.js`, `cardnews-content` Skill |
 | 기록·분석 | `docs/event-log-spec.md`, `scripts/log.js`, `scripts/compare.js`, `scripts/lib/metrics.js`, `scripts/lib/analysis.js` |
-| 웹 연결 | `docs/service-mode.md`, `prompts/`, `.env.example` |
+| 웹 연결 | `docs/service-mode.md`, `prompts/`, `scripts/service/`, `.env.example` |
 | 공동 | `CLAUDE.md`, `docs/style-guide.md`, `config/caution-expressions.json`, `config/revision-types.json` |
 
 ## 원문 근거 검증 방식
@@ -139,6 +141,6 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 | 2. 입력·데이터 규격 확정 | JSON 스키마, 입력 양식 정의 파일, 지시문 탐지, 입력 누락·지시문 테스트 자료, 규격 일치 테스트 | 완료 (v0.4) |
 | 3. 템플릿 3종·디자인 반영 | Figma 토큰 ↔ `theme.json`, 글자 수 측정 도구(`calibrate`)로 기준 조정, 줄바꿈 기준, 이미지 겹침 점검 | 완료 (v0.4) |
 | 4. 첫 실제 제작 (대화 모드) | 대화 모드 전체 흐름(구성안 → 승인 → 문구·출력 → 최종 승인 → 기록) 점검, 입력 누락·지시문 자료로 안전 규칙 확인 | 흐름 점검 완료 (v0.5, 가상 자료) · 실제 자료 제작은 자료 받은 뒤 |
-| 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 (`docs/service-mode.md`) | |
+| 5. Agent SDK PoC | 서비스 모드 실행기(작업 폴더 → 실행 → 서버 재검증 → 반영 → 기록), 권한·비용 확인 (`docs/service-mode.md`) | 실행기·흐름 확인 완료 (키 없이 manual 실행) · SDK 권한·비용 확인은 API 크레딧 생긴 뒤 |
 
 웹 화면·서버는 5단계 결과를 보고 따로 계획합니다. 멘토 확인 사항(평가 기준, API 비용, 배포 환경, Agent SDK 활용 인정 여부)은 노션 작업 트래커에서 관리합니다.

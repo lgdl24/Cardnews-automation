@@ -80,6 +80,24 @@ npm run poc -- --model sonnet                                             # 확�
 - 프로젝트 저장소는 `data/projects/<ID>`, 작업 폴더는 `data/jobs/<작업ID>`(끝나면 삭제, `--keep`이면 남김), 보고서는 `data/reports/<작업ID>.json`. `data/`는 커밋되지 않아요.
 - 보고서에는 API 키가 섞여 들어와도 `[REDACTED]`로 가려요. 권한 점검(C5)은 실제 비밀이 아닌 가짜 파일만 노려요.
 
+## 키 없이 실행해 보기 (`--executor manual`)
+
+API 크레딧 없이 작업 폴더·지시문·서버 재검증·반영·기록 흐름을 확인하는 방법이에요. `query()` 대신 **사람이 연 Claude Code 대화가 작업 폴더에서 지시문대로 작업**하고, 마무리는 SDK 실행과 같은 코드(`finishJob`)가 해요.
+
+```bash
+npm run job -- plan poc-toneup --from toneup-sunscreen --executor manual
+# → 작업 폴더(data/jobs/<작업ID>)와 지시문, 명령에 붙일 환경변수(CARDNEWS_MODE·CARDNEWS_JOB_ID·CARDNEWS_JOB_KIND)를 출력하고 끝남
+# Claude Code: 작업 폴더를 작업 위치로 삼아 지시문대로 작업 → 마지막 결과 보고를 파일로 저장
+npm run job -- finish <작업ID> --report <결과 보고 파일>
+# → 서버 재검증 → 성공이면 cards.json·output/ 반영 → job_finished 기록 → 작업 폴더 삭제
+```
+
+- 결과 보고가 없으면 `NO_REPORT`, `결과: 중단`이면 재검증을 통과해도 반영하지 않아요 (SDK 실행도 같은 기준).
+- 기록의 `job_started`·`job_finished`에 `executor: "manual"`이 붙고, 토큰·비용은 `null`이에요. 지표 비교에서 SDK 실행과 섞지 않아요.
+- **확인할 수 없는 것**: `allowedTools`·`dontAsk` 권한 제한, `maxTurns`·`maxBudgetUsd`, 토큰·비용 기록, `skills` 옵션으로 Skill 불러오기. 대화의 Claude Code는 이 제한 없이 규칙을 지켜서 작업하므로, 이 항목들은 SDK 실행으로만 확인해요.
+- SDK 코드는 그대로 둬요. API 키가 있을 때 `npm run job`(기본 `--executor sdk`)·`npm run poc`로 바로 실행할 수 있어요. 테스트는 가짜 `query()`를 써서 API를 부르지 않아요.
+- 시스템 Chromium을 쓰는 환경(예: 클라우드 작업 공간)에서는 명령에 `CHROMIUM_PATH`를 붙여요.
+
 ## 환경변수
 
 `.env.example` 참고. 작업마다 서버가 넣는 값(`CARDNEWS_MODE`, `CARDNEWS_JOB_ID`, `CARDNEWS_JOB_KIND`)은 `.env`에 쓰지 않습니다.
@@ -94,12 +112,19 @@ npm run poc -- --model sonnet                                             # 확�
 
 ## PoC에서 확인할 것
 
-- [ ] `settingSources: ['project']`로 작업 폴더의 `CLAUDE.md`와 두 Skill이 불러와지고 Skill이 실제로 호출되는지
-- [ ] 서비스 실행이 개발 문서(`docs/project-context.md`, `docs/handoff.md`, `AGENTS.md`)를 읽지 않는지. 작업 폴더에 이 파일들을 복사하지 않는 것도 방법 (`CLAUDE.md` '요청 종류')
-- [ ] `tools`에 `Skill`을 넣어야 하는지, `skills` 옵션만으로 되는지
-- [ ] `permissionMode: 'dontAsk'` + `allowedTools`로 허용 밖 명령(`ls`, `cat .env`, `curl` 등)이 막히는지
-- [ ] `Edit(./products/<pid>/cards.json)` 규칙이 작업 폴더 기준 경로로 동작하는지, 다른 파일 쓰기가 막히는지
-- [ ] `maxTurns`·`maxBudgetUsd`에 걸렸을 때 결과 메시지와 작업 폴더 상태
-- [ ] 결과 메시지의 `total_cost_usd`, `modelUsage`로 작업별 토큰·비용 기록
-- [ ] 제품 설명에 지시문을 넣은 테스트 자료로 '입력 자료 취급' 규칙 확인
-- [ ] 동시 작업 1~2개일 때 메모리 사용량
+상태: ✅ 확인 · 🟡 키 없이(manual) 흐름만 확인 · ⬜ 미확인 (API 크레딧 필요). 2026-10-10 기준.
+
+- 🟡 `settingSources: ['project']`로 작업 폴더의 `CLAUDE.md`와 두 Skill이 불러와지고 Skill이 실제로 호출되는지
+  - SDK: 크레딧 오류로 끝난 실행의 init 메시지에서 `skills`에 `cardnews-content`·`cardnews-render`, `tools` 6개, `permissionMode: dontAsk`, `apiKeySource: ANTHROPIC_API_KEY` 확인. 실제 Skill 호출은 미확인
+  - init에 기본 Skill(deep-research 등)·플러그인 목록도 함께 나옴. 모델에 노출되는지는 미확인
+- 🟡 서비스 실행이 개발 문서(`docs/project-context.md`, `docs/handoff.md`, `AGENTS.md`)를 읽지 않는지 → 작업 폴더에 복사하지 않음 (테스트·manual 실행으로 확인). SDK 실행의 도구 호출 기록은 미확인
+- ⬜ `tools`에 `Skill`을 넣어야 하는지, `skills` 옵션만으로 되는지 (SDK 타입 정의상 `skills`만으로 됨)
+- ⬜ `permissionMode: 'dontAsk'` + `allowedTools`로 허용 밖 명령(`ls`, `cat .env`, `curl` 등)이 막히는지 (`npm run poc -- --only C5`)
+- ⬜ `Edit(./products/<pid>/cards.json)` 규칙이 작업 폴더 기준 경로로 동작하는지, 다른 파일 쓰기가 막히는지 (C5)
+- ⬜ `maxTurns`·`maxBudgetUsd`에 걸렸을 때 결과 메시지와 작업 폴더 상태 (C6). 실행기 처리(반영 안 함, 실패 기록)는 가짜 `query()` 테스트로 확인
+- ⬜ 결과 메시지의 `total_cost_usd`, `modelUsage`로 작업별 토큰·비용 기록. 기록 코드는 가짜 `query()` 테스트로 확인
+- 🟡 제품 설명에 지시문을 넣은 테스트 자료로 '입력 자료 취급' 규칙 확인: manual 실행에서 지시문 4개 경고·무시, `cards.json`에 지시문 문장 없음. SDK 모델의 동작은 미확인 (C3)
+- ✅ 작업 흐름 (manual 실행, 가상 톤업 선크림): 구성안 작업 → 반영 → 문구·출력 작업(PNG 5장, 레이아웃 오류 0) → 반영. 작업 폴더의 `node_modules` 링크로 렌더링 동작, 검증 기록에 작업 ID가 붙음
+- ✅ 입력 누락 자료: `결과: 중단`·`INPUT_MISSING` 보고 → 반영 안 함, `job_finished`에 `ok: false`·`INPUT_MISSING` (manual 실행)
+- ✅ API 오류(크레딧 부족): 반영하지 않고 `API_CREDIT`으로 기록 (실제 SDK 실행)
+- ⬜ 동시 작업 1~2개일 때 메모리 사용량

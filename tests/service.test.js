@@ -213,3 +213,45 @@ test('API 오류(크레딧 부족 등)로 끝나면 성공으로 보지 않고 �
     t.cleanup();
   }
 });
+
+// ── API 키 없이: Claude Code 대화가 작업 폴더에서 직접 작업 (executor 'manual')
+test('manual 작업: 준비 → 작업 폴더에서 작업 → 같은 재검증·반영·기록으로 마무리', () => {
+  const t = tempEnv();
+  try {
+    const meta = job.startJob({ kind: 'plan', projectId: 'svc-test', projectDir: t.projectDir, executor: 'manual', jobsDir: t.jobsDir });
+    assert.ok(meta.prompt.startsWith('[서비스 모드]'));
+    assert.ok(fs.existsSync(path.join(meta.jobDir, 'CLAUDE.md')));
+    assert.ok(!fs.existsSync(path.join(meta.jobDir, 'docs', 'handoff.md')));
+    assert.equal(job.loadJob(meta.job_id, t.jobsDir).executor, 'manual');
+    fs.writeFileSync(path.join(meta.productDir, 'cards.json'), JSON.stringify(planCards('svc-test'), null, 2));
+    const r = job.finishJob({ meta: job.loadJob(meta.job_id, t.jobsDir), reportText: '결과: 완료\n단계: plan\n오류: 없음\n알림: 없음', jobsDir: t.jobsDir, reportsDir: t.reportsDir });
+    assert.equal(r.ok, true, JSON.stringify(r.verify));
+    assert.equal(r.executor, 'manual');
+    assert.ok(r.applied.includes('cards.json'));
+    const events = fs.readFileSync(path.join(t.projectDir, 'log.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    assert.deepEqual(events.map((e) => [e.event, e.executor]), [['job_started', 'manual'], ['job_finished', 'manual']]);
+    assert.equal(events[1].cost_usd, null);
+    assert.ok(!fs.existsSync(meta.jobDir), '작업 폴더는 지워야 해요');
+    assert.throws(() => job.loadJob(meta.job_id, t.jobsDir), /진행 중인 작업이 없어요/);
+  } finally {
+    t.cleanup();
+  }
+});
+
+test('manual 작업: 결과 보고가 없거나 중단이면 재검증을 통과해도 반영하지 않는다', () => {
+  const t = tempEnv();
+  try {
+    for (const [reportText, code] of [['', 'NO_REPORT'], ['결과: 중단\n단계: plan\n오류: 없음\n알림: 없음', 'STOPPED']]) {
+      const meta = job.startJob({ kind: 'plan', projectId: 'svc-test', projectDir: t.projectDir, executor: 'manual', jobsDir: t.jobsDir });
+      fs.writeFileSync(path.join(meta.productDir, 'cards.json'), JSON.stringify(planCards('svc-test'), null, 2));
+      const r = job.finishJob({ meta, reportText, jobsDir: t.jobsDir, reportsDir: t.reportsDir });
+      assert.equal(r.verify.ok, true);
+      assert.equal(r.ok, false);
+      assert.equal(r.error_code, code);
+      assert.ok(!fs.existsSync(path.join(t.projectDir, 'cards.json')));
+    }
+    assert.throws(() => job.startJob({ kind: 'plan', projectId: 'svc-test', projectDir: t.projectDir, executor: 'robot', jobsDir: t.jobsDir }), /executor/);
+  } finally {
+    t.cleanup();
+  }
+});

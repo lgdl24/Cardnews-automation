@@ -1,5 +1,6 @@
 // 서비스 모드 작업 실행기 (웹 서버가 쓸 부분의 PoC). 규격: docs/service-mode.md
 //   작업 하나 = 작업 폴더 만들기 → 지시문 채우기 → Agent SDK query() 한 번 → 서버 재검증 → 성공할 때만 프로젝트에 반영
+//   API 키 없이 흐름을 확인할 때는 query() 대신 Claude Code 대화가 작업 폴더에서 작업 (executor 'manual', 아래 startJob·finishJob)
 // 이 파일은 API 키·환경변수 값을 출력하거나 기록하지 않는다. 결과에 섞여 들어온 비밀 값은 redact()로 가린다.
 const fs = require('fs');
 const path = require('path');
@@ -264,65 +265,83 @@ function mergeJob({ productDir, projectDir, ok }) {
   return applied;
 }
 
-// 실패 원인 코드: Claude 결과 보고의 오류 코드 > API·실행 오류 > SDK 종료 사유 > 서버 재검증 실패
+// 실패 원인 코드: Claude 결과 보고의 오류 코드 > API·실행 오류 > SDK 종료 사유 > 결과 보고의 중단 > 서버 재검증 실패
 function errorCodeOf({ report, sdk, crash, verify }) {
   const fromReport = report.오류.map((e) => (e.match(/\b[A-Z][A-Z_]{4,}\b/) || [])[0]).find(Boolean);
   if (fromReport) return fromReport;
   if (crash) return /credit balance/i.test(crash) ? 'API_CREDIT' : 'error_during_execution';
   if (sdk && sdk.subtype !== 'success') return sdk.subtype;
   if (sdk && sdk.is_error) return 'error_during_execution';
+  if (/중단/.test(report.결과 || '')) return 'STOPPED';
   if (!verify.ok) return 'VERIFY_FAILED';
   return 'error_during_execution';
 }
 
-// ── 작업 하나 실행
-async function runJob({
-  kind, projectId, projectDir, vars = {}, queryFn, keep = false,
-  maxTurns, maxBudgetUsd, model, promptOverride, env = process.env, jobsDir, reportsDir,
-  inspect, // (ws) => 객체. 작업 폴더를 지우기 전에 확인할 것 (PoC용)
-}) {
+// ── 작업 실행: 시작(작업 폴더·지시문·job_started) → 실행 → 마무리(재검증·반영·job_finished·보고서)
+// 실행하는 쪽(executor)
+//   sdk    : Agent SDK query() 한 번 (서비스 모드 본 방식, API 키 필요)
+//   manual : 사람이 연 Claude Code 대화가 작업 폴더에서 지시문대로 작업 (API 키 없이 흐름 확인용).
+//            도구 제한(allowedTools)·비용 상한·토큰 기록은 적용되지 않음. 마무리는 SDK와 같은 코드
+const EXECUTORS = ['sdk', 'manual'];
+const metaFile = (jobsDir, jobId) => path.join(jobsDir, `${jobId}.json`); // 작업 폴더 밖에 둠 (Claude가 볼 필요 없음)
+
+function startJob({ kind, projectId, projectDir, vars = {}, promptOverride, executor = 'sdk', jobsDir = path.join(dataDir(), 'jobs') }) {
+  if (!EXECUTORS.includes(executor)) throw new Error(`executor는 ${EXECUTORS.join(' / ')} 중 하나예요: ${executor}`);
   const jobId = newJobId();
-  const started = new Date();
   const ws = createJobWorkspace({ jobId, projectId, projectDir, jobsDir });
   const prompt = promptOverride || fillPrompt(kind, { product_id: projectId, ...vars });
-  const options = buildQueryOptions({ ...ws, projectId, jobId, kind, maxTurns, maxBudgetUsd, model, baseEnv: env });
-  appendLines(path.join(projectDir, 'log.jsonl'), [serverEvent(projectId, jobId, 'job_started', { kind })]);
+  appendLines(path.join(projectDir, 'log.jsonl'), [serverEvent(projectId, jobId, 'job_started', { kind, executor })]);
+  const meta = {
+    job_id: jobId, kind, project_id: projectId, project_dir: projectDir, executor,
+    started_at: new Date().toISOString(), prompt, ...ws,
+  };
+  fs.writeFileSync(metaFile(jobsDir, jobId), JSON.stringify(meta, null, 2));
+  return meta;
+}
 
-  const collector = createCollector();
-  let crash = null;
-  try {
-    const q = queryFn || (await import('@anthropic-ai/claude-agent-sdk')).query;
-    for await (const msg of q({ prompt, options })) collector.push(msg);
-  } catch (e) {
-    crash = e.message;
-  }
+function loadJob(jobId, jobsDir = path.join(dataDir(), 'jobs')) {
+  const file = metaFile(jobsDir, jobId);
+  if (!fs.existsSync(file)) throw new Error(`진행 중인 작업이 없어요: ${jobId}`);
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
 
+function finishJob({
+  meta, collector = createCollector(), crash = null, reportText, keep = false,
+  env = process.env, jobsDir = path.join(dataDir(), 'jobs'), reportsDir, inspect,
+}) {
+  const { job_id: jobId, kind, project_id: projectId, project_dir: projectDir, executor } = meta;
+  const ws = { jobDir: meta.jobDir, productDir: meta.productDir, homeDir: meta.homeDir };
   const verify = verifyJob({ ...ws, projectId, kind });
   const inspected = inspect ? inspect(ws) : undefined;
-  const sdkOk = Boolean(collector.result && collector.result.subtype === 'success' && !collector.result.is_error && !crash);
-  const ok = sdkOk && verify.ok;
+  const sdk = collector.result;
+  const report = parseResultReport(reportText !== undefined ? reportText : sdk && sdk.text);
+  const runOk = executor === 'manual'
+    ? Boolean(report.결과) && !crash
+    : Boolean(sdk && sdk.subtype === 'success' && !sdk.is_error && !crash);
+  const ok = runOk && !/중단/.test(report.결과 || '') && verify.ok;
   const applied = mergeJob({ productDir: ws.productDir, projectDir, ok });
-  const report = parseResultReport(collector.result && collector.result.text);
-  const errorCode = ok ? null : errorCodeOf({ report, sdk: collector.result, crash, verify });
+  const errorCode = ok ? null : (executor === 'manual' && !report.결과 ? 'NO_REPORT' : errorCodeOf({ report, sdk, crash, verify }));
   appendLines(path.join(projectDir, 'log.jsonl'), [serverEvent(projectId, jobId, 'job_finished', {
     kind,
+    executor,
     ok,
     error_code: errorCode,
-    input_tokens: collector.result ? collector.result.input_tokens : null,
-    output_tokens: collector.result ? collector.result.output_tokens : null,
-    cost_usd: collector.result ? collector.result.cost_usd : null,
+    input_tokens: sdk ? sdk.input_tokens : null,
+    output_tokens: sdk ? sdk.output_tokens : null,
+    cost_usd: sdk ? sdk.cost_usd : null,
   })]);
 
   const result = redact({
     job_id: jobId,
     kind,
     project_id: projectId,
-    started_at: started.toISOString(),
+    executor,
+    started_at: meta.started_at,
     finished_at: new Date().toISOString(),
     ok,
     error_code: errorCode,
     crash,
-    sdk: collector.result,
+    sdk,
     init: collector.init,
     tool_uses: collector.toolUses,
     report,
@@ -336,7 +355,27 @@ async function runJob({
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `${jobId}.json`), JSON.stringify(result, null, 2));
   if (!keep) fs.rmSync(ws.jobDir, { recursive: true, force: true });
+  fs.rmSync(metaFile(jobsDir, jobId), { force: true });
   return result;
+}
+
+// SDK로 작업 하나를 처음부터 끝까지 (웹 서버가 쓸 방식)
+async function runJob({
+  kind, projectId, projectDir, vars = {}, queryFn, keep = false,
+  maxTurns, maxBudgetUsd, model, promptOverride, env = process.env, jobsDir = path.join(dataDir(), 'jobs'), reportsDir,
+  inspect, // (ws) => 객체. 작업 폴더를 지우기 전에 확인할 것 (PoC용)
+}) {
+  const meta = startJob({ kind, projectId, projectDir, vars, promptOverride, executor: 'sdk', jobsDir });
+  const options = buildQueryOptions({ ...meta, projectId, jobId: meta.job_id, kind, maxTurns, maxBudgetUsd, model, baseEnv: env });
+  const collector = createCollector();
+  let crash = null;
+  try {
+    const q = queryFn || (await import('@anthropic-ai/claude-agent-sdk')).query;
+    for await (const msg of q({ prompt: meta.prompt, options })) collector.push(msg);
+  } catch (e) {
+    crash = e.message;
+  }
+  return finishJob({ meta, collector, crash, keep, env, jobsDir, reportsDir, inspect });
 }
 
 // 프로젝트 저장소(data/projects/<id>)를 예시 제품에서 처음 만들 때: 입력·이미지만 복사
@@ -353,5 +392,5 @@ function seedProject({ fromProductDir, projectDir }) {
 module.exports = {
   ROOT, RULE_ENTRIES, EXCLUDE, PRODUCT_EXCLUDE, dataDir, newJobId,
   createJobWorkspace, fillPrompt, allowedToolsFor, buildQueryOptions, parseResultReport, redact,
-  createCollector, verifyJob, mergeJob, runJob, seedProject,
+  createCollector, verifyJob, mergeJob, startJob, loadJob, finishJob, runJob, seedProject, EXECUTORS,
 };

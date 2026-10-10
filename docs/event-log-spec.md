@@ -19,8 +19,8 @@
 | 이벤트 | 추가 필드 | 누가 남기나 (개발 / 서비스) |
 |---|---|---|
 | `input_submitted` | `form_started_at`(선택, 입력 폼을 연 시각) | Claude / 서버 |
-| `job_started` | `kind`: `plan` · `copy` · `revise` | Claude / 서버 |
-| `job_finished` | `kind`, `ok`, `error_code`, `input_tokens`, `output_tokens`, `cost_usd` | Claude (토큰·비용 없음) / 서버 (SDK 결과값) |
+| `job_started` | `kind`: `plan` · `copy` · `revise`, (서버) `executor`: `sdk` · `manual` | Claude / 서버 |
+| `job_finished` | `kind`, `ok`, `error_code`, `input_tokens`, `output_tokens`, `cost_usd`, (서버) `executor` | Claude (토큰·비용 없음) / 서버 (SDK 결과값. `executor: manual`이면 토큰·비용 `null`, `docs/service-mode.md` '키 없이 실행해 보기') |
 | `validate_result` | `check`: `data` · `layout`, `ok`, `error_codes`, `error_count`, `cards_with_errors`, `caution_count`, `stage`, `metrics`(data만), `rendered_cards`(layout만) | `validate`·`render` 스크립트 (두 모드 같음) |
 | `plan_approved` | — | Claude / 서버 |
 | `final_approved` | — | Claude / 서버 |
