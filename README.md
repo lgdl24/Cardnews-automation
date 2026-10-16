@@ -72,6 +72,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 - `validate`·`render`는 결과를 `products/<제품ID>/log.jsonl`에 자동으로 남기고, 품질 지표를 `output/quality.json`에 저장합니다.
 - 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 서비스 모드에서 서버가 남깁니다.
 - 모든 기록에 규칙 버전(`config/skill-version.json`)이 붙습니다. 규칙을 고치면 버전을 올려 v1·v2 결과를 비교합니다.
+- **평가 방식 (2026-10-16)**: 실사용자가 없으므로, 평가용 입력 세트 12개(정상 8·경계 4)와 핵심 정보 체크리스트를 평가 실행기(`npm run eval`, 예정)로 반복 실행해 품질·일관성·안전성·규칙 버전 효과를 측정합니다. 자세한 내용은 [공통 맥락](docs/project-context.md) '평가와 미결정'.
 - 형식과 지표 정의: `docs/event-log-spec.md`
 
 실험 예시:
@@ -119,8 +120,8 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 
 | 담당 | 영역 | 주요 파일 |
 |---|---|---|
-| 이규동 · 웹·데이터 | 검증·출력·기록 스크립트, 템플릿, 웹 데이터 규격·내보내기, 결과 보기 웹·배포, 저장소 관리 | `scripts/`, `templates/`, `config/theme.json`, `config/templates.json`, `docs/input-form.md`, (예정) `scripts/export.js`, `web/` |
-| 이용석 · 제작·콘텐츠 | 실제 자료·제작, 규칙·Skill, 문체·주의 표현, 실험 실행 | `products/<제품ID>/`, `CLAUDE.md`, `.claude/skills/`, `docs/style-guide.md`, `config/caution-expressions.json` |
+| 이규동 · 웹·데이터 | 검증·출력·기록 스크립트, 템플릿, 웹 데이터 규격·내보내기, 평가 실행기, 결과 보기 웹·평가 대시보드·배포, 저장소 관리 | `scripts/`, `templates/`, `config/theme.json`, `config/templates.json`, `docs/input-form.md`, (예정) `scripts/export.js`, `scripts/eval.js`, `web/` |
+| 이용석 · 제작·콘텐츠 | 실제 자료·제작, 평가용 입력 세트·핵심 정보 체크리스트, 규칙·Skill, 문체·주의 표현, 실험 실행 | `products/<제품ID>/`, `CLAUDE.md`, `.claude/skills/`, `docs/style-guide.md`, `config/caution-expressions.json` |
 | 공동 | 연결 규격, 규칙 버전, 분석 리포트 | `docs/card-data-spec.md`, `docs/event-log-spec.md`, `config/skill-version.json`, `config/revision-types.json` |
 
 ## 원문 근거 검증 방식
