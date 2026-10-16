@@ -118,11 +118,13 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 
 ## 담당 범위 (2026-10-16 개발 계획서 기준)
 
-| 담당 | 영역 | 주요 파일 |
-|---|---|---|
-| 이규동 · 웹·데이터 | 검증·출력·기록 스크립트, 템플릿, 웹 데이터 규격·내보내기, 평가 실행기, 결과 보기 웹·평가 대시보드·배포, 저장소 관리 | `scripts/`, `templates/`, `config/theme.json`, `config/templates.json`, `docs/input-form.md`, (예정) `scripts/export.js`, `scripts/eval.js`, `web/` |
-| 이용석 · 제작·콘텐츠 | 실제 자료·제작, 평가용 입력 세트·핵심 정보 체크리스트, 규칙·Skill, 문체·주의 표현, 실험 실행 | `products/<제품ID>/`, `CLAUDE.md`, `.claude/skills/`, `docs/style-guide.md`, `config/caution-expressions.json` |
-| 공동 | 연결 규격, 규칙 버전, 분석 리포트 | `docs/card-data-spec.md`, `docs/event-log-spec.md`, `config/skill-version.json`, `config/revision-types.json` |
+기능·화면 단위로 나눕니다. 각자 맡은 기능을 개발·테스트·문서까지 끝내고, PR은 상대가 리뷰합니다.
+
+| 담당 | 웹 화면 | 프로그램·규칙 | 제작·평가 | 주요 파일 (예정 포함) |
+|---|---|---|---|---|
+| 이규동 | 웹 골격·공통 부품, V1 프로젝트 목록, V2 카드 결과, V2 제작 과정 | 내보내기(`npm run export`), 평가 실행기(`npm run eval`), 배포, 입력 확인·검증·출력·기록 스크립트, 템플릿 | 제품 A·B 자료, 평가 입력 6개(제품 A·B·입력 누락·지시문), A6 일관성, A8(권장) | `scripts/`, `templates/`, `config/theme.json`, `config/templates.json`, `docs/input-form.md`, `scripts/export.js`, `scripts/eval.js`, `web/` 골격·V1·V2 카드 결과·제작 과정 |
+| 이용석 | V2 구성안·근거, V3 평가 대시보드, V4 버전 비교(권장) | 핵심 정보 포함률 지표, 평가 결과 집계, 주의 표현 검사 기준, `CLAUDE.md`·Skill(v2) | 톤업 선크림 제작, 평가 입력 6개(톤업·과장 원문·긴 원문), A5 규칙 버전 비교, A7 안전성 | `CLAUDE.md`, `.claude/skills/`, `docs/style-guide.md`, `config/caution-expressions.json`, `scripts/lib/` 핵심 정보·집계, `web/` V2 구성안·근거·V3·V4 |
+| 공동 (둘 다 승인) | — | 연결 규격 3개, 규칙 버전 | 체크리스트 교차 검토, 통합 테스트, 리포트 | `docs/card-data-spec.md`, `docs/web-data-spec.md`, `docs/eval-spec.md`, `schemas/`, `docs/event-log-spec.md`, `config/skill-version.json`, `config/revision-types.json`, `evals/` |
 
 ## 원문 근거 검증 방식
 
