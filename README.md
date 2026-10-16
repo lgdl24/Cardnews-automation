@@ -8,14 +8,14 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 
 ## 실행 방식
 
-> **2026-10-16 구조 변경**: 카드 제작은 로컬 Claude Code(대화 모드)로만 하고, 웹은 결과를 보여주는 **결과 보기 웹**(정적 사이트, 배포 링크)으로 만듭니다. 아래 표의 서비스 모드(Agent SDK)는 범위에서 빠졌고, 관련 파일은 정리 예정입니다. 계획과 역할은 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761)를 보세요.
+카드 제작은 로컬 Claude Code로만 하고, 웹은 결과를 보여주는 **결과 보기 웹**(정적 사이트, 배포 링크)입니다. 계획과 역할은 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761)를 보세요.
 
-| | 대화 모드 | 서비스 모드 |
+| | 대화 모드 | 평가 모드 |
 |---|---|---|
-| 쓰는 사람 | 팀원 (개발·실험) | 기업 관리자 (관리자 웹) |
-| 실행 | 터미널의 Claude Code | 웹 서버가 Agent SDK로 실행 (`docs/service-mode.md`) |
-| 사람 확인 | 터미널 대화 | 웹 화면 (구성안 승인, 카드 검토) |
-| 상태 | 사용 가능 | 범위 제외 (2026-10-16) |
+| 쓰는 사람 | 팀원 (실제 제작) | 평가 실행기 (평가용 입력 세트 반복 실행) |
+| 실행 | 터미널의 Claude Code와 대화 | `npm run eval`(예정)이 `claude -p`로 작업 하나씩 실행, 지시문은 `prompts/` |
+| 사람 확인 | 구성안 승인·최종 검토를 대화에서 | 없음. 구성안 승인은 '평가'로 자동 기록 |
+| 결과 보기 | 결과 보기 웹 (`npm run export`로 내보낸 데이터) | 같음 + 평가 대시보드 |
 
 ## 설치
 
@@ -35,7 +35,7 @@ npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드
 - 작업은 이슈 → 브랜치 → PR 순서로 하고, `main` 병합은 관리자가 결정합니다. ([CONTRIBUTING.md](CONTRIBUTING.md))
 - 작은 작업이 끝나거나 중단될 때마다 인수인계를 갱신합니다. 규칙·용어·파일이 바뀌면 '최근 변경'에 남겨 다음 도구가 알 수 있게 합니다.
 - 교대 전에 편집·실행을 끝내고, 같은 폴더에서는 한 도구만 수정합니다.
-- 카드 제작(대화 모드·서비스 모드)의 승인 절차는 `CLAUDE.md`가 기준이며, 인수인계가 대신하지 않습니다.
+- 카드 제작(대화 모드·평가 모드)의 승인 절차는 `CLAUDE.md`가 기준이며, 인수인계가 대신하지 않습니다.
 
 새 세션에서 요청할 예시:
 
@@ -70,7 +70,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 ## 제작 기록과 분석
 
 - `validate`·`render`는 결과를 `products/<제품ID>/log.jsonl`에 자동으로 남기고, 품질 지표를 `output/quality.json`에 저장합니다.
-- 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 서비스 모드에서 서버가 남깁니다.
+- 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 평가 모드에서 평가 실행기가 남깁니다.
 - 모든 기록에 규칙 버전(`config/skill-version.json`)이 붙습니다. 규칙을 고치면 버전을 올려 v1·v2 결과를 비교합니다.
 - **평가 방식 (2026-10-16)**: 실사용자가 없으므로, 평가용 입력 세트 12개(정상 8·경계 4)와 핵심 정보 체크리스트를 평가 실행기(`npm run eval`, 예정)로 반복 실행해 품질·일관성·안전성·규칙 버전 효과를 측정합니다. 자세한 내용은 [공통 맥락](docs/project-context.md) '평가와 미결정'.
 - 형식과 지표 정의: `docs/event-log-spec.md`
@@ -90,7 +90,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 ├── .claude/skills/
 │   ├── cardnews-content/SKILL.md     # 콘텐츠 생성 Skill: 입력 확인 ~ 데이터 검증, 수정 요청
 │   └── cardnews-render/SKILL.md      # 카드 출력 Skill: 템플릿 적용 ~ 재출력
-├── prompts/                          # 서비스 모드 작업 지시문 (plan, copy, revise)
+├── prompts/                          # 평가 모드 작업 지시문 (plan, copy)
 ├── schemas/cards.schema.json         # 카드 구성 데이터 JSON 스키마 (형식 규격)
 ├── config/
 │   ├── input-form.json               # 입력 양식 항목 정의 (검사·빈 양식·웹 입력 폼 공통)
@@ -105,14 +105,12 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── card-data-spec.md             # 카드 구성 데이터(JSON) 규격
 │   ├── style-guide.md                # 카드 구성·문체 기준
 │   ├── event-log-spec.md             # 제작 기록·지표 규격
-│   ├── service-mode.md               # 웹 서버 ↔ Agent SDK 연결 규격
 │   ├── project-context.md            # 교대 개발 공통 맥락 (용어·설계 이유·개발 작업 규칙)
 │   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
 ├── scripts/                          # check-input, validate, render, log, compare, new-run, lib/
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
 ├── CONTRIBUTING.md                   # 협업 규칙
-├── .env.example                      # 서비스 모드 환경변수 예시
 └── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 대화 모드 실행 기록)
 ```
 
@@ -140,6 +138,6 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 | 2. 입력·데이터 규격 확정 | JSON 스키마, 입력 양식 정의 파일, 지시문 탐지, 입력 누락·지시문 테스트 자료, 규격 일치 테스트 | 완료 (v0.4) |
 | 3. 템플릿 3종·디자인 반영 | Figma 토큰 ↔ `theme.json`, 글자 수 측정 도구(`calibrate`)로 기준 조정, 줄바꿈 기준, 이미지 겹침 점검 | 완료 (v0.4) |
 | 4. 첫 실제 제작 (대화 모드) | 대화 모드 전체 흐름(구성안 → 승인 → 문구·출력 → 최종 승인 → 기록) 점검, 입력 누락·지시문 자료로 안전 규칙 확인 | 흐름 점검 완료 (v0.5, 가상 자료) · 실제 자료 제작은 자료 받은 뒤 |
-| 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 | 실행기·흐름 확인 후 중단 (2026-10-16 범위 제외, 이슈 #3 · PR #4 브랜치) |
+| 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 | 2026-10-16 범위 제외. 서비스 모드는 평가 모드로 바뀜(#9), 실행기 코드는 `feat/3-agent-sdk-poc` 브랜치에 보관 |
 
 이후 일정과 담당별 작업은 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761) 8장과 작업 트래커에서 관리합니다. 멘토 확인 사항(웹 범위·공개 범위·실제 자료·평가 기준)은 노션 회의·멘토링 기록에 있습니다.

@@ -1,7 +1,7 @@
 # 제작 기록(이벤트)·지표 규격 — v0.1
 
-데이터 분석(A1~A7)의 원본 데이터 형식입니다. 대화 모드는 `products/<제품ID>/log.jsonl`에 한 줄씩,
-서비스 모드는 같은 형식을 DB 이벤트 테이블(`EVENT.type`, `EVENT.payload_json`)에 저장합니다.
+데이터 분석(A1~A8)의 원본 데이터 형식입니다. 대화 모드와 평가 모드 모두 제품(평가 실행이면 실행별) 폴더의 `products/<제품ID>/log.jsonl`에 한 줄씩 저장합니다.
+결과 보기 웹에는 내보내기(`npm run export`)가 공개해도 되는 필드만 옮깁니다(`docs/web-data-spec.md`).
 계산 코드: `scripts/lib/metrics.js`(품질 지표), `scripts/lib/analysis.js`(과정 지표).
 
 ## 공통 필드
@@ -10,24 +10,25 @@
 |---|---|
 | `ts` | 기록 시각 (ISO 8601, UTC) |
 | `event` | 이벤트 이름 |
-| `project_id` | 제품ID (서비스 모드는 프로젝트 ID) |
-| `job_id` | 작업 ID. 작업 밖 이벤트는 `null`. 대화 모드는 `cli-YYYYMMDD-HHMMSS-xxx` |
+| `project_id` | 제품ID |
+| `job_id` | 작업 ID. 작업 밖 이벤트는 `null`. 대화 모드는 `cli-YYYYMMDD-HHMMSS-xxx`, 평가 모드는 평가 실행기가 정한 ID(`CARDNEWS_JOB_ID`) |
 | `skill_version` | `config/skill-version.json`의 `version` |
 
 ## 이벤트
 
-| 이벤트 | 추가 필드 | 누가 남기나 (개발 / 서비스) |
+| 이벤트 | 추가 필드 | 누가 남기나 (대화 / 평가) |
 |---|---|---|
-| `input_submitted` | `form_started_at`(선택, 입력 폼을 연 시각) | Claude / 서버 |
-| `job_started` | `kind`: `plan` · `copy` · `revise` | Claude / 서버 |
-| `job_finished` | `kind`, `ok`, `error_code`, `input_tokens`, `output_tokens`, `cost_usd` | Claude (토큰·비용 없음) / 서버 (SDK 결과값) |
+| `input_submitted` | `form_started_at`(선택, 입력 작성을 시작한 시각) | Claude / 평가 실행기 |
+| `job_started` | `kind`: `plan` · `copy` · `revise` | Claude / 평가 실행기 |
+| `job_finished` | `kind`, `ok`, `error_code` | Claude / 평가 실행기 |
 | `validate_result` | `check`: `data` · `layout`, `ok`, `error_codes`, `error_count`, `cards_with_errors`, `caution_count`, `stage`, `metrics`(data만), `rendered_cards`(layout만) | `validate`·`render` 스크립트 (두 모드 같음) |
-| `plan_approved` | — | Claude / 서버 |
-| `final_approved` | — | Claude / 서버 |
-| `revision_requested` | `stage`: `plan` · `final`, `cards`(카드 번호 배열, 전체면 빈 배열), `types`(유형 코드 배열), `memo` | Claude / 서버 |
+| `plan_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 평가 실행기(`eval`) |
+| `final_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / (평가 모드는 남기지 않음) |
+| `revision_requested` | `stage`: `plan` · `final`, `cards`(카드 번호 배열, 전체면 빈 배열), `types`(유형 코드 배열), `memo` | Claude / (평가 모드에는 없음) |
 
-- 서비스 모드의 `validate_result`는 작업 폴더의 `log.jsonl`에 쌓이고, 작업이 끝나면 서버가 DB로 옮깁니다.
-- `validate`·`render`에 `--no-log`를 붙이거나 `CARDNEWS_NO_LOG=1`이면 기록하지 않습니다. (서버의 재검증용)
+- 평가 모드(`CARDNEWS_MODE=eval`)에서는 `log.js`가 기록하지 않고, 평가 실행기가 작업·승인 이벤트를 직접 남깁니다. `validate_result`는 두 모드 모두 스크립트가 남깁니다.
+- `approved_by`가 없으면 사람이 승인한 것으로 봅니다. 평가 실행의 자동 승인은 `eval`로 남겨 실제 제작과 구분합니다.
+- `validate`·`render`에 `--no-log`를 붙이거나 `CARDNEWS_NO_LOG=1`이면 기록하지 않습니다. (평가 실행기의 재검증용)
 - 유형 코드는 `config/revision-types.json`이 원본입니다.
 
 예시:
@@ -59,7 +60,6 @@
 | 수정 유형 분포 | `types` 코드별 건수 |
 | 1회 통과 | 첫 문구·출력 작업에서 첫 `data` 검사와 첫 `layout` 검사가 모두 오류 0개 |
 | 자동 수정 횟수 | 작업 안에서 실패한 검사 뒤에 다시 검사가 있는 횟수의 합 |
-| 토큰·비용 | `job_finished`의 값 합계 (서비스 모드만) |
 
 ## 실험 (A5·A6)
 

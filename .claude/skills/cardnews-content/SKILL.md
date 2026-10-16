@@ -7,7 +7,7 @@ description: 제품 입력 자료(products/<제품ID>/input.md)로 카드뉴스�
 
 입력 자료를 분석해 `products/<제품ID>/cards.json`을 만드는 절차입니다.
 규격은 `docs/card-data-spec.md`, 문체는 `docs/style-guide.md`를 따릅니다.
-대화 모드·서비스 모드 차이와 기록 명령은 `CLAUDE.md`의 '실행 방식'·'제작 기록'을 따릅니다. (아래 `[대화]` 표시는 대화 모드에서만 하는 일)
+대화 모드·평가 모드 차이와 기록 명령은 `CLAUDE.md`의 '실행 방식'·'제작 기록'을 따릅니다. (아래 `[대화]` 표시는 대화 모드에서만 하는 일)
 
 | 작업 | 이 Skill에서 하는 단계 |
 |---|---|
@@ -56,7 +56,7 @@ npm run check -- <제품ID>
 - `[대화]` 표를 보여주고 `node scripts/log.js <제품ID> job_finished --ok true`를 남긴 뒤 답을 기다립니다.
   - 승인: `plan_approved` 기록 → `job_started --kind copy` → 5단계
   - 수정 요청: 맨 아래 '수정 요청'
-- 서비스 모드: 검증 오류가 0개면 작업을 끝냅니다. 관리자는 웹의 구성안 확인 화면에서 `cards.json` 기준으로 구성안을 봅니다.
+- 평가 모드: 검증 오류가 0개면 작업을 끝냅니다. 구성안 승인은 평가 실행기가 '평가'로 기록합니다.
 
 ## 5. 카드별 문구 생성
 

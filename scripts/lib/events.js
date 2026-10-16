@@ -1,5 +1,5 @@
 // 제작 기록(이벤트) 저장·읽기
-// 형식은 docs/event-log-spec.md. CLI는 products/<제품ID>/log.jsonl, 웹은 같은 형식을 DB 이벤트 테이블에 저장합니다.
+// 형식은 docs/event-log-spec.md. 제품(또는 평가 실행) 폴더의 products/<제품ID>/log.jsonl에 한 줄씩 저장합니다.
 const fs = require('fs');
 const { paths, readJson } = require('./common');
 
@@ -9,7 +9,8 @@ const EVENTS = [
 ];
 const JOB_KINDS = ['plan', 'copy', 'revise'];
 
-const isServiceMode = () => process.env.CARDNEWS_MODE === 'service';
+// 평가 모드: 평가 실행기(npm run eval)가 claude -p를 실행할 때 CARDNEWS_MODE=eval을 넘김
+const isEvalMode = () => process.env.CARDNEWS_MODE === 'eval';
 
 function skillVersion() {
   try {
@@ -22,7 +23,7 @@ function skillVersion() {
 const logFile = (id) => paths.product(id, 'log.jsonl');
 const jobFile = (id) => paths.product(id, '.job.json');
 
-// 진행 중인 작업: 서비스 모드는 서버가 넘긴 환경변수, CLI는 job_started가 만든 .job.json
+// 진행 중인 작업: 평가 모드는 평가 실행기가 넘긴 환경변수, 대화 모드는 job_started가 만든 .job.json
 function currentJob(id) {
   if (process.env.CARDNEWS_JOB_ID) {
     return { job_id: process.env.CARDNEWS_JOB_ID, kind: process.env.CARDNEWS_JOB_KIND || null };
@@ -100,6 +101,6 @@ function resultFields(check, report, extra = {}) {
 const shouldLog = (argv) => !argv.includes('--no-log') && process.env.CARDNEWS_NO_LOG !== '1';
 
 module.exports = {
-  EVENTS, JOB_KINDS, isServiceMode, skillVersion, currentJob, startJob, endJob,
+  EVENTS, JOB_KINDS, isEvalMode, skillVersion, currentJob, startJob, endJob,
   appendEvent, readEvents, resultFields, shouldLog,
 };

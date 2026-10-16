@@ -92,10 +92,10 @@ test('log: 작업 시작~끝 기록이 같은 job_id로 묶이고 요약이 나�
   }
 });
 
-test('log: 서비스 모드에서는 기록하지 않는다 (서버가 기록)', () => {
+test('log: 평가 모드에서는 기록하지 않는다 (평가 실행기가 기록)', () => {
   const ws = makeWorkspace();
   try {
-    ws.run('log.js', ['input_submitted'], { CARDNEWS_MODE: 'service' });
+    ws.run('log.js', ['input_submitted'], { CARDNEWS_MODE: 'eval' });
     assert.equal(readLog(ws).length, 0);
   } finally {
     ws.cleanup();
