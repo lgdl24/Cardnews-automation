@@ -92,6 +92,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   └── cardnews-render/SKILL.md      # 카드 출력 Skill: 템플릿 적용 ~ 재출력
 ├── prompts/                          # 서비스 모드 작업 지시문 (plan, copy, revise)
 ├── schemas/cards.schema.json         # 카드 구성 데이터 JSON 스키마 (형식 규격)
+├── schemas/web-data/                 # 웹 데이터(결과 보기 웹) JSON 스키마: index·project·timeline
 ├── config/
 │   ├── input-form.json               # 입력 양식 항목 정의 (검사·빈 양식·웹 입력 폼 공통)
 │   ├── input-safety.json             # 입력 자료 속 지시문 탐지 패턴
@@ -105,6 +106,8 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── card-data-spec.md             # 카드 구성 데이터(JSON) 규격
 │   ├── style-guide.md                # 카드 구성·문체 기준
 │   ├── event-log-spec.md             # 제작 기록·지표 규격
+│   ├── web-data-spec.md              # 웹 데이터 규격 (내보내기 → 결과 보기 웹)
+│   ├── examples/web-data/            # 웹 데이터 예시 (웹 화면 개발용)
 │   ├── service-mode.md               # 웹 서버 ↔ Agent SDK 연결 규격
 │   ├── project-context.md            # 교대 개발 공통 맥락 (용어·설계 이유·개발 작업 규칙)
 │   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)

@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-16 | Claude | #7 · `feat/7-web-data-spec` | **웹 데이터 규격 v0.1 초안**: `docs/web-data-spec.md`, 스키마 `schemas/web-data/`(index·project·timeline), 예시 `docs/examples/web-data/`(toneup-sunscreen-r1 실제 결과에서 생성), 테스트 `tests/web-data.test.js`(`npm test`에 포함). 웹 화면은 이 예시로 먼저 개발. 연결 규격이라 이용석 승인 필요 |
 | 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **분석 방향 변경**: 실사용자가 없어 사용 데이터 분석·블라인드 평가는 제외. **평가용 입력 세트 12개**(정상 8·경계 4) + **핵심 정보 체크리스트**를 **평가 실행기**(`npm run eval`, 예정, `claude -p` 사용)로 반복 실행해 품질·일관성·안전성·규칙 v1/v2를 비교. 구성안 승인은 '평가' 자동 승인으로 기록. 직접 제작 시간 비교는 사례로만. 상세: `project-context.md` '평가와 미결정', 노션 [데이터 분석 설계](https://app.notion.com/p/3f56bcfa1f8a81f68cc3ee29a152453f) |
 | 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **구조 변경**: 카드 제작은 **로컬 Claude Code(대화 모드)만**, 웹은 **결과 보기 전용 정적 사이트**(React·TypeScript, 배포 링크). Agent SDK 서버 실행·관리자 로그인·DB·Docker·API 비용·토큰/비용 지표(A3)는 범위 제외. `CLAUDE.md`·Skill·`docs/service-mode.md`·`prompts/`의 서비스 모드 내용은 아직 남아 있으나 **새 작업의 근거로 쓰지 않는다** (정리 작업 예정) |
 | 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **역할 분담 (기능·화면 단위)**: 이규동 = 웹 골격·V1·V2 카드 결과·V2 제작 과정, `export`·`eval`·배포·스크립트·템플릿 / 이용석 = V2 구성안·근거·V3·V4, 핵심 정보 포함률·평가 집계·주의 표현, `CLAUDE.md`·Skill. 평가 입력은 6개씩. 연결 규격 3개(카드 데이터·웹 데이터·평가 결과)로만 연결. PR 리뷰어는 상대(트래커 '리뷰'), 병합은 이규동 (`CONTRIBUTING.md`). 담당 표: `README.md`, 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761) 7장 |
@@ -17,27 +18,28 @@
 | 2026-10-10 | Codex | #1 · `docs/1-agent-handoff` | `AGENTS.md`, `docs/project-context.md`, `docs/handoff.md` 추가 (교대 개발 문서) |
 | 2026-10-10 | Claude | `main` `92ea3de` (v0.5) | 원문 커버리지에서 지시문 형태 문장 제외(`coverage_detail.excluded`). 실행 기록 폴더 `products/*-r1` 추가 |
 | 2026-10-10 | Claude | `main` `e3b8fdf` (v0.4) | 규격 원본: `schemas/cards.schema.json`, `config/input-form.json`, `config/input-safety.json`. 글자 수 기준에 한 줄·최대 줄 수 추가, `npm run calibrate` |
-| 2026-10-10 | Claude | `main` `dd2e02f` (v0.3) | `npm test`·`npm run test:render`, `CONTRIBUTING.md`, 테스트는 `CARDNEWS_PRODUCTS_DIR` 임시 폴더 사용 |
 
 ## 현재 작업
 
 - 확인일·작성 도구: 2026-10-16 · Claude.
-- 이슈·PR: [#5](https://github.com/lgdl24/Cardnews-automation/issues/5) · [PR #6](https://github.com/lgdl24/Cardnews-automation/pull/6). **`main` 병합은 이규동 결정.**
-- 상태: 완료 (PR 검토 대기).
-- 목표·완료 조건: 10.16 구조 변경·역할 분담·분석 방향 변경(평가용 입력 세트)을 교대 개발 문서(`handoff.md`, `project-context.md`, `README.md`)에 반영해, 다음 도구가 옛 계획(서비스 모드·관리자 웹·사용자 기반 분석)으로 작업하지 않게 함.
-- 작업 브랜치: `docs/5-local-web-viewer` · 기준 커밋 `594f244` (`main`).
-- 변경 파일: `docs/handoff.md`, `docs/project-context.md`, `README.md`, `CONTRIBUTING.md` (문서만).
+- 이슈·PR: [#7](https://github.com/lgdl24/Cardnews-automation/issues/7) · PR은 push 후 생성. 리뷰 이용석. **`main` 병합은 승인 후 이규동.**
+- 상태: 완료 (PR 리뷰 대기, 마감 10.21).
+- 목표·완료 조건: 결과 보기 웹이 읽을 데이터 형식(연결 규격)을 정하고, 예시 데이터가 스키마 검사를 통과.
+- 작업 브랜치: `feat/7-web-data-spec` · 기준 커밋 `551f8e0` (`main`, PR #6 병합).
+- 변경 파일: `docs/web-data-spec.md`, `schemas/web-data/*.schema.json`, `docs/examples/web-data/`, `tests/web-data.test.js`, `package.json`(test 목록), `README.md`, `docs/handoff.md`.
 - 실행 중인 작업: 없음.
 
 ## 완료한 내용과 결정
 
-- 노션: 기획 상세 문서를 제출용 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761)로 개정, 작업 트래커 담당을 이규동·이용석·공동으로 재배정(이전 완료 작업은 이규동), 설계 문서·요구사항을 새 구조로 갱신.
-- 저장소는 이번에는 안내 문서만 바꿈. `CLAUDE.md`·Skill·`docs/service-mode.md`·`prompts/` 정리는 제작 규칙이 바뀌므로 규칙 버전 결정과 함께 별도 작업(노션 '저장소 구조 정리', 이규동)으로 한다.
-- 이슈 #3 · PR #4(Agent SDK 실행기 PoC)는 범위 제외. 병합하지 않고 브랜치 보관할지는 이규동이 결정한다. 병합하면 이 문서와 충돌하므로 이 문서를 기준으로 맞춘다.
+- PR #6(구조 변경·분석 방향·역할 분담 문서) 병합 (`551f8e0`, 이슈 #5 종료).
+- 예시 데이터는 임시 생성 스크립트로 `products/toneup-sunscreen-r1`의 실제 결과(`cards.json`·`log.jsonl`·`quality.json`·출력 보고서·PNG)에서 만들었다. `npm run export`가 생기면 그 명령으로 다시 만든다.
+- 웹에 공개하지 않는 것: `input.md` 전체, 입력 이미지 원본, 토큰·비용, 지시문 형태 원문 문장(개수만). 스키마가 `additionalProperties: false`로 막고 테스트가 확인.
+- 내보낸 데이터 폴더(`web/public/data/`)는 커밋한다(`products/*/output/`이 git 제외라 배포 원본이 필요).
+- PR #4(Agent SDK 서비스 모드 실행기)는 저장소 정리 작업에서 닫고 브랜치는 보관, 작업 폴더 분리·재검증 코드는 평가 실행기에서 재사용한다(이규동 결정).
 
 ## 검증
 
-- 문서만 변경. 상대 링크 확인, `git diff --check` 통과. 코드 변경이 없어 `npm test`는 다시 돌리지 않음.
+- `npm test` 통과 (새 `tests/web-data.test.js` 5개 포함). `git diff --check` 통과.
 
 ## 프로젝트 기준 상태 (2026-10-16)
 
@@ -50,13 +52,13 @@
 ## 남은 문제·미결정
 
 - 멘토 확인: 결과 보기 웹으로 '웹으로 구현' 피드백을 충족하는지, 웹 공개 범위, 실제 제품 자료 제공 시점, 평가 기준 (노션 '1차 멘토링 — 확인할 질문').
-- 웹 데이터 규격은 노션 데이터 명세의 초안만 있음. `docs/web-data-spec.md`로 10.21까지 초안(이규동) → 이용석 승인.
+- 웹 데이터 규격 v0.1 초안 작성됨(#7). 이용석 리뷰에서 V2 구성안·근거에 더 필요한 필드, ZIP 생성 위치를 정함. 수정 요청·주의 표현이 있는 예시는 톤업 선크림 첫 제작 뒤 추가.
 - 평가 결과·체크리스트 규격은 아직 없음. `docs/eval-spec.md`로 10.24까지 초안(이용석) → 이규동 승인.
 - 배포처(Vercel 등)와 공개 링크 접근 제한 여부는 미정.
 - 평가 실행기: `claude -p`의 허용 도구 제한·결과 형식(`--output-format json`)·실행 시간을 첫 구현 때 확인. 평가 결과 파일 위치·형식과 평가 세트 형식(`input.md` + 체크리스트)은 `docs/eval-spec.md`를 따름.
 
 ## 다음 행동
 
-1. 이규동: PR #6 병합 결정, PR #4 처리 결정 → '저장소 구조 정리' → 웹 데이터 규격 초안(10.21) → `npm run export` → 웹 골격·공통 부품·배포 링크(10.28) → V1·V2 카드 결과 화면, 평가 실행기(`npm run eval`), 평가 입력 6개 → V2 제작 과정.
+1. 이규동: 웹 데이터 규격 PR(#7) 리뷰 반영 → '저장소 구조 정리'(PR #4 닫기 포함) → `npm run export` → 웹 골격·공통 부품·배포 링크(10.28) → V1·V2 카드 결과 화면, 평가 실행기(`npm run eval`), 평가 입력 6개 → V2 제작 과정.
 2. 이용석: 저장소 받아 `npm install`·`npm test`, 실제 톤업 선크림 자료·이미지(`npm run new-product`) → 주의 표현 목록·검사 기준 → 평가 결과·체크리스트 규격 초안(10.24) → 대화 모드 첫 제작 → V2 구성안·근거 화면, 핵심 정보 포함률 지표, 평가 입력 6개 → v1 평가 분석·v2 규칙, 평가 집계·V3 대시보드.
 3. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
