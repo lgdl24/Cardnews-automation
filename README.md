@@ -6,16 +6,16 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 
 > 현재 버전: v0.5 (기본 틀 + 두 실행 방식 규칙 + 제작 기록·품질 지표 + 자동 테스트 + 규격 파일·지시문 탐지 + 측정 기반 글자 수 기준). `products/toneup-sunscreen`은 구조 확인용 **가상 예시 제품**이에요.
 
-## 두 가지 실행 방식
+## 실행 방식
 
-같은 `CLAUDE.md`·Skill·스크립트를 두 방식으로 실행합니다.
+> **2026-10-16 구조 변경**: 카드 제작은 로컬 Claude Code(대화 모드)로만 하고, 웹은 결과를 보여주는 **결과 보기 웹**(정적 사이트, 배포 링크)으로 만듭니다. 아래 표의 서비스 모드(Agent SDK)는 범위에서 빠졌고, 관련 파일은 정리 예정입니다. 계획과 역할은 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761)를 보세요.
 
 | | 대화 모드 | 서비스 모드 |
 |---|---|---|
 | 쓰는 사람 | 팀원 (개발·실험) | 기업 관리자 (관리자 웹) |
 | 실행 | 터미널의 Claude Code | 웹 서버가 Agent SDK로 실행 (`docs/service-mode.md`) |
 | 사람 확인 | 터미널 대화 | 웹 화면 (구성안 승인, 카드 검토) |
-| 상태 | 사용 가능 | 웹 서버 구현 예정 (규격·작업 지시문 준비됨) |
+| 상태 | 사용 가능 | 범위 제외 (2026-10-16) |
 
 ## 설치
 
@@ -72,6 +72,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 - `validate`·`render`는 결과를 `products/<제품ID>/log.jsonl`에 자동으로 남기고, 품질 지표를 `output/quality.json`에 저장합니다.
 - 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 서비스 모드에서 서버가 남깁니다.
 - 모든 기록에 규칙 버전(`config/skill-version.json`)이 붙습니다. 규칙을 고치면 버전을 올려 v1·v2 결과를 비교합니다.
+- **평가 방식 (2026-10-16)**: 실사용자가 없으므로, 평가용 입력 세트 12개(정상 8·경계 4)와 핵심 정보 체크리스트를 평가 실행기(`npm run eval`, 예정)로 반복 실행해 품질·일관성·안전성·규칙 버전 효과를 측정합니다. 자세한 내용은 [공통 맥락](docs/project-context.md) '평가와 미결정'.
 - 형식과 지표 정의: `docs/event-log-spec.md`
 
 실험 예시:
@@ -115,15 +116,15 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 └── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 대화 모드 실행 기록)
 ```
 
-## 담당 범위 (계획서 기준)
+## 담당 범위 (2026-10-16 개발 계획서 기준)
 
-| 영역 | 주요 파일 |
-|---|---|
-| 템플릿·출력 | `templates/`, `config/theme.json`, `config/templates.json`, `scripts/render.js`, `cardnews-render` Skill |
-| 콘텐츠·검증 | `docs/input-form.md`, `docs/card-data-spec.md`, `scripts/check-input.js`, `scripts/validate.js`, `cardnews-content` Skill |
-| 기록·분석 | `docs/event-log-spec.md`, `scripts/log.js`, `scripts/compare.js`, `scripts/lib/metrics.js`, `scripts/lib/analysis.js` |
-| 웹 연결 | `docs/service-mode.md`, `prompts/`, `.env.example` |
-| 공동 | `CLAUDE.md`, `docs/style-guide.md`, `config/caution-expressions.json`, `config/revision-types.json` |
+기능·화면 단위로 나눕니다. 각자 맡은 기능을 개발·테스트·문서까지 끝내고, PR은 상대가 리뷰합니다.
+
+| 담당 | 웹 화면 | 프로그램·규칙 | 제작·평가 | 주요 파일 (예정 포함) |
+|---|---|---|---|---|
+| 이규동 | 웹 골격·공통 부품, V1 프로젝트 목록, V2 카드 결과, V2 제작 과정 | 내보내기(`npm run export`), 평가 실행기(`npm run eval`), 배포, 입력 확인·검증·출력·기록 스크립트, 템플릿 | 제품 A·B 자료, 평가 입력 6개(제품 A·B·입력 누락·지시문), A6 일관성, A8(권장) | `scripts/`, `templates/`, `config/theme.json`, `config/templates.json`, `docs/input-form.md`, `scripts/export.js`, `scripts/eval.js`, `web/` 골격·V1·V2 카드 결과·제작 과정 |
+| 이용석 | V2 구성안·근거, V3 평가 대시보드, V4 버전 비교(권장) | 핵심 정보 포함률 지표, 평가 결과 집계, 주의 표현 검사 기준, `CLAUDE.md`·Skill(v2) | 톤업 선크림 제작, 평가 입력 6개(톤업·과장 원문·긴 원문), A5 규칙 버전 비교, A7 안전성 | `CLAUDE.md`, `.claude/skills/`, `docs/style-guide.md`, `config/caution-expressions.json`, `scripts/lib/` 핵심 정보·집계, `web/` V2 구성안·근거·V3·V4 |
+| 공동 (둘 다 승인) | — | 연결 규격 3개, 규칙 버전 | 체크리스트 교차 검토, 통합 테스트, 리포트 | `docs/card-data-spec.md`, `docs/web-data-spec.md`, `docs/eval-spec.md`, `schemas/`, `docs/event-log-spec.md`, `config/skill-version.json`, `config/revision-types.json`, `evals/` |
 
 ## 원문 근거 검증 방식
 
@@ -139,6 +140,6 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 | 2. 입력·데이터 규격 확정 | JSON 스키마, 입력 양식 정의 파일, 지시문 탐지, 입력 누락·지시문 테스트 자료, 규격 일치 테스트 | 완료 (v0.4) |
 | 3. 템플릿 3종·디자인 반영 | Figma 토큰 ↔ `theme.json`, 글자 수 측정 도구(`calibrate`)로 기준 조정, 줄바꿈 기준, 이미지 겹침 점검 | 완료 (v0.4) |
 | 4. 첫 실제 제작 (대화 모드) | 대화 모드 전체 흐름(구성안 → 승인 → 문구·출력 → 최종 승인 → 기록) 점검, 입력 누락·지시문 자료로 안전 규칙 확인 | 흐름 점검 완료 (v0.5, 가상 자료) · 실제 자료 제작은 자료 받은 뒤 |
-| 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 (`docs/service-mode.md`) | |
+| 5. Agent SDK PoC | 서비스 모드 작업 1개 실행, 권한·비용 확인 | 실행기·흐름 확인 후 중단 (2026-10-16 범위 제외, 이슈 #3 · PR #4 브랜치) |
 
-웹 화면·서버는 5단계 결과를 보고 따로 계획합니다. 멘토 확인 사항(평가 기준, API 비용, 배포 환경, Agent SDK 활용 인정 여부)은 노션 작업 트래커에서 관리합니다.
+이후 일정과 담당별 작업은 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761) 8장과 작업 트래커에서 관리합니다. 멘토 확인 사항(웹 범위·공개 범위·실제 자료·평가 기준)은 노션 회의·멘토링 기록에 있습니다.
