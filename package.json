@@ -3,7 +3,7 @@
   "version": "0.5.0",
   "description": "Claude Code 기반 카드뉴스 제작 자동화",
   "scripts": {
-    "test": "node --test tests/check-input.test.js tests/validate.test.js tests/cli.test.js tests/spec.test.js tests/web-data.test.js",
+    "test": "node --test tests/check-input.test.js tests/validate.test.js tests/cli.test.js tests/spec.test.js tests/web-data.test.js tests/export.test.js",
     "test:render": "node --test tests/render.test.js tests/calibrate.test.js",
     "check": "node scripts/check-input.js",
     "validate": "node scripts/validate.js",
@@ -12,7 +12,8 @@
     "compare": "node scripts/compare.js",
     "new-run": "node scripts/new-run.js",
     "new-product": "node scripts/new-product.js",
-    "calibrate": "node scripts/calibrate.js"
+    "calibrate": "node scripts/calibrate.js",
+    "export": "node scripts/export.js"
   },
   "devDependencies": {
     "ajv": "^8.20.0",

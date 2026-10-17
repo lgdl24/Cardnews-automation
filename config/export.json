@@ -1,0 +1,7 @@
+{
+  "_설명": "npm run export 설정. 웹(결과 보기)에 내보낼 제품 목록과 출력 폴더. 규격: docs/web-data-spec.md",
+  "out_dir": "web/public/data",
+  "projects": [
+    { "id": "toneup-sunscreen-r1", "kind": "example", "label": "가상 예시 · 대화 모드 흐름 점검" }
+  ]
+}

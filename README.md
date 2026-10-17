@@ -63,6 +63,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run log -- <제품ID> --summary` | 단계별 시간, 수정 유형, 자동 수정, 1회 통과, 품질 지표 요약 (`--json` 가능) |
 | `npm run new-run -- <원본ID> <새ID>` | 같은 입력으로 실험용 제작 폴더 만들기 |
 | `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성 |
+| `npm run export` | 승인된 결과를 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json`, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`) |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
 미리보기: `products/<제품ID>/output/html/index.html`을 브라우저로 열면 전체 카드를 한 번에 볼 수 있어요.
@@ -100,6 +101,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름)
 │   ├── caution-expressions.json      # 주의 표현 목록 (초안)
 │   ├── revision-types.json           # 수정 요청 유형 코드
+│   ├── export.json                   # 웹에 내보낼 제품 목록·출력 폴더 (npm run export)
 │   └── skill-version.json            # 규칙 버전
 ├── docs/
 │   ├── input-form.md                 # 입력 양식
@@ -112,7 +114,8 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── project-context.md            # 교대 개발 공통 맥락 (용어·설계 이유·개발 작업 규칙)
 │   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
-├── scripts/                          # check-input, validate, render, log, compare, new-run, lib/
+├── scripts/                          # check-input, validate, render, log, compare, new-run, export, lib/
+├── web/public/data/                  # 내보낸 웹 데이터 (npm run export가 생성, 커밋함)
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
 ├── CONTRIBUTING.md                   # 협업 규칙
 ├── .env.example                      # 서비스 모드 환경변수 예시
