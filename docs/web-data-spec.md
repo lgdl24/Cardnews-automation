@@ -170,7 +170,7 @@ npm run export -- --out <폴더>         # 다른 폴더로 (확인용)
 | V3 평가 대시보드 | 이용석 | `eval/` (`docs/eval-spec.md`), `index.json`의 `kind: "eval"` 프로젝트 |
 | V4 버전 비교 | 이용석 | 같은 평가 입력의 `project.json` 두 개 |
 
-웹에서는 `fetch('/data/index.json')` → `fetch('/data/projects/<id>/project.json')` 순서로 읽고, 카드 이미지는 `/data/projects/<id>/` + `cards[].png`입니다. TypeScript 타입은 웹 골격 작업에서 이 스키마로 만듭니다.
+웹에서는 `fetch('/data/index.json')` → `fetch('/data/projects/<id>/project.json')` 순서로 읽고, 카드 이미지는 `/data/projects/<id>/` + `cards[].png`입니다. TypeScript 타입은 `web/src/data/types.ts`(#13)이고, 스키마를 바꾸면 같은 PR에서 함께 고칩니다.
 
 ## 정할 것 (리뷰에서)
 

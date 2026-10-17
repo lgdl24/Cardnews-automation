@@ -4,3 +4,4 @@ products/*/.job.json
 .env
 /data/
 .DS_Store
+web/dist/
