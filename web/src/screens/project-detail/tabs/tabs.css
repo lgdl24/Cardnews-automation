@@ -1,0 +1,23 @@
+/* V2 탭 공통: 카드 미리보기 줄 (카드 결과 탭) */
+.card-strip {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+.card-strip img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-accent);
+}
+.card-strip-no {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}

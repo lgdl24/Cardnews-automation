@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lgdl24/Cardnews-automation/schemas/web-data/index.schema.json",
+  "title": "웹 데이터 index.json — 프로젝트 목록 (V1)",
+  "description": "docs/web-data-spec.md '1. index.json'. 내보내기(npm run export)가 만들고 결과 보기 웹이 가장 먼저 읽는 파일",
+  "type": "object",
+  "required": ["spec_version", "exported_at", "skill_version", "labels", "projects"],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "const": "0.1" },
+    "exported_at": { "$ref": "#/$defs/datetime" },
+    "skill_version": { "type": "string", "description": "내보낼 때 config/skill-version.json의 현재 규칙 버전" },
+    "labels": {
+      "type": "object",
+      "required": ["kinds", "stages", "roles", "templates", "revision_types", "phases"],
+      "additionalProperties": false,
+      "properties": {
+        "kinds": { "$ref": "#/$defs/labelMap" },
+        "stages": { "$ref": "#/$defs/labelMap" },
+        "roles": { "$ref": "#/$defs/labelMap" },
+        "templates": { "$ref": "#/$defs/labelMap" },
+        "revision_types": { "$ref": "#/$defs/labelMap" },
+        "phases": { "$ref": "#/$defs/labelMap" }
+      }
+    },
+    "projects": { "type": "array", "items": { "$ref": "#/$defs/projectSummary" } }
+  },
+  "$defs": {
+    "datetime": { "type": "string", "format": "date-time" },
+    "labelMap": { "type": "object", "additionalProperties": { "type": "string" } },
+    "kind": { "enum": ["production", "example", "eval"] },
+    "rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "projectSummary": {
+      "type": "object",
+      "required": ["id", "kind", "label", "product_name", "brand", "category", "stage", "skill_version", "card_count", "updated_at", "thumbnail", "summary", "eval"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "kind": { "$ref": "#/$defs/kind" },
+        "label": { "type": ["string", "null"] },
+        "product_name": { "type": "string", "minLength": 1 },
+        "brand": { "type": ["string", "null"] },
+        "category": { "type": ["string", "null"] },
+        "stage": { "$ref": "../cards.schema.json#/properties/stage" },
+        "skill_version": { "type": ["string", "null"] },
+        "card_count": { "type": "integer", "minimum": 1 },
+        "updated_at": { "oneOf": [{ "$ref": "#/$defs/datetime" }, { "type": "null" }] },
+        "thumbnail": { "type": "string", "pattern": "^projects/[a-z0-9-]+/png/card-\\d{2}\\.png$" },
+        "summary": {
+          "type": "object",
+          "required": ["coverage", "evidence_rate", "caution_total", "first_pass", "total_minutes", "revision_rounds"],
+          "additionalProperties": false,
+          "properties": {
+            "coverage": { "$ref": "#/$defs/rate" },
+            "evidence_rate": { "$ref": "#/$defs/rate" },
+            "caution_total": { "type": ["integer", "null"], "minimum": 0 },
+            "first_pass": { "type": ["boolean", "null"] },
+            "total_minutes": { "type": ["number", "null"], "minimum": 0 },
+            "revision_rounds": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "eval": {
+          "description": "kind가 eval일 때만 값이 있음. 필드는 docs/eval-spec.md와 맞춤",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["input_id", "run_id", "repeat"],
+              "properties": {
+                "input_id": { "type": "string", "minLength": 1 },
+                "run_id": { "type": "string", "minLength": 1 },
+                "repeat": { "type": "integer", "minimum": 1 },
+                "variant": { "type": ["string", "null"], "description": "A8 비교판 이름. 기본 규칙이면 null" }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

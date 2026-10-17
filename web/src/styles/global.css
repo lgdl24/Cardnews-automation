@@ -1,0 +1,121 @@
+/* 공통 스타일 — 색상은 config/theme.json(카드 템플릿)·Figma color/* 와 같은 계열 */
+/* 글자 범위별로 나눈 가변 폰트: 화면에 쓰인 글자 묶음만 내려받음 */
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
+:root {
+  --color-bg: #fbf6f1;
+  --color-surface: #ffffff;
+  --color-text: #2b2420;
+  --color-muted: #7a6e66;
+  --color-primary: #d9826b;
+  --color-primary-strong: #b9624b;
+  --color-accent: #f2d7cc;
+  --color-border: #eadfd6;
+  --color-danger: #c2413b;
+
+  /* 단계 배지: 구성안(회색) · 문구(파랑) · 승인 완료(초록) — 노션 '웹 화면 설계' 공통 규칙 */
+  --stage-plan-bg: #ecebea;
+  --stage-plan-fg: #57514c;
+  --stage-copy-bg: #e1ecfb;
+  --stage-copy-fg: #2457a6;
+  --stage-approved-bg: #e0f2e6;
+  --stage-approved-fg: #23774a;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgb(43 36 32 / 6%), 0 4px 12px rgb(43 36 32 / 5%);
+  --page-width: 1200px;
+  --gutter: 24px;
+
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  min-width: 320px;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.3;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.page {
+  width: 100%;
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 32px var(--gutter) 48px;
+}
+
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.page-desc {
+  color: var(--color-muted);
+  margin: 6px 0 0;
+}
+
+.section {
+  margin-top: 32px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,0 +1,71 @@
+{
+  "spec_version": "0.1",
+  "exported_at": "2026-10-17T07:36:02.316Z",
+  "skill_version": "v1",
+  "labels": {
+    "kinds": {
+      "production": "실제 제작",
+      "example": "예시",
+      "eval": "평가 실행"
+    },
+    "stages": {
+      "plan": "구성안",
+      "copy": "문구",
+      "approved": "승인 완료"
+    },
+    "roles": {
+      "cover": "표지",
+      "feature": "특징",
+      "usage": "사용법",
+      "detail": "상세",
+      "closing": "마무리"
+    },
+    "templates": {
+      "cover": "표지형",
+      "image": "이미지 강조형",
+      "description": "설명형"
+    },
+    "revision_types": {
+      "LEN": "길이",
+      "TONE": "톤·문체",
+      "FACT": "사실·표기 오류",
+      "EXAG": "과장 표현",
+      "MISS": "내용 누락",
+      "ORDER": "순서·구성",
+      "DESIGN": "디자인·배치",
+      "ETC": "기타"
+    },
+    "phases": {
+      "input": "입력",
+      "plan_job": "구성안 작업",
+      "plan_review": "구성안 확인",
+      "copy_job": "문구·출력 작업",
+      "final_review": "최종 검토",
+      "revise_job": "수정 작업"
+    }
+  },
+  "projects": [
+    {
+      "id": "toneup-sunscreen-r1",
+      "kind": "example",
+      "label": "가상 예시 · 대화 모드 흐름 점검",
+      "product_name": "데일리 글로우 톤업 선크림",
+      "brand": "샘플랩 (구조 확인용 가상 브랜드)",
+      "category": "선케어",
+      "stage": "approved",
+      "skill_version": "v1",
+      "card_count": 5,
+      "updated_at": "2026-10-10T08:35:00.896Z",
+      "thumbnail": "projects/toneup-sunscreen-r1/png/card-01.png",
+      "summary": {
+        "coverage": 1,
+        "evidence_rate": 1,
+        "caution_total": 0,
+        "first_pass": true,
+        "total_minutes": 2.8,
+        "revision_rounds": 0
+      },
+      "eval": null
+    }
+  ]
+}
