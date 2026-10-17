@@ -63,6 +63,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run log -- <제품ID> --summary` | 단계별 시간, 수정 유형, 자동 수정, 1회 통과, 품질 지표 요약 (`--json` 가능) |
 | `npm run new-run -- <원본ID> <새ID>` | 같은 입력으로 실험용 제작 폴더 만들기 |
 | `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성 |
+| `npm run export` | 승인된 결과를 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json`, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`) |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
 미리보기: `products/<제품ID>/output/html/index.html`을 브라우저로 열면 전체 카드를 한 번에 볼 수 있어요.
@@ -92,6 +93,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   └── cardnews-render/SKILL.md      # 카드 출력 Skill: 템플릿 적용 ~ 재출력
 ├── prompts/                          # 평가 모드 작업 지시문 (plan, copy)
 ├── schemas/cards.schema.json         # 카드 구성 데이터 JSON 스키마 (형식 규격)
+├── schemas/web-data/                 # 웹 데이터(결과 보기 웹) JSON 스키마: index·project·timeline
 ├── config/
 │   ├── input-form.json               # 입력 양식 항목 정의 (검사·빈 양식·웹 입력 폼 공통)
 │   ├── input-safety.json             # 입력 자료 속 지시문 탐지 패턴
@@ -99,16 +101,20 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름)
 │   ├── caution-expressions.json      # 주의 표현 목록 (초안)
 │   ├── revision-types.json           # 수정 요청 유형 코드
+│   ├── export.json                   # 웹에 내보낼 제품 목록·출력 폴더 (npm run export)
 │   └── skill-version.json            # 규칙 버전
 ├── docs/
 │   ├── input-form.md                 # 입력 양식
 │   ├── card-data-spec.md             # 카드 구성 데이터(JSON) 규격
 │   ├── style-guide.md                # 카드 구성·문체 기준
 │   ├── event-log-spec.md             # 제작 기록·지표 규격
+│   ├── web-data-spec.md              # 웹 데이터 규격 (내보내기 → 결과 보기 웹)
+│   ├── examples/web-data/            # 웹 데이터 예시 (웹 화면 개발용)
 │   ├── project-context.md            # 교대 개발 공통 맥락 (용어·설계 이유·개발 작업 규칙)
 │   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
-├── scripts/                          # check-input, validate, render, log, compare, new-run, lib/
+├── scripts/                          # check-input, validate, render, log, compare, new-run, export, lib/
+├── web/public/data/                  # 내보낸 웹 데이터 (npm run export가 생성, 커밋함)
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
 ├── CONTRIBUTING.md                   # 협업 규칙
 └── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 대화 모드 실행 기록)
