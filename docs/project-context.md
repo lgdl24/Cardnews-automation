@@ -7,11 +7,11 @@ Claude Code·Codex가 프로젝트를 개발할 때 함께 읽는 기준이다. 
 | 용어 | 뜻 |
 |---|---|
 | 대화 모드 | 팀원이 터미널의 Claude Code와 대화하며 카드를 만드는 **제작 방식**. 구성안·최종 승인을 대화로 받는다. (2026-10-10 이전 문서의 "개발 모드"와 같음) |
-| 서비스 모드 | (2026-10-16 범위 제외) 관리자 웹이 Agent SDK로 작업 하나씩 실행하던 제작 방식. 관련 규칙·문서가 아직 남아 있지만 새 작업의 근거로 쓰지 않는다. |
+| 평가 모드 | 평가 실행기(`npm run eval`)가 `claude -p`로 작업 하나씩 실행하는 제작 방식. 질문하지 않고 끝내며 구성안 승인은 '평가'(`approved_by: eval`)로 기록. 10.10의 서비스 모드(관리자 웹 → Agent SDK)를 이름과 실행 주체만 바꿔 이어받음 |
 | 결과 보기 웹 | 로컬에서 만든 결과·구성안·원문 근거·제작 기록·지표를 보여주는 정적 사이트. 생성·승인·로그인 기능이 없다. |
 | 프로젝트 개발 | 이 저장소의 코드·웹·설정·문서를 고치는 작업. Claude Code·Codex가 교대로 하며 이 문서와 인수인계를 따른다. |
 
-카드 제작 중의 쓰기·명령 제한(`cards.json`만 쓰기 등)은 대화·서비스 모드에만 적용된다. 프로젝트 개발에서 `config/`·`templates/`·Skill처럼 제작 결과에 영향을 주는 파일을 바꾸면 [CLAUDE.md](../CLAUDE.md) '규칙 버전'에 따라 버전 변경 여부를 사람에게 묻는다.
+카드 제작 중의 쓰기·명령 제한(`cards.json`만 쓰기 등)은 대화·평가 모드에만 적용된다. 프로젝트 개발에서 `config/`·`templates/`·Skill처럼 제작 결과에 영향을 주는 파일을 바꾸면 [CLAUDE.md](../CLAUDE.md) '규칙 버전'에 따라 버전 변경 여부를 사람에게 묻는다.
 
 ## 목표와 범위
 
@@ -51,7 +51,7 @@ Claude Code·Codex가 프로젝트를 개발할 때 함께 읽는 기준이다. 
 | 입력·데이터 규격 | [입력 양식](input-form.md), [데이터 명세](card-data-spec.md), [입력 설정](../config/input-form.json), [JSON 스키마](../schemas/cards.schema.json) |
 | 문구·템플릿·디자인 | [문체](style-guide.md), [템플릿 기준](../config/templates.json), [테마](../config/theme.json), [출력 CSS](../templates/base.css), 관련 Figma 화면 |
 | 기록·지표·분석 | [이벤트 명세](event-log-spec.md), [수정 유형](../config/revision-types.json), [규칙 버전](../config/skill-version.json), [분석 코드](../scripts/lib/analysis.js) |
-| 결과 보기 웹 | 노션 설계 문서의 '웹 화면 설계'(V1~V4)·'데이터 명세'(웹 데이터 초안)·'시스템 아키텍처'. [service-mode.md](service-mode.md)·`prompts/`는 10.16 범위 제외(정리 예정). |
+| 결과 보기 웹 | 노션 설계 문서의 '웹 화면 설계'(V1~V4)·'데이터 명세'(웹 데이터 초안)·'시스템 아키텍처'. 웹 데이터 규격은 `docs/web-data-spec.md`. `prompts/`는 평가 모드 작업 지시문. |
 
 ## 외부 기획·디자인
 

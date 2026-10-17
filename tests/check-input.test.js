@@ -134,7 +134,7 @@ test('일반 제품 문구는 지시문으로 잡지 않는다 (오탐 확인)',
   }
 });
 
-// ── 수동 테스트용 입력 자료 (products/test-*): Claude Code·Agent SDK로 직접 돌려볼 때 쓰는 자료가 의도대로인지
+// ── 수동 테스트용 입력 자료 (products/test-*): 대화 모드·평가 모드로 직접 돌려볼 때 쓰는 자료가 의도대로인지
 test('products/test-input-missing은 입력 누락으로 멈춘다', () => {
   const report = checkInput('test-input-missing');
   assert.deepEqual(codes(report), ['INPUT_MISSING']);

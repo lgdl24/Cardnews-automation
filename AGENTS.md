@@ -12,11 +12,11 @@ Claude Code와 Codex는 같은 목표·완료 조건·인수인계로 이 저장
 
 | 요청 | 따를 것 |
 |---|---|
-| 작업 지시문이 `[서비스 모드]`로 시작 | [CLAUDE.md](CLAUDE.md)의 서비스 모드 규칙과 지정된 Skill만. 개발 문서(`docs/project-context.md`, `docs/handoff.md`)는 읽지도 고치지도 않는다. |
+| 작업 지시문이 `[평가 모드]`로 시작 | [CLAUDE.md](CLAUDE.md)의 평가 모드 규칙과 지정된 Skill만. 개발 문서(`docs/project-context.md`, `docs/handoff.md`)는 읽지도 고치지도 않는다. |
 | 특정 제품의 카드 제작·수정 | [CLAUDE.md](CLAUDE.md)의 대화 모드 절차. 콘텐츠는 [cardnews-content](.claude/skills/cardnews-content/SKILL.md), 출력은 [cardnews-render](.claude/skills/cardnews-render/SKILL.md)를 해당 단계에서 읽는다. Codex도 이 Skill 파일을 그대로 참조하고 사본을 만들지 않는다. |
 | 코드·웹·설정·문서 개발 (프로젝트 개발) | [공통 맥락](docs/project-context.md)의 '개발 작업 규칙'과 [CONTRIBUTING.md](CONTRIBUTING.md)의 이슈·브랜치·PR 흐름. |
 
-용어: **대화 모드**는 팀원이 터미널 대화로 카드를 만드는 제작 방식, **서비스 모드**는 관리자 웹이 Agent SDK로 실행하는 제작 방식, **프로젝트 개발**은 이 저장소의 코드·문서를 고치는 작업이다. 카드 제작 중의 쓰기 제한(`cards.json`만)은 프로젝트 개발에 적용하지 않고, 서비스 모드의 제한을 개발 지침으로 완화하지도 않는다.
+용어: **대화 모드**는 팀원이 터미널 대화로 카드를 만드는 제작 방식, **평가 모드**는 평가 실행기(`npm run eval`)가 `claude -p`로 작업 하나씩 실행하는 제작 방식, **프로젝트 개발**은 이 저장소의 코드·문서를 고치는 작업이다. 카드 제작 중의 쓰기 제한(`cards.json`만)은 프로젝트 개발에 적용하지 않고, 평가 모드의 제한을 개발 지침으로 완화하지도 않는다.
 
 ## 작업 흐름 요약
 

@@ -9,7 +9,7 @@
 
 | 파일 | 담당하는 내용 |
 |---|---|
-| `schemas/cards.schema.json` | 형식: 필드·타입·허용 값·템플릿별 copy 필드 (JSON Schema 2020-12). 웹 서버·Agent SDK에서 그대로 쓸 수 있어요 |
+| `schemas/cards.schema.json` | 형식: 필드·타입·허용 값·템플릿별 copy 필드 (JSON Schema 2020-12). 웹 데이터 스키마(`schemas/web-data/`)도 이 파일을 참조해요 |
 | `config/templates.json` | 템플릿별 글자 수 기준 (전체·한 줄·최대 줄 수) |
 | `scripts/validate.js` | 다른 파일과 비교하는 검사: 원문 인용 일치, 근거 ID 연결, 카드 수, 입력 양식의 이미지, 글자 수, 주의 표현 |
 
@@ -32,7 +32,7 @@
 |---|---|---|
 | `spec_version` | O | 규격 버전 |
 | `product_id` | O | 폴더 이름과 같아야 함 |
-| `stage` | O | `plan`(구성안) → `copy`(문구 생성 완료) → `approved`(최종 검토 완료). `approved`는 사람이 승인한 뒤에만 바꿈 (서비스 모드는 서버가 바꿈) |
+| `stage` | O | `plan`(구성안) → `copy`(문구 생성 완료) → `approved`(최종 검토 완료). `approved`는 사람이 승인한 뒤에만 바꿈 (평가 모드는 `copy`로 끝남) |
 | `sources` | O | 원문 근거 목록 |
 | `analysis` | O | 자료 분석 결과 |
 | `cards` | O | 카드 목록. 개수는 입력 양식의 카드 수와 같아야 함 |
@@ -102,4 +102,4 @@
 ## 관련 파일
 
 - 품질 지표(`output/quality.json`)와 제작 기록(`log.jsonl`) 형식: `docs/event-log-spec.md`
-- 웹에서는 이 파일을 그대로 쓰고, 카드별 버전·수정 요청은 DB에 따로 저장합니다. (`docs/service-mode.md`)
+- 결과 보기 웹에는 내보내기가 이 파일의 `sources`·`analysis`·`cards`를 그대로 옮기고 화면용 값을 더합니다. (`docs/web-data-spec.md`)
