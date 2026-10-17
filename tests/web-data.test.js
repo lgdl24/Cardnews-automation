@@ -4,19 +4,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const Ajv2020 = require('ajv/dist/2020');
 const { ROOT } = require('./helpers');
 const { STAGES, ROLES } = require('../scripts/validate');
 const { PHASES } = require('../scripts/lib/analysis');
+const { getAjv, schemaUrl } = require('../scripts/lib/web-schema');
 
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
 const EXAMPLE = 'docs/examples/web-data';
 
-const ajv = new Ajv2020({ allErrors: true });
-ajv.addFormat('date-time', /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/);
-ajv.addSchema(readJson('schemas/cards.schema.json'));
-for (const name of ['index', 'project', 'timeline']) ajv.addSchema(readJson(`schemas/web-data/${name}.schema.json`));
-const schemaUrl = (name) => `https://github.com/lgdl24/Cardnews-automation/schemas/web-data/${name}.schema.json`;
+const ajv = getAjv();
 const check = (name, data) => {
   const validate = ajv.getSchema(schemaUrl(name));
   assert.ok(validate(data), `${name}: ${JSON.stringify(validate.errors, null, 2)}`);

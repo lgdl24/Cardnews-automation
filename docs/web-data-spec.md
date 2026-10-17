@@ -41,18 +41,45 @@
 
 ## 내보내기 대상
 
-`npm run export`(다음 작업, 이슈 별도)가 아래 조건을 모두 만족하는 제품만 내보내고, 나머지는 이유를 출력합니다.
+`npm run export`가 아래 조건을 모두 만족하는 제품만 내보내고, 나머지는 `[제외] <제품ID> | <이유 코드> | <설명>`으로 출력합니다. 제외된 제품이 있어도 나머지는 내보냅니다.
+
+```
+npm run export                         # config/export.json의 제품 전체 → web/public/data/
+npm run export -- --only <제품ID>      # 그 제품만 다시 내보냄 (index.json의 다른 프로젝트는 유지)
+npm run export -- --out <폴더>         # 다른 폴더로 (확인용)
+```
 
 | 조건 | 안 될 때 이유 코드 |
 |---|---|
-| 내보낼 목록에 있음: 실제 제작·예시는 `config/export.json`(예정)에 적은 제품, 평가 실행은 평가 결과 목록(`docs/eval-spec.md`) | — |
+| 내보낼 목록(`config/export.json`)에 있음. 평가 실행은 평가 실행기가 평가 결과 목록(`docs/eval-spec.md`)에서 목록을 넘김 | — |
 | `input.md`·`cards.json`이 있고 `validate` 오류 0개 | `INPUT_MISSING`, `VALIDATE_ERROR` |
 | `stage`가 `approved` (평가 실행은 `copy` 이상 — 사람의 최종 승인이 없음) | `NOT_APPROVED` |
 | 모든 카드의 PNG가 있음 | `PNG_MISSING` |
 | 가장 최근 출력 보고서에 레이아웃 오류(`OVERFLOW`·이미지 로드 실패)가 없음 | `LAYOUT_ERROR` |
 
 - 이미지 사용 가능 여부가 '불가'인 제품은 입력 확인(`check`)에서 이미 막히므로 따로 보지 않습니다.
-- 카드별 재출력 보고서(`render-report-card-NN.json`)가 전체 출력 보고서보다 최근이면 그 카드는 재출력 결과를 씁니다.
+- 카드별 재출력 보고서(`render-report-card-NN.json`)가 전체 출력 보고서보다 최근이면 그 카드는 재출력 결과를 씁니다. 출력 보고서가 없는 카드도 `LAYOUT_ERROR`입니다.
+- 품질 지표는 `quality.json`을 읽지 않고 내보낼 때 다시 계산합니다(규칙이 바뀌어도 웹 수치가 최신).
+- 쓰기 전에 만든 파일을 모두 스키마(`schemas/web-data/`)로 검사하고, 하나라도 틀리면 **아무 파일도 쓰지 않고** `SCHEMA_ERROR`로 끝냅니다(종료 코드 1).
+- 내보낼 때 `projects/`와 `index.json`만 새로 씁니다. 평가 결과(`eval/`)는 평가 실행기가 관리하므로 지우지 않습니다.
+
+`config/export.json` 형식:
+
+```json
+{
+  "out_dir": "web/public/data",
+  "projects": [
+    { "id": "toneup-sunscreen-r1", "kind": "example", "label": "가상 예시 · 대화 모드 흐름 점검" }
+  ]
+}
+```
+
+| 필드 | 설명 |
+|---|---|
+| `id` | 제품ID (`products/<id>/`). 중복 불가 |
+| `kind` | `production`·`example`·`eval` |
+| `label` | 목록에 보이는 짧은 설명 (없으면 생략·`null`) |
+| `eval` | `kind: "eval"`일 때 `{input_id, run_id, repeat, variant}` (아래 '4. 평가 결과와의 경계') |
 
 ## 1. `index.json` — 프로젝트 목록 (V1)
 
@@ -149,7 +176,7 @@
 
 - [ ] V2 구성안·근거 화면에 더 필요한 필드가 있는지 (이용석)
 - [ ] PNG 묶음(ZIP)을 브라우저에서 만들지, 내보내기에서 파일로 만들지 — 초안은 브라우저에서 만듦
-- [ ] `config/export.json`의 형식 (내보내기 작업에서 정함)
+- [x] `config/export.json`의 형식 → '내보내기 대상' (#11)
 
 ## 버전
 
