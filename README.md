@@ -117,6 +117,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 ├── scripts/                          # check-input, validate, render, log, compare, new-run, export, lib/
 ├── web/                              # 결과 보기 웹 (React·TS·Vite 정적 사이트, 화면별 담당은 web/README.md)
 │   └── public/data/                  # 내보낸 웹 데이터 (npm run export가 생성, 커밋함)
+├── eval/inputs/                      # 평가 입력 세트 (input.md + 핵심 정보 체크리스트, 형식 초안: eval/inputs/README.md)
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
 ├── CONTRIBUTING.md                   # 협업 규칙
 └── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 대화 모드 실행 기록)

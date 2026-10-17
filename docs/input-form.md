@@ -30,6 +30,8 @@
 | `products/test-input-missing` | 입력 누락 테스트: 필수 항목·이미지 파일이 빠짐 → `INPUT_MISSING`, 작업 보류 |
 | `products/test-injection` | 지시문 테스트: 제품 설명·이미지 설명에 지시문 형태 문장 → `[경고]`, 카드 문구에 쓰이지 않아야 함 |
 
+평가 실행기가 쓰는 입력(정상·경계)은 `eval/inputs/`에 따로 있어요. 위 폴더는 스크립트 테스트용이에요.
+
 ## 빈 양식
 
 ```markdown

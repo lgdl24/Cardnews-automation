@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-17 | Claude | #18 · `feat/18-eval-inputs` | **평가 입력 4개 (초안 형식)**: `eval/inputs/<입력ID>/`(input.md·images·checklist.json). 가상 정상 `eval-mini-humidifier`(수치)·`eval-oat-drink`(식품 효능), 경계 `eval-input-missing`(5종 누락)·`eval-injection`(지시문 5개 탐지 + 탐지 안 되는 1개). `tests/eval-inputs.test.js`가 인용·기대 동작 확인. 형식은 `docs/eval-spec.md`(이용석) 확정 뒤 맞춤. 제품 A·B는 실제 자료 대기 |
 | 2026-10-17 | Claude | #17 · `feat/17-timeline` | **V2 제작 과정 완성**: 요약 숫자, 단계별 시간 막대(AI `#C8664E` / 사람 `#3B78C4`, 색약 구분 검증), 품질 지표, 작업별 결과 표, 제작 기록 타임라인(경과 시간, 검증 오류 코드·카드, 승인 주체 사람/평가, 수정 요청 유형 칩·메모). 단계 순서·처리 주체는 `scripts/lib/analysis.js`와 같게 화면 코드에 둠. 공통 변경: `formatMinutes`가 1분 미만을 초로, 10분 미만을 '분 초'로 표시, 표 스타일을 `components.css`로 이동 |
 | 2026-10-17 | Claude | #15 · `feat/15-card-result` | **V2 카드 결과 완성**: 크게 보기(`<dialog>`, 주소 `?card=N`으로 열림·공유, ←·→·Esc·바깥 클릭), PNG 개별 받기(`<제품ID>-card-NN.png`), 전체 ZIP(브라우저에서 `fflate`로 묶음, 다시 압축하지 않음), 이미지 출처 표(쓰인 카드 포함), 겹침 경고. 공통 변경: `web/src/lib/`(download·zip), `types.ts`의 `layout.overlaps` 모양(`{target, px}`) |
 | 2026-10-17 | Claude | #13 · `feat/13-web-skeleton` | **결과 보기 웹 골격**: `web/`(React 19·TS·Vite 7·React Router 7, 별도 `package.json`). 주소 V1 `/` · V2 `/projects/:id`(탭: 카드 결과 · `plan` 구성안·근거 · `timeline` 제작 과정) · V3 `/eval` · V4 `/compare`. 화면별 폴더 `web/src/screens/`, [공통] `data/`(타입·불러오기)·`components/`·`styles/`는 두 사람 리뷰. 아직 없는 화면은 `ScreenPlaceholder`. 루트 명령 `npm run web:install`·`web:dev`·`web:build`. 상세 `web/README.md` |
@@ -17,17 +18,16 @@
 | 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **분석 방향 변경**: 실사용자가 없어 사용 데이터 분석·블라인드 평가는 제외. **평가용 입력 세트 12개**(정상 8·경계 4) + **핵심 정보 체크리스트**를 **평가 실행기**(`npm run eval`, 예정, `claude -p` 사용)로 반복 실행해 품질·일관성·안전성·규칙 v1/v2를 비교. 구성안 승인은 '평가' 자동 승인으로 기록. 직접 제작 시간 비교는 사례로만. 상세: `project-context.md` '평가와 미결정', 노션 [데이터 분석 설계](https://app.notion.com/p/3f56bcfa1f8a81f68cc3ee29a152453f) |
 | 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **구조 변경**: 카드 제작은 **로컬 Claude Code(대화 모드)만**, 웹은 **결과 보기 전용 정적 사이트**(React·TypeScript, 배포 링크). Agent SDK 서버 실행·관리자 로그인·DB·Docker·API 비용·토큰/비용 지표(A3)는 범위 제외. `CLAUDE.md`·Skill·`docs/service-mode.md`·`prompts/`의 서비스 모드 내용은 아직 남아 있으나 **새 작업의 근거로 쓰지 않는다** (정리 작업 예정) |
 | 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **역할 분담 (기능·화면 단위)**: 이규동 = 웹 골격·V1·V2 카드 결과·V2 제작 과정, `export`·`eval`·배포·스크립트·템플릿 / 이용석 = V2 구성안·근거·V3·V4, 핵심 정보 포함률·평가 집계·주의 표현, `CLAUDE.md`·Skill. 평가 입력은 6개씩. 연결 규격 3개(카드 데이터·웹 데이터·평가 결과)로만 연결. PR 리뷰어는 상대(트래커 '리뷰'), 병합은 이규동 (`CONTRIBUTING.md`). 담당 표: `README.md`, 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761) 7장 |
-| 2026-10-10 | Claude | #1 · `docs/1-agent-handoff` | **용어 변경**: 카드 제작의 "개발 모드" → **"대화 모드"**. Skill의 `[개발]` 표시 → `[대화]`. "프로젝트 개발"은 코드·문서 작업을 뜻함 |
 
 ## 현재 작업
 
 - 확인일·작성 도구: 2026-10-17 · Claude.
-- 이슈·PR: [#17](https://github.com/lgdl24/Cardnews-automation/issues/17) · PR은 push 후 생성(기준 브랜치 `feat/15-card-result`). 리뷰 이용석. **`main` 병합은 이규동.**
-- 상태: 완료 (PR 리뷰 대기). 쌓인 PR: #14(웹 골격, #8 포함) → #16(카드 결과) → 이 PR. 앞에서부터 병합하고 base를 `main`으로 바꾼다.
-- 목표·완료 조건: V2 제작 과정 탭 완성. 빌드 통과, 실제 기록과 오류·수정 요청·평가 승인이 있는 기록 모두 표시 확인.
-- 작업 브랜치: `feat/17-timeline` · 기준 `feat/15-card-result`(`8118638`).
-- 변경 파일: `web/src/screens/project-detail/tabs/`(TimelineTab·timeline.css·tabs.css), `web/src/components/components.css`(표), `web/src/data/format.ts`(시간 표시), `web/README.md`, 이 문서.
-- 다음: 평가 입력 4개(#18).
+- 이슈·PR: [#18](https://github.com/lgdl24/Cardnews-automation/issues/18) · PR은 push 후 생성(기준 브랜치 `feat/17-timeline`). 리뷰 이용석(평가 세트·체크리스트 형식 담당). **`main` 병합은 이규동.**
+- 상태: 완료 (PR 리뷰 대기). 쌓인 PR: #14(웹 골격, #8 포함) → #16(카드 결과) → #19(제작 과정) → 이 PR. 앞에서부터 병합하고 base를 `main`으로 바꾼다.
+- 목표·완료 조건: 이규동 몫 평가 입력 중 지금 만들 수 있는 4개와 체크리스트 초안. `npm test`로 인용·기대 동작 확인.
+- 작업 브랜치: `feat/18-eval-inputs` · 기준 `feat/17-timeline`(`b8e561e`). 웹과 관계없지만 `package.json` test 줄이 겹쳐서 이어 쌓음.
+- 변경 파일: `eval/inputs/`(새로, README 포함), `tests/eval-inputs.test.js`, `package.json`(test 목록), `README.md`, `docs/input-form.md`, 이 문서.
+- 실행 중인 작업: 없음.
 
 ## 완료한 내용과 결정
 
@@ -46,11 +46,14 @@
 - 웹 글꼴은 Pretendard 가변 폰트의 글자 범위별 파일(dynamic subset)을 써서 쓰인 글자 묶음만 내려받는다.
 - ZIP은 내보내기에서 파일로 만들지 않고 브라우저에서 만든다(규격 초안대로, 데이터 폴더가 커지지 않음). 리뷰에서 확정.
 - 크게 보기 상태는 주소(`?card=N`)에 둔다: 링크로 특정 카드를 공유하고, 뒤로 가기로 닫힘.
+- 평가 입력은 `products/`가 아니라 `eval/inputs/`에 둔다(제작 폴더와 섞이지 않게, 실행기가 임시 폴더로 복사해 사용). 기존 `products/test-*`는 스크립트 테스트용으로 남긴다.
+- 지시문 입력에는 탐지 패턴에 일부러 안 걸리는 지시 1개(주의사항의 최상급 문구 요청)를 넣었다: 패턴이 놓쳐도 Claude가 따르지 않는지 보려고.
 - 차트 색은 dataviz 검증기(명도·채도·색약 구분·대비)를 통과한 값만 쓰고, 색만으로 구분하지 않게 글자(AI/사람)도 함께 적는다.
 
 ## 검증
 
 - `npm test` 88개 통과. `npm run web:build`(타입 검사 + 빌드) 통과, `npm audit` 0건.
+- #18: `npm test` 91개 통과(새 `tests/eval-inputs.test.js` 3개). 입력 확인 결과: 정상 2개 오류·경고 0, 입력 누락 `INPUT_MISSING` 5개, 지시문 경고 5개.
 - #17: Playwright로 실제 기록(이벤트 12개·단계 4칸)과, 데이터를 바꿔 검증 오류·평가 자동 승인·카드 수정 요청(유형 칩·메모)·수정 작업 중단이 있는 기록을 표시 확인. 모바일 390px. 콘솔 오류 없음.
 - #15: Playwright로 크게 보기(클릭·주소로 열기·←→·마지막 카드 다음 버튼 비활성·Esc·바깥 클릭 닫기), PNG 받기 파일명·내용, ZIP 파일명과 안의 PNG 5개가 원본과 같은지, 겹침 경고(데이터를 바꿔 확인), 모바일 390px 화면 확인. 콘솔 오류 없음.
 
@@ -66,12 +69,12 @@
 
 - 멘토 확인: 결과 보기 웹으로 '웹으로 구현' 피드백을 충족하는지, 웹 공개 범위, 실제 제품 자료 제공 시점, 평가 기준 (노션 '1차 멘토링 — 확인할 질문').
 - 웹 데이터 규격 v0.1 초안 작성됨(#7). 이용석 리뷰에서 V2 구성안·근거에 더 필요한 필드, ZIP 생성 위치를 정함. 수정 요청·주의 표현이 있는 예시는 톤업 선크림 첫 제작 뒤 추가.
-- 평가 결과·체크리스트 규격은 아직 없음. `docs/eval-spec.md`로 10.24까지 초안(이용석) → 이규동 승인.
+- 평가 결과·체크리스트 규격은 아직 없음. `docs/eval-spec.md`로 10.24까지 초안(이용석) → 이규동 승인. `eval/inputs/`의 폴더·`checklist.json` 형식(#18)은 초안이라 규격에 맞춰 고친다.
 - 배포처(Vercel 예정)와 공개 링크 접근 제한 여부는 미정. 배포 계정 연결은 사람이 한다(설정값은 `web/README.md` '배포').
 - 평가 실행기: `claude -p`의 허용 도구 제한·결과 형식(`--output-format json`)·실행 시간을 첫 구현 때 확인. 평가 결과 파일 위치·형식과 평가 세트 형식(`input.md` + 체크리스트)은 `docs/eval-spec.md`를 따름.
 
 ## 다음 행동
 
-1. 이규동: 웹 골격 PR 리뷰 반영 → 배포처 정하고 배포 링크(10.28) → 평가 실행기(`npm run eval`), 평가 입력 6개 → V2 제작 과정.
+1. 이규동: 웹 골격 PR 리뷰 반영 → 배포처 정하고 배포 링크(10.28) → 평가 실행기(`npm run eval`, eval-spec 확정 후) → 제품 A·B 평가 입력(실제 자료 받으면).
 2. 이용석: 저장소 받아 `npm install`·`npm test`, 실제 톤업 선크림 자료·이미지(`npm run new-product`) → 주의 표현 목록·검사 기준 → 평가 결과·체크리스트 규격 초안(10.24) → 대화 모드 첫 제작 → V2 구성안·근거 화면(`web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx`, `npm run web:dev`), 핵심 정보 포함률 지표, 평가 입력 6개 → v1 평가 분석·v2 규칙, 평가 집계·V3 대시보드.
 3. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
