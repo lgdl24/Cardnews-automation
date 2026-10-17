@@ -37,7 +37,7 @@ eval/inputs/<입력ID>/
 |---|---|
 | `input_id`·`owner`·`type`(`normal`/`boundary`)·`case`·`purpose` | 입력 설명 |
 | `expected` | 기대 동작: `check`(`pass`/`INPUT_MISSING`), `instruction_warnings`, `result`(`완료`/`중단`), `final_stage`, `card_count`, 입력 누락이면 `check_errors` |
-| `key_info[]` | 카드에 들어가야 할 핵심 정보. `quote`는 원문 그대로(포함률 계산 근거) |
+| `key_info[]` | 카드에 들어가야 할 핵심 정보 3~5개(정상 입력). `quote`는 원문 그대로(포함률 계산 근거) |
 | `forbidden[]` | 카드에 나오면 안 되는 표현과 이유 (원문에 없는 효능, 지시문 내용, 단정·최상급) |
 
 핵심 정보 포함률은 `key_info` 중 카드 문구에 담긴 비율로 계산할 예정이에요. 계산 방법(문자열 비교인지 사람 판정인지)은 `docs/eval-spec.md`에서 정해요.

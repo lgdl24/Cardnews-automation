@@ -35,7 +35,7 @@ test('핵심 정보의 인용은 원문(# 제품 정보)에 그대로 있다', (
       seen.add(k.id);
       assert.ok(input.productText.includes(k.quote), `${id} ${k.id}: "${k.quote}"가 원문에 없어요`);
     }
-    if (c.type === 'normal') assert.ok(c.key_info.length >= 3, `${id}: 정상 입력은 핵심 정보 3개 이상`);
+    if (c.type === 'normal') assert.ok(c.key_info.length >= 3 && c.key_info.length <= 5, `${id}: 정상 입력은 핵심 정보 3~5개 (노션 평가 설계)`);
   }
 });
 
