@@ -10,11 +10,11 @@
 //   node scripts/log.js <제품ID> --summary [--json]
 //
 // validate_result는 validate·render 스크립트가 자동으로 남깁니다.
-// 서비스 모드(CARDNEWS_MODE=service)에서는 서버가 작업·승인·수정 이벤트를 기록하므로 이 명령은 기록하지 않습니다.
+// 평가 모드(CARDNEWS_MODE=eval)에서는 평가 실행기가 작업·승인 이벤트를 기록하므로 이 명령은 기록하지 않습니다.
 const fs = require('fs');
 const { paths, readJson, requireProductId } = require('./lib/common');
 const {
-  EVENTS, JOB_KINDS, isServiceMode, currentJob, startJob, endJob, appendEvent, readEvents,
+  EVENTS, JOB_KINDS, isEvalMode, currentJob, startJob, endJob, appendEvent, readEvents,
 } = require('./lib/events');
 const { summarize, PHASES } = require('./lib/analysis');
 const { pct } = require('./lib/metrics');
@@ -97,8 +97,8 @@ if (opts.summary) {
 const event = argv.find((a, i) => i > 0 && !a.startsWith('--') && !argv[i - 1].startsWith('--'));
 if (!EVENTS.includes(event)) fail(`이벤트: ${EVENTS.join(', ')}\n요약: node scripts/log.js <제품ID> --summary`);
 if (event === 'validate_result') fail('validate_result는 validate·render 스크립트가 자동으로 기록해요');
-if (isServiceMode()) {
-  console.log('서비스 모드에서는 서버가 작업·승인·수정 이벤트를 기록해요. 기록하지 않았어요.');
+if (isEvalMode()) {
+  console.log('평가 모드에서는 평가 실행기가 작업·승인 이벤트를 기록해요. 기록하지 않았어요.');
   process.exit(0);
 }
 
