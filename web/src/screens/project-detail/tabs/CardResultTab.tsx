@@ -1,35 +1,162 @@
 // V2 카드 결과 — 담당 이규동
 // 읽는 데이터: project.json cards[].png · layout, images
-// 골격 단계: 카드 미리보기만. 크게 보기·PNG/ZIP 다운로드·이미지 출처는 'V2 카드 결과' 작업에서
+// 노션 '웹 화면 설계' V2 · 카드 결과: 카드 미리보기, 크게 보기, PNG 개별 다운로드, 묶음(ZIP) 다운로드, 이미지 출처
+import { useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { projectFileUrl } from '../../../data/load';
 import { label } from '../../../data/format';
+import type { Card, Labels, Project } from '../../../data/types';
+import { cardFileName, downloadBlob } from '../../../lib/download';
+import { buildZip } from '../../../lib/zip';
 import { useProjectContext } from '../ProjectDetailPage';
-import { ScreenPlaceholder } from '../../../components/ScreenPlaceholder';
+import { CardViewer } from './CardViewer';
 import './tabs.css';
+
+/** 크게 보기 상태는 주소(?card=3)에 둬서 링크로 공유·뒤로 가기가 됨 */
+function useOpenCard(cards: Card[]) {
+  const [params, setParams] = useSearchParams();
+  const no = Number(params.get('card'));
+  const index = cards.findIndex((c) => c.no === no);
+  const open = (n: number | null, replace = false) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (n === null) next.delete('card');
+        else next.set('card', String(n));
+        return next;
+      },
+      { replace, preventScrollReset: true },
+    );
+  return { index: index >= 0 ? index : null, open };
+}
 
 export function CardResultTab() {
   const { project, labels } = useProjectContext();
+  const { index, open } = useOpenCard(project.cards);
+  const warned = project.cards.filter((c) => c.layout.overlaps.length > 0).length;
+
   return (
     <>
-      <ul className="card-strip" aria-label="카드 미리보기">
+      <div className="result-toolbar">
+        <p className="result-summary">
+          카드 {project.cards.length}장 · 1080×1080 PNG
+          {warned > 0 && <span className="result-warn"> · 겹침 주의 {warned}장</span>}
+        </p>
+        <ZipButton project={project} />
+      </div>
+
+      <ul className="card-grid" aria-label="카드 목록">
         {project.cards.map((c) => (
           <li key={c.no}>
-            <img src={projectFileUrl(project.id, c.png)} alt={`${c.no}번 카드 (${label(labels.roles, c.role)})`} loading="lazy" width={1080} height={1080} />
-            <span className="card-strip-no">
-              {c.no} · {label(labels.roles, c.role)}
-            </span>
+            <CardTile project={project} card={c} labels={labels} onOpen={() => open(c.no)} />
           </li>
         ))}
       </ul>
-      <div className="section">
-        <ScreenPlaceholder
-          title="V2 카드 결과"
-          owner="이규동"
-          folder="screens/project-detail/tabs/CardResultTab.tsx"
-          reads="project.json — cards[].png · layout, images"
-          todo={['카드 크게 보기 (앞뒤 넘기기)', 'PNG 개별 다운로드, 묶음(ZIP) 다운로드(권장)', '이미지 출처 표기 (images[].source)', '레이아웃 겹침 경고 표시 (layout.overlaps)']}
+
+      <ImageSources project={project} labels={labels} />
+
+      {index !== null && (
+        <CardViewer
+          project={project}
+          labels={labels}
+          index={index}
+          onMove={(i) => open(project.cards[i]!.no, true)}
+          onClose={() => open(null)}
         />
-      </div>
+      )}
     </>
+  );
+}
+
+function CardTile({ project, card, labels, onOpen }: { project: Project; card: Card; labels: Labels; onOpen: () => void }) {
+  const src = projectFileUrl(project.id, card.png);
+  const role = label(labels.roles, card.role);
+  return (
+    <figure className="card-tile">
+      <button type="button" className="card-tile-image" onClick={onOpen} aria-label={`${card.no}번 카드 크게 보기`}>
+        <img src={src} alt={`${card.no}번 카드 (${role})`} loading="lazy" width={1080} height={1080} />
+      </button>
+      <figcaption className="card-tile-caption">
+        <span className="card-tile-title">
+          <strong>{card.no}</strong> {role}
+          <span className="muted"> · {label(labels.templates, card.template)}</span>
+        </span>
+        <a className="text-button" href={src} download={cardFileName(project.id, card.no)}>
+          PNG 받기
+        </a>
+      </figcaption>
+      {card.layout.overlaps.length > 0 && (
+        <p className="card-tile-warn" title={card.layout.overlaps.map((o) => `${o.target} ${o.px}px`).join(', ')}>
+          글자가 이미지와 겹쳐요 ({Math.max(...card.layout.overlaps.map((o) => o.px))}px)
+        </p>
+      )}
+    </figure>
+  );
+}
+
+function ZipButton({ project }: { project: Project }) {
+  const [state, setState] = useState<'idle' | 'working' | 'error'>('idle');
+  const run = async () => {
+    setState('working');
+    try {
+      const blob = await buildZip(project.cards.map((c) => ({ name: cardFileName(project.id, c.no), url: projectFileUrl(project.id, c.png) })));
+      downloadBlob(blob, `${project.id}-cards.zip`);
+      setState('idle');
+    } catch {
+      setState('error');
+    }
+  };
+  return (
+    <div className="zip-action">
+      <button type="button" className="button" onClick={run} disabled={state === 'working'}>
+        {state === 'working' ? '묶는 중…' : `전체 받기 (ZIP, ${project.cards.length}장)`}
+      </button>
+      {state === 'error' && (
+        <span className="zip-error" role="alert">
+          묶음을 만들지 못했어요. 카드별로 받아 주세요.
+        </span>
+      )}
+    </div>
+  );
+}
+
+// 입력 이미지의 설명·출처·사용 가능 여부와 쓰인 카드 (이미지 원본 파일은 공개하지 않음)
+function ImageSources({ project, labels }: { project: Project; labels: Labels }) {
+  if (project.images.length === 0) return null;
+  return (
+    <section className="section" aria-labelledby="image-sources">
+      <h2 className="section-title" id="image-sources">
+        이미지 출처
+      </h2>
+      <div className="table-wrap">
+        <table className="table table-sources">
+          <thead>
+            <tr>
+              <th scope="col">파일</th>
+              <th scope="col">설명</th>
+              <th scope="col">출처</th>
+              <th scope="col">사용</th>
+              <th scope="col">쓰인 카드</th>
+            </tr>
+          </thead>
+          <tbody>
+            {project.images.map((img) => {
+              const used = project.cards.filter((c) => c.image === img.file);
+              return (
+                <tr key={img.file}>
+                  <td data-label="파일">
+                    <code>{img.file}</code>
+                  </td>
+                  <td data-label="설명">{img.desc}</td>
+                  <td data-label="출처">{img.source}</td>
+                  <td data-label="사용">{img.usage}</td>
+                  <td data-label="쓰인 카드">{used.length ? used.map((c) => `${c.no}번 ${label(labels.roles, c.role)}`).join(', ') : '—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

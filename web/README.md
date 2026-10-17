@@ -31,6 +31,8 @@ npm run web:build        # 타입 검사 + 빌드 → web/dist/
 | `/eval` | V3 평가 대시보드 | 이용석 | `src/screens/eval-dashboard/` |
 | `/compare?a=<id>&b=<id>` | V4 버전 비교 (권장) | 이용석 | `src/screens/version-compare/` |
 
+V2 카드 결과(#15)는 크게 보기(`?card=3`으로 공유, ←·→·Esc), PNG 개별·ZIP 묶음 다운로드(브라우저에서 만듦, `src/lib/zip.ts`), 이미지 출처 표, 글자-이미지 겹침 경고까지 있습니다.
+
 아직 만들지 않은 화면은 `ScreenPlaceholder`(담당·읽는 데이터·할 일)가 자리를 잡고 있습니다. 담당자가 자기 파일에서 이 부분을 실제 화면으로 바꿉니다.
 
 ## 폴더
@@ -43,11 +45,12 @@ web/
 │   ├── data/           # [공통] 웹 데이터 타입·불러오기·표시 형식
 │   ├── components/     # [공통] 헤더·하단·배지·지표 카드·탭·상태 표시
 │   ├── styles/         # [공통] 색상·글꼴·페이지 틀
+│   ├── lib/            # [공통] 내려받기·ZIP 만들기
 │   └── screens/        # 화면별 폴더 (담당자가 자기 폴더만 고침)
 └── vercel.json         # 정적 배포 설정 (주소 새로고침 시 index.html)
 ```
 
-- **[공통] 파일**(`data/`, `components/`, `styles/`, `App.tsx`)을 바꿀 때는 PR에 적고 두 사람이 함께 리뷰합니다. 화면 폴더는 담당자가 고치고 상대가 리뷰합니다.
+- **[공통] 파일**(`data/`, `components/`, `styles/`, `lib/`, `App.tsx`)을 바꿀 때는 PR에 적고 두 사람이 함께 리뷰합니다. 화면 폴더는 담당자가 고치고 상대가 리뷰합니다.
 - 화면 전용 스타일은 화면 폴더의 `.css`에 둡니다. 색상은 `styles/global.css`의 변수(`--color-*`, `--stage-*`)를 씁니다.
 - 탭 화면은 `useProjectContext()`로 `project`(project.json)와 `labels`(index.json의 이름표)를 받습니다. `timeline.json`은 `useTimeline(id)`로 따로 불러옵니다.
 - 화면에 보이는 이름(단계·역할·템플릿·수정 유형·단계 이름)은 코드에 적지 않고 `labels`에서 꺼냅니다(`label(labels.roles, card.role)`).

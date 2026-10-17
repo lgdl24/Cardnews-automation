@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-17 | Claude | #15 · `feat/15-card-result` | **V2 카드 결과 완성**: 크게 보기(`<dialog>`, 주소 `?card=N`으로 열림·공유, ←·→·Esc·바깥 클릭), PNG 개별 받기(`<제품ID>-card-NN.png`), 전체 ZIP(브라우저에서 `fflate`로 묶음, 다시 압축하지 않음), 이미지 출처 표(쓰인 카드 포함), 겹침 경고. 공통 변경: `web/src/lib/`(download·zip), `types.ts`의 `layout.overlaps` 모양(`{target, px}`) |
 | 2026-10-17 | Claude | #13 · `feat/13-web-skeleton` | **결과 보기 웹 골격**: `web/`(React 19·TS·Vite 7·React Router 7, 별도 `package.json`). 주소 V1 `/` · V2 `/projects/:id`(탭: 카드 결과 · `plan` 구성안·근거 · `timeline` 제작 과정) · V3 `/eval` · V4 `/compare`. 화면별 폴더 `web/src/screens/`, [공통] `data/`(타입·불러오기)·`components/`·`styles/`는 두 사람 리뷰. 아직 없는 화면은 `ScreenPlaceholder`. 루트 명령 `npm run web:install`·`web:dev`·`web:build`. 상세 `web/README.md` |
 | 2026-10-17 | Claude | #11 · `feat/11-export` | **`npm run export`**: `config/export.json`의 제품을 웹 데이터(`web/public/data/`, 커밋함)로 내보냄. 조건(검증 오류 0·승인·PNG·레이아웃) 미달은 이유 코드로 제외, 쓰기 전 스키마 검사, `eval/`은 지우지 않음. 코드 `scripts/export.js`·`scripts/lib/web-data.js`·`scripts/lib/web-schema.js`, 테스트 `tests/export.test.js`(결과가 `docs/examples/web-data/`와 같은지 확인). #7 위에 쌓은 브랜치 |
 | 2026-10-16 | Claude | #9 · `chore/9-remove-service-mode` | **서비스 모드 → 평가 모드**: `[평가 모드]` 지시문으로 평가 실행기(`npm run eval`, `claude -p`)가 작업 하나씩 실행. 질문 없이 끝내고 결과 보고 형식으로 답함, `log.js`는 기록 안 함(`CARDNEWS_MODE=eval`), 구성안 승인은 실행기가 `approved_by: eval`로 기록. `docs/service-mode.md`·`.env.example`·`prompts/revise.md` 삭제. 관리자 웹·Agent SDK 서버는 규칙에서 없어짐 |
@@ -17,16 +18,15 @@
 | 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **역할 분담 (기능·화면 단위)**: 이규동 = 웹 골격·V1·V2 카드 결과·V2 제작 과정, `export`·`eval`·배포·스크립트·템플릿 / 이용석 = V2 구성안·근거·V3·V4, 핵심 정보 포함률·평가 집계·주의 표현, `CLAUDE.md`·Skill. 평가 입력은 6개씩. 연결 규격 3개(카드 데이터·웹 데이터·평가 결과)로만 연결. PR 리뷰어는 상대(트래커 '리뷰'), 병합은 이규동 (`CONTRIBUTING.md`). 담당 표: `README.md`, 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761) 7장 |
 | 2026-10-10 | Claude | #1 · `docs/1-agent-handoff` | **용어 변경**: 카드 제작의 "개발 모드" → **"대화 모드"**. Skill의 `[개발]` 표시 → `[대화]`. "프로젝트 개발"은 코드·문서 작업을 뜻함 |
 | 2026-10-10 | Claude | #1 · `docs/1-agent-handoff` | **작업 흐름**: 이슈 → `<종류>/<이슈번호>-<설명>` 브랜치 → 커밋 `(#번호)` → push → PR. `main` 직접 push 금지, 병합은 관리자 결정 (`CONTRIBUTING.md`) |
-| 2026-10-10 | Claude | #1 · `docs/1-agent-handoff` | `CLAUDE.md` 맨 위에 '요청 종류' 표 추가. 서비스 실행용 작업 폴더에는 `AGENTS.md`·개발 문서를 복사하지 않음 (`docs/service-mode.md`) |
 
 ## 현재 작업
 
 - 확인일·작성 도구: 2026-10-17 · Claude.
-- 이슈·PR: [#13](https://github.com/lgdl24/Cardnews-automation/issues/13) · PR은 push 후 생성. 리뷰 이용석(공통 부품·타입은 함께 확인). **`main` 병합은 이규동.**
-- 상태: 완료 (PR 리뷰 대기). 배포 링크(10.28)는 배포처 결정 후.
-- 목표·완료 조건: 각 화면 담당이 자기 폴더에서 바로 개발할 수 있는 골격. 타입 검사·빌드 통과, 예시 데이터로 V1·V2 탭 이동 확인.
-- 작업 브랜치: `feat/13-web-skeleton` · `feat/7-web-data-spec`(#8, #12 포함 `1a2728d`)에 `main`(`fe83ee7`, #10)을 합친 위에서 작업. 그래서 이 PR에는 #8의 커밋도 들어 있고, `README.md`·이 문서의 #8↔#10 충돌은 여기서 정리됨.
-- 변경 파일: `web/`(새로), 루트 `package.json`(web 명령), `.gitignore`(`web/dist/`), `README.md`, `docs/web-data-spec.md`(타입 위치), 이 문서.
+- 이슈·PR: [#15](https://github.com/lgdl24/Cardnews-automation/issues/15) · PR은 push 후 생성(기준 브랜치 `feat/13-web-skeleton`, #14 병합 뒤 `main`). 리뷰 이용석. **`main` 병합은 이규동.**
+- 상태: 완료 (PR 리뷰 대기). 이전 작업 #13(웹 골격, PR #14)도 리뷰 대기.
+- 목표·완료 조건: V2 카드 결과 탭의 크게 보기·PNG/ZIP 다운로드·이미지 출처. 빌드 통과, 브라우저에서 동작과 ZIP 내용 확인.
+- 작업 브랜치: `feat/15-card-result` · 기준 `feat/13-web-skeleton`(`659c8d9`).
+- 변경 파일: `web/src/screens/project-detail/tabs/`(CardResultTab·CardViewer·tabs.css), `web/src/lib/`(새로), `web/src/data/types.ts`(overlaps 모양), `web/package.json`(`fflate` 추가), `web/README.md`, `docs/web-data-spec.md`(ZIP 항목), 이 문서.
 - 실행 중인 작업: 없음.
 
 ## 완료한 내용과 결정
@@ -44,16 +44,19 @@
 - 웹은 루트와 따로 `web/package.json`을 둔다(루트 스크립트 의존성과 섞지 않음). 버전은 보안 권고가 해결된 판으로 고정(`npm audit` 0건).
 - 웹 주소는 `BrowserRouter` 방식이라 정적 호스팅에서 새로고침용 설정이 필요하다(Vercel은 `web/vercel.json`). 데이터 파일이 없으면 HTML이 돌아오는 호스팅도 있어 JSON이 아니면 '없음'으로 처리.
 - 웹 글꼴은 Pretendard 가변 폰트의 글자 범위별 파일(dynamic subset)을 써서 쓰인 글자 묶음만 내려받는다.
+- ZIP은 내보내기에서 파일로 만들지 않고 브라우저에서 만든다(규격 초안대로, 데이터 폴더가 커지지 않음). 리뷰에서 확정.
+- 크게 보기 상태는 주소(`?card=N`)에 둔다: 링크로 특정 카드를 공유하고, 뒤로 가기로 닫힘.
 
 ## 검증
 
-- `npm test` 88개 통과. `npm run web:build`(타입 검사 + 빌드) 통과. 빌드 결과를 `vite preview`로 띄워 Playwright로 V1(데스크톱·모바일 390px)·V2 세 탭·없는 제품·V3·V4 화면 확인, 콘솔 오류 없음.
+- `npm test` 88개 통과. `npm run web:build`(타입 검사 + 빌드) 통과, `npm audit` 0건.
+- #15: Playwright로 크게 보기(클릭·주소로 열기·←→·마지막 카드 다음 버튼 비활성·Esc·바깥 클릭 닫기), PNG 받기 파일명·내용, ZIP 파일명과 안의 PNG 5개가 원본과 같은지, 겹침 경고(데이터를 바꿔 확인), 모바일 390px 화면 확인. 콘솔 오류 없음.
 
 ## 프로젝트 기준 상태 (2026-10-16)
 
 - v0.5: 입력 확인·데이터/근거/글자 수 검증·HTML/PNG 출력·제작 기록·지표·자동 테스트가 있음. 가상 톤업 선크림으로 대화 모드 전체 흐름 확인(`products/toneup-sunscreen-r1`).
 - 실제 제품 자료로 하는 첫 제작은 자료 대기. 가상 결과와 Figma 예시 수치를 성과로 일반화하지 않음.
-- 내보내기(`npm run export`, #11)와 결과 보기 웹 골격(#13)이 있음. V1은 기본 목록, V2는 탭 틀·카드 미리보기·요약 숫자까지. 평가 실행기(`npm run eval`)는 아직 없음. `prompts/`는 평가 모드 지시문(plan·copy).
+- 내보내기(`npm run export`, #11)와 결과 보기 웹 골격(#13)이 있음. V1은 기본 목록, V2 카드 결과는 완성(#15), 제작 과정은 요약 숫자까지. 평가 실행기(`npm run eval`)는 아직 없음. `prompts/`는 평가 모드 지시문(plan·copy).
 - Mac 작업 폴더(`~/git/Cardnews-automation`)에는 `node_modules/`가 없을 수 있음. 테스트 전에 `npm install`.
 - 노션은 2026-10-16 기준으로 갱신됨. Figma '02 웹 와이어프레임'(W1~W8)은 10.10 관리자 웹 기준이라 노션 '웹 화면 설계'(V1~V4)가 우선.
 
@@ -67,6 +70,6 @@
 
 ## 다음 행동
 
-1. 이규동: 웹 골격 PR 리뷰 반영 → 배포처 정하고 배포 링크(10.28) → V1·V2 카드 결과 화면, 평가 실행기(`npm run eval`), 평가 입력 6개 → V2 제작 과정.
+1. 이규동: 웹 골격 PR 리뷰 반영 → 배포처 정하고 배포 링크(10.28) → 평가 실행기(`npm run eval`), 평가 입력 6개 → V2 제작 과정.
 2. 이용석: 저장소 받아 `npm install`·`npm test`, 실제 톤업 선크림 자료·이미지(`npm run new-product`) → 주의 표현 목록·검사 기준 → 평가 결과·체크리스트 규격 초안(10.24) → 대화 모드 첫 제작 → V2 구성안·근거 화면(`web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx`, `npm run web:dev`), 핵심 정보 포함률 지표, 평가 입력 6개 → v1 평가 분석·v2 규칙, 평가 집계·V3 대시보드.
 3. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
