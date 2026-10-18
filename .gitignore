@@ -2,5 +2,6 @@ node_modules/
 products/*/output/
 products/*/.job.json
 .env
-data/
+/data/
 .DS_Store
+web/dist/

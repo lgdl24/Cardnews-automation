@@ -1,0 +1,151 @@
+{
+  "spec_version": "0.1",
+  "id": "toneup-sunscreen-r1",
+  "summary": {
+    "complete": true,
+    "total_minutes": 2.8,
+    "ai_minutes": 1.3,
+    "human_minutes": 1.5,
+    "phases": {
+      "input": 0,
+      "plan_job": 0.7,
+      "plan_review": 0.9,
+      "copy_job": 0.6,
+      "final_review": 0.6,
+      "revise_job": 0
+    },
+    "plan_revisions": 0,
+    "revision_rounds": 0,
+    "revised_card_ratio": 0,
+    "revision_types": {},
+    "first_pass": true,
+    "auto_fix_total": 0
+  },
+  "jobs": [
+    {
+      "job_id": "cli-20261010-083211-lgo",
+      "kind": "plan",
+      "ok": true,
+      "minutes": 0.7,
+      "error_code": null,
+      "first_pass": true,
+      "auto_fix_count": 0
+    },
+    {
+      "job_id": "cli-20261010-083351-gn4",
+      "kind": "copy",
+      "ok": true,
+      "minutes": 0.6,
+      "error_code": null,
+      "first_pass": true,
+      "auto_fix_count": 0
+    }
+  ],
+  "events": [
+    {
+      "ts": "2026-10-10T08:32:11.635Z",
+      "event": "input_submitted",
+      "job_id": null
+    },
+    {
+      "ts": "2026-10-10T08:32:11.670Z",
+      "event": "job_started",
+      "job_id": "cli-20261010-083211-lgo",
+      "kind": "plan"
+    },
+    {
+      "ts": "2026-10-10T08:32:45.988Z",
+      "event": "validate_result",
+      "job_id": "cli-20261010-083211-lgo",
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "plan"
+    },
+    {
+      "ts": "2026-10-10T08:32:54.529Z",
+      "event": "job_finished",
+      "job_id": "cli-20261010-083211-lgo",
+      "kind": "plan",
+      "ok": true,
+      "error_code": null
+    },
+    {
+      "ts": "2026-10-10T08:33:51.415Z",
+      "event": "plan_approved",
+      "job_id": null,
+      "approved_by": "human"
+    },
+    {
+      "ts": "2026-10-10T08:33:51.441Z",
+      "event": "job_started",
+      "job_id": "cli-20261010-083351-gn4",
+      "kind": "copy"
+    },
+    {
+      "ts": "2026-10-10T08:33:51.606Z",
+      "event": "validate_result",
+      "job_id": "cli-20261010-083351-gn4",
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy"
+    },
+    {
+      "ts": "2026-10-10T08:34:03.681Z",
+      "event": "validate_result",
+      "job_id": "cli-20261010-083351-gn4",
+      "ok": true,
+      "check": "layout",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy",
+      "rendered_cards": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "ts": "2026-10-10T08:34:16.886Z",
+      "event": "validate_result",
+      "job_id": "cli-20261010-083351-gn4",
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy"
+    },
+    {
+      "ts": "2026-10-10T08:34:17.899Z",
+      "event": "validate_result",
+      "job_id": "cli-20261010-083351-gn4",
+      "ok": true,
+      "check": "layout",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy",
+      "rendered_cards": [
+        3
+      ]
+    },
+    {
+      "ts": "2026-10-10T08:34:25.082Z",
+      "event": "job_finished",
+      "job_id": "cli-20261010-083351-gn4",
+      "kind": "copy",
+      "ok": true,
+      "error_code": null
+    },
+    {
+      "ts": "2026-10-10T08:35:00.896Z",
+      "event": "final_approved",
+      "job_id": null,
+      "approved_by": "human"
+    }
+  ]
+}
