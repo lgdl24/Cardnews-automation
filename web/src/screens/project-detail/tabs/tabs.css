@@ -1,23 +1,323 @@
-/* V2 탭 공통: 카드 미리보기 줄 (카드 결과 탭) */
-.card-strip {
+/* V2 카드 결과 (CardResultTab · CardViewer) */
+
+.result-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.result-summary {
+  margin: 0;
+  color: var(--color-muted);
+}
+.result-warn {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+.zip-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.zip-error {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}
+
+/* ── 카드 목록 */
+.card-grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
 }
-.card-strip img {
+.card-tile {
+  margin: 0;
+}
+.card-tile-image {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-accent);
+  cursor: zoom-in;
+  transition: box-shadow 0.15s;
+}
+.card-tile-image:hover {
+  box-shadow: var(--shadow);
+}
+.card-tile-image img {
   width: 100%;
   height: auto;
   aspect-ratio: 1;
+}
+.card-tile-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+.card-tile-title strong {
+  font-weight: 800;
+  margin-right: 2px;
+}
+.card-tile-warn {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  color: var(--color-danger);
+}
+
+/* ── 버튼 (공통으로 쓸 일이 생기면 components.css로 옮김) */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.button:hover {
+  background: var(--color-primary-strong);
+  border-color: var(--color-primary-strong);
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.text-button {
+  color: var(--color-primary-strong);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.text-button:hover {
+  text-decoration: underline;
+}
+.icon-button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.icon-button:hover {
   background: var(--color-accent);
 }
-.card-strip-no {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.85rem;
+
+/* ── 이미지 출처 표 */
+.table-wrap {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+.table th {
   color: var(--color-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.table tr:last-child td {
+  border-bottom: 0;
+}
+.table code {
+  background: var(--color-accent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* ── 크게 보기 */
+.viewer {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 30%);
+}
+.viewer::backdrop {
+  background: rgb(43 36 32 / 70%);
+}
+.viewer-body {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+}
+.viewer-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+.viewer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  flex: 1;
+}
+.viewer-count {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.viewer-stage {
+  position: relative;
+  /* 카드 배경(크림색)과 구분되도록 한 단계 어두운 바탕 + 좌우에 넘기기 버튼 자리 */
+  background: #ece3db;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  padding: 20px 72px;
+}
+.viewer-stage img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100dvh - 260px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgb(43 36 32 / 18%);
+}
+.viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 92%);
+  color: var(--color-text);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.viewer-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.viewer-prev {
+  left: 12px;
+}
+.viewer-next {
+  right: 12px;
+}
+.viewer-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+}
+.viewer-intent {
+  flex: 1 1 280px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+.viewer-foot .card-tile-warn {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .card-tile-caption {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .viewer-stage {
+    padding: 12px;
+  }
+  .viewer-nav {
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+  }
+  .viewer-prev {
+    left: 4px;
+  }
+  .viewer-next {
+    right: 4px;
+  }
+  /* 이미지 출처 표: 좁은 화면에서는 이미지마다 세로로 */
+  .table-sources thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .table-sources tr {
+    display: block;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .table-sources tr:last-child {
+    border-bottom: 0;
+  }
+  .table-sources td {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 8px;
+    padding: 3px 0;
+    border: 0;
+  }
+  .table-sources td > * {
+    justify-self: start;
+  }
+  .table-sources td::before {
+    content: attr(data-label);
+    color: var(--color-muted);
+  }
+  .viewer-foot .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-tile-image {
+    transition: none;
+  }
 }

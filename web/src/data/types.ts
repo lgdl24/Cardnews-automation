@@ -116,6 +116,11 @@ export interface CardCopy {
   [field: string]: string | string[] | undefined;
 }
 
+export interface LayoutOverlap {
+  target: string;
+  px: number;
+}
+
 export interface Card {
   no: number;
   role: Role;
@@ -128,7 +133,13 @@ export interface Card {
   png: string;
   chars: CharRow[];
   cautions: Caution[];
-  layout: { ok: boolean; issues: unknown[]; overlaps: unknown[] };
+  layout: {
+    ok: boolean;
+    /** 출력을 막는 오류 (내보낸 카드는 항상 빈 배열) */
+    issues: unknown[];
+    /** 글자-이미지 겹침 경고: 겹친 글자 요소와 겹친 높이(px). 출력은 막지 않음 */
+    overlaps: LayoutOverlap[];
+  };
   revisions: Revision[];
 }
 
