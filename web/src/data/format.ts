@@ -20,9 +20,12 @@ export const formatDate = (iso: string | null | undefined) => (iso ? dateOnly.fo
 /** 0.857 → 86% */
 export const formatPercent = (rate: Rate | undefined) => (rate === null || rate === undefined ? '—' : `${Math.round(rate * 100)}%`);
 
-/** 12.4 → 12분, 75 → 1시간 15분 */
+/** 0.7 → 42초, 2.8 → 2분 48초, 12.4 → 12분, 75 → 1시간 15분 (짧은 작업도 0분으로 보이지 않게) */
 export function formatMinutes(min: number | null | undefined) {
   if (min === null || min === undefined) return '—';
+  const sec = Math.round(min * 60);
+  if (sec < 60) return `${sec}초`;
+  if (sec < 600) return `${Math.floor(sec / 60)}분${sec % 60 ? ` ${sec % 60}초` : ''}`;
   const m = Math.round(min);
   if (m < 60) return `${m}분`;
   return `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}`;

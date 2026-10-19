@@ -8,10 +8,12 @@ Claude Code·Codex가 프로젝트를 개발할 때 함께 읽는 기준이다. 
 |---|---|
 | 대화 모드 | 팀원이 터미널의 Claude Code와 대화하며 카드를 만드는 **제작 방식**. 구성안·최종 승인을 대화로 받는다. (2026-10-10 이전 문서의 "개발 모드"와 같음) |
 | 평가 모드 | 평가 실행기(`npm run eval`)가 `claude -p`로 작업 하나씩 실행하는 제작 방식. 질문하지 않고 끝내며 구성안 승인은 '평가'(`approved_by: eval`)로 기록. 10.10의 서비스 모드(관리자 웹 → Agent SDK)를 이름과 실행 주체만 바꿔 이어받음 |
-| 결과 보기 웹 | 로컬에서 만든 결과·구성안·원문 근거·제작 기록·지표를 보여주는 정적 사이트. 생성·승인·로그인 기능이 없다. |
+| 웹 모드 | 팀원이 내 컴퓨터에서 켠 웹 제작 화면(`npm run studio`, `/studio`)에서 입력·승인·수정 요청을 하고, 작업 실행기가 이 컴퓨터의 `claude -p`로 작업 하나씩 실행하는 제작 방식. 질문하지 않고 끝내며 승인은 사람(`approved_by: human`). 배포 사이트에서는 동작하지 않음 (#21) |
+| 작업 실행기 | `scripts/lib/job-runner.js`. 웹·평가 모드가 함께 쓰는 `claude -p` 실행 코드: 임시 작업 폴더, 허용 도구·명령 제한, 재검증 후 반영, 작업 시작·끝 기록 |
+| 결과 보기 웹 | 로컬에서 만든 결과·구성안·원문 근거·제작 기록·지표를 보여주는 정적 사이트(배포 링크). 배포된 사이트에는 생성·승인·로그인 기능이 없다. 같은 앱을 로컬에서 켜면 웹 모드 제작 화면이 함께 열린다. |
 | 프로젝트 개발 | 이 저장소의 코드·웹·설정·문서를 고치는 작업. Claude Code·Codex가 교대로 하며 이 문서와 인수인계를 따른다. |
 
-카드 제작 중의 쓰기·명령 제한(`cards.json`만 쓰기 등)은 대화·평가 모드에만 적용된다. 프로젝트 개발에서 `config/`·`templates/`·Skill처럼 제작 결과에 영향을 주는 파일을 바꾸면 [CLAUDE.md](../CLAUDE.md) '규칙 버전'에 따라 버전 변경 여부를 사람에게 묻는다.
+카드 제작 중의 쓰기·명령 제한(`cards.json`만 쓰기 등)은 대화·웹·평가 모드에만 적용된다. 프로젝트 개발에서 `config/`·`templates/`·Skill처럼 제작 결과에 영향을 주는 파일을 바꾸면 [CLAUDE.md](../CLAUDE.md) '규칙 버전'에 따라 버전 변경 여부를 사람에게 묻는다.
 
 ## 목표와 범위
 
@@ -51,7 +53,7 @@ Claude Code·Codex가 프로젝트를 개발할 때 함께 읽는 기준이다. 
 | 입력·데이터 규격 | [입력 양식](input-form.md), [데이터 명세](card-data-spec.md), [입력 설정](../config/input-form.json), [JSON 스키마](../schemas/cards.schema.json) |
 | 문구·템플릿·디자인 | [문체](style-guide.md), [템플릿 기준](../config/templates.json), [테마](../config/theme.json), [출력 CSS](../templates/base.css), 관련 Figma 화면 |
 | 기록·지표·분석 | [이벤트 명세](event-log-spec.md), [수정 유형](../config/revision-types.json), [규칙 버전](../config/skill-version.json), [분석 코드](../scripts/lib/analysis.js) |
-| 결과 보기 웹 | 노션 설계 문서의 '웹 화면 설계'(V1~V4)·'데이터 명세'(웹 데이터 초안)·'시스템 아키텍처'. 웹 데이터 규격은 `docs/web-data-spec.md`. `prompts/`는 평가 모드 작업 지시문. |
+| 결과 보기 웹 | 노션 설계 문서의 '웹 화면 설계'(V1~V4)·'데이터 명세'(웹 데이터 초안)·'시스템 아키텍처'. 웹 데이터 규격은 `docs/web-data-spec.md`. `prompts/web/`은 웹 모드, `prompts/eval/`은 평가 모드 작업 지시문. 웹 모드 화면 S1~S3는 `web/README.md`. |
 
 ## 외부 기획·디자인
 
