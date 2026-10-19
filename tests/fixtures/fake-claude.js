@@ -40,7 +40,8 @@ process.stdin.on('end', () => {
   const source = JSON.parse(fs.readFileSync(process.env.FAKE_CLAUDE_SOURCE, 'utf8'));
   let data;
   if (kind === 'plan' || (kind === 'revise' && reviseStage === 'plan')) {
-    data = { ...source, stage: 'plan', cards: source.cards.map(({ copy, ...c }) => c) };
+    // 실제 Claude처럼 표지·마무리 카드는 근거 없이 (스키마상 선택)
+    data = { ...source, stage: 'plan', cards: source.cards.map(({ copy, ...c }) => (c.role === 'cover' || c.role === 'closing' ? (({ evidence, ...rest }) => rest)(c) : c)) };
     if (kind === 'revise') data.cards[0].intent += ' (수정됨)';
   } else {
     data = { ...source, stage: 'copy' };

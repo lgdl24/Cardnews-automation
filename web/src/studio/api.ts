@@ -97,8 +97,9 @@ export interface StudioCard {
   role: Role;
   template: TemplateId;
   intent: string;
-  image: string | null;
-  evidence: SourceId[];
+  /** cards.json 그대로라 없는 필드가 있음: 표지·마무리 카드는 evidence가 없어도 됨 (cards.schema.json) */
+  image?: string | null;
+  evidence?: SourceId[];
   copy?: CardCopy;
 }
 export interface Actions {

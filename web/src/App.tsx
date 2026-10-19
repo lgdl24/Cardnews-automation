@@ -19,6 +19,7 @@ import { TimelineTab } from './screens/project-detail/tabs/TimelineTab';
 import { EvalDashboardPage } from './screens/eval-dashboard/EvalDashboardPage';
 import { VersionComparePage } from './screens/version-compare/VersionComparePage';
 import { NotFoundPage } from './screens/NotFoundPage';
+import { RouteError } from './components/StateView';
 import { StudioHomePage } from './screens/studio/StudioHomePage';
 import { ProductFormPage } from './screens/studio/ProductFormPage';
 import { StudioProductPage } from './screens/studio/StudioProductPage';
@@ -28,23 +29,29 @@ const router = createBrowserRouter(
     {
       element: <Layout />,
       children: [
-        { index: true, element: <ProjectListPage /> },
         {
-          path: 'projects/:id',
-          element: <ProjectDetailPage />,
+          // 화면 코드에서 오류가 나도 헤더는 남기고 이 자리에 안내를 보여줌
+          errorElement: <RouteError />,
           children: [
-            { index: true, element: <CardResultTab /> },
-            { path: 'plan', element: <PlanEvidenceTab /> },
-            { path: 'timeline', element: <TimelineTab /> },
+            { index: true, element: <ProjectListPage /> },
+            {
+              path: 'projects/:id',
+              element: <ProjectDetailPage />,
+              children: [
+                { index: true, element: <CardResultTab /> },
+                { path: 'plan', element: <PlanEvidenceTab /> },
+                { path: 'timeline', element: <TimelineTab /> },
+              ],
+            },
+            { path: 'eval', element: <EvalDashboardPage /> },
+            { path: 'compare', element: <VersionComparePage /> },
+            { path: 'studio', element: <StudioHomePage /> },
+            { path: 'studio/new', element: <ProductFormPage /> },
+            { path: 'studio/:id', element: <StudioProductPage /> },
+            { path: 'studio/:id/edit', element: <ProductFormPage /> },
+            { path: '*', element: <NotFoundPage /> },
           ],
         },
-        { path: 'eval', element: <EvalDashboardPage /> },
-        { path: 'compare', element: <VersionComparePage /> },
-        { path: 'studio', element: <StudioHomePage /> },
-        { path: 'studio/new', element: <ProductFormPage /> },
-        { path: 'studio/:id', element: <StudioProductPage /> },
-        { path: 'studio/:id/edit', element: <ProductFormPage /> },
-        { path: '*', element: <NotFoundPage /> },
       ],
     },
   ],

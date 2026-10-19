@@ -280,8 +280,8 @@ function IssueList({ items, tone, prefix }: { items: { code?: string; where: str
 function PlanReview({ detail, labels }: { detail: ProductDetail; labels?: Labels }) {
   const c = detail.cards!;
   const quote = new Map(c.sources.map((s) => [s.id, s]));
-  const chips = (ids: string[]) =>
-    ids.map((sid) => (
+  const chips = (ids: string[] | undefined) =>
+    !ids || ids.length === 0 ? <span className="muted">—</span> : ids.map((sid) => (
       <span key={sid} className="chip" title={quote.get(sid as never)?.quote}>
         {sid}
       </span>
