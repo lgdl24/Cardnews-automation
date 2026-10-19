@@ -169,12 +169,12 @@ function createStudio({
 
   function claudeStatus() {
     if (claudeInfo) return claudeInfo;
-    const v = spawnSync(bin, ['-v'], { encoding: 'utf8', timeout: 10000 });
+    const v = spawnSync(...jobRunner.claudeCommand(bin, ['-v']), { encoding: 'utf8', timeout: 10000 });
     if (v.error || v.status !== 0) {
       claudeInfo = { installed: false, version: null, logged_in: null };
       return claudeInfo;
     }
-    const a = spawnSync(bin, ['auth', 'status'], { encoding: 'utf8', timeout: 10000 });
+    const a = spawnSync(...jobRunner.claudeCommand(bin, ['auth', 'status']), { encoding: 'utf8', timeout: 10000 });
     claudeInfo = { installed: true, version: (v.stdout || '').trim().split(/\s/)[0] || null, logged_in: a.error ? null : a.status === 0 };
     return claudeInfo;
   }
