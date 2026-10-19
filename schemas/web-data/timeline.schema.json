@@ -7,7 +7,7 @@
   "required": ["spec_version", "id", "summary", "jobs", "events"],
   "additionalProperties": false,
   "properties": {
-    "spec_version": { "const": "0.1" },
+    "spec_version": { "const": "0.2" },
     "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
     "summary": {
       "type": "object",
