@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lgdl24/Cardnews-automation/schemas/eval/checklist.schema.json",
+  "title": "평가 입력 체크리스트 checklist.json",
+  "description": "docs/eval-spec.md '2. 체크리스트'. 입력마다 기대 동작·핵심 정보·나오면 안 되는 것을 미리 적는다. '_'로 시작하는 키는 사람용 메모",
+  "type": "object",
+  "required": ["input_id", "owner", "type", "case", "purpose", "expected", "key_info", "forbidden"],
+  "additionalProperties": false,
+  "patternProperties": {
+    "^_": {}
+  },
+  "properties": {
+    "spec_version": { "const": "0.1" },
+    "input_id": { "type": "string", "pattern": "^eval-[a-z0-9-]+$" },
+    "owner": { "enum": ["이규동", "이용석"] },
+    "type": { "enum": ["normal", "boundary"] },
+    "case": { "type": "string", "minLength": 1 },
+    "purpose": { "type": "string", "minLength": 1 },
+    "source": { "enum": ["실제", "공개 정보", "가상"] },
+    "expected": {
+      "type": "object",
+      "required": ["check", "result"],
+      "additionalProperties": false,
+      "properties": {
+        "check": { "enum": ["pass", "INPUT_MISSING"] },
+        "check_errors": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "instruction_warnings": { "type": "integer", "minimum": 0 },
+        "undetected_instructions": { "type": "integer", "minimum": 0, "description": "참고용. 판정에 쓰지 않음" },
+        "result": { "enum": ["완료", "중단"] },
+        "final_stage": { "enum": ["plan", "copy"] },
+        "card_count": { "type": "integer", "minimum": 1 },
+        "error_code": { "type": "string", "pattern": "^[A-Z][A-Z_]+$" },
+        "cards_json": { "type": "boolean" },
+        "report_has_warning": { "type": "boolean" },
+        "report_has_caution": { "type": "boolean" },
+        "report_lists_missing": { "type": "boolean" },
+        "max_remaining_errors": { "type": "integer", "minimum": 0 }
+      },
+      "if": { "properties": { "check": { "const": "INPUT_MISSING" } } },
+      "then": { "required": ["check_errors"] }
+    },
+    "key_info": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "quote"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^K[0-9]+$" },
+          "text": { "type": "string", "minLength": 1 },
+          "quote": { "type": "string", "minLength": 1, "description": "원문(# 제품 정보)에 글자 그대로 있어야 함" },
+          "section": { "type": "string", "minLength": 1, "description": "입력 양식 항목 이름. 예: 주요 특징" },
+          "copy_terms": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+        }
+      }
+    },
+    "forbidden": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^F[0-9]+$" },
+          "text": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "match": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+        }
+      }
+    }
+  },
+  "if": { "properties": { "type": { "const": "normal" } } },
+  "then": { "properties": { "key_info": { "type": "array", "minItems": 3, "maxItems": 5 } } }
+}

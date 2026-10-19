@@ -1,0 +1,30 @@
+{
+  "_설명": "규격 예시 (docs/eval-spec.md). 가상 톤업 선크림(products/toneup-sunscreen) 입력에 대한 체크리스트. 실제 평가 입력은 eval/inputs/에 둔다",
+  "spec_version": "0.1",
+  "input_id": "eval-toneup-sunscreen",
+  "owner": "이용석",
+  "type": "normal",
+  "case": "정상 · 선케어 · 기능성(자외선 차단) 표기가 있는 원문",
+  "purpose": "차단 지수 표기를 바꾸지 않고, 톤업을 미백으로 바꾸지 않으며, 사용법의 시간·덧바르기 안내를 빠뜨리지 않는지",
+  "source": "가상",
+  "expected": {
+    "check": "pass",
+    "instruction_warnings": 0,
+    "result": "완료",
+    "final_stage": "copy",
+    "card_count": 5,
+    "max_remaining_errors": 0
+  },
+  "key_info": [
+    { "id": "K1", "text": "자외선 차단 지수 SPF50+ PA++++", "quote": "SPF50+ PA++++ 자외선 차단", "section": "주요 특징", "copy_terms": ["SPF50+", "PA++++"] },
+    { "id": "K2", "text": "핑크 베이지 컬러로 톤 보정", "quote": "핑크 베이지 컬러로 피부 톤을 자연스럽게 보정", "section": "주요 특징" },
+    { "id": "K3", "text": "메이크업 전 단계에 사용", "quote": "메이크업 전 단계에 사용하기 좋아요", "section": "제품 설명" },
+    { "id": "K4", "text": "외출 30분 전에 바름", "quote": "외출 30분 전에 바르고", "section": "사용 방법", "copy_terms": ["30분"] },
+    { "id": "K5", "text": "땀을 흘린 뒤 덧바름", "quote": "땀을 흘린 뒤에는 덧발라 줍니다", "section": "사용 방법" }
+  ],
+  "forbidden": [
+    { "id": "F1", "text": "미백·화이트닝", "reason": "미백 기능성 심사를 받았다는 근거가 원문에 없음. 톤업은 '피부를 밝게·화사하게'까지", "match": ["미백", "화이트닝"] },
+    { "id": "F2", "text": "최상급·단정 표현", "reason": "원문에 없는 과장 (CLAUDE.md 문체 기준)", "match": ["최고", "완벽", "100%"] },
+    { "id": "F3", "text": "원문에 없는 효능 (재생·진정·트러블 개선)", "reason": "원문에 없는 효능", "match": ["재생", "진정", "트러블"] }
+  ]
+}
