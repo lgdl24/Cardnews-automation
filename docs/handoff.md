@@ -22,8 +22,8 @@
 ## 현재 작업
 
 - 확인일·작성 도구: 2026-10-19 · Claude (이용석 PC).
-- 이슈·PR: [#23](https://github.com/lgdl24/Cardnews-automation/issues/23) · PR은 push 후 생성(이 PC에는 `gh`가 없어 GitHub 웹에서). 리뷰 이규동(연결 규격이라 두 사람 승인). **`main` 병합은 이규동.**
-- 상태: 초안 작성 완료, 커밋 전.
+- 이슈·PR: [#23](https://github.com/lgdl24/Cardnews-automation/issues/23) · [PR #24](https://github.com/lgdl24/Cardnews-automation/pull/24) (이 PC에는 `gh`가 없어 GitHub 웹에서 생성). 리뷰 이규동(연결 규격이라 두 사람 승인). **`main` 병합은 이규동.**
+- 상태: 완료 (PR #24 리뷰 대기). Windows 실행기 수정은 따로 [#25](https://github.com/lgdl24/Cardnews-automation/issues/25) · [PR #26](https://github.com/lgdl24/Cardnews-automation/pull/26)(기준 `feat/21-web-studio`).
 - 목표·완료 조건: 평가 실행기(이규동)가 쓰고 평가 집계·V3(이용석)가 읽을 파일 형식을 정한다 — 평가 입력 폴더, 체크리스트, 실행 결과 필드, 핵심 정보 포함률 계산, 경계 입력의 기대 동작, 예시 결과 1개. `npm test` 통과.
 - 작업 브랜치: `docs/23-eval-spec` · 기준 `main`(`edf61f8`). #18(`eval/inputs/`)은 아직 `main`에 없어서, #18 체크리스트 4개는 임시로 복사해 새 스키마를 통과하는지만 확인함.
 - 변경 파일: `docs/eval-spec.md`, `schemas/eval/`, `docs/examples/eval/`, `tests/eval-spec.test.js`, `package.json`(test 목록), 이 문서.
@@ -69,5 +69,5 @@
 ## 다음 행동
 
 1. 이규동: 웹 골격 PR 리뷰 반영 → 배포처 정하고 배포 링크(10.28) → V1·V2 카드 결과 화면, 평가 실행기(`npm run eval`), 평가 입력 6개 → V2 제작 과정.
-2. 이용석: eval-spec(#23) 커밋·PR(리뷰 이규동) → 실제 톤업 선크림 자료·이미지 직접 수집(`npm run new-product`, 10.24) → 웹 모드(#21) `CLAUDE.md`·Skill 문구 리뷰 → 주의 표현 목록·검사 기준(10.28) → 대화 모드 첫 제작 → V2 구성안·근거 화면(`web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx`, `npm run web:dev`), 핵심 정보 포함률 지표, 평가 입력 6개 → v1 평가 분석·v2 규칙, 평가 집계·V3 대시보드.
+2. 이용석: PR #24·#26 리뷰 반영 → Claude Code CLI 로그인(실제 웹 모드·평가 실행용) → 실제 톤업 선크림 자료·이미지 직접 수집(`npm run new-product`, 10.24) → 웹 모드(#21) `CLAUDE.md`·Skill 문구 리뷰 → 주의 표현 목록·검사 기준(10.28) → 대화 모드 첫 제작 → V2 구성안·근거 화면(`web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx`, `npm run web:dev`), 핵심 정보 포함률 지표, 평가 입력 6개 → v1 평가 분석·v2 규칙, 평가 집계·V3 대시보드.
 3. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
