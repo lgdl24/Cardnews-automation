@@ -65,8 +65,9 @@ function createWorkspace({ jobId, productId, productDir, root = ROOT, jobsDir = 
     if (fs.existsSync(src)) copyFiltered(src, path.join(jobDir, entry), { base: root, exclude: RULE_EXCLUDE });
   }
   // node_modules는 복사하지 않고 링크 (Playwright·Pretendard)
+  // Windows는 디렉터리 symlink에 관리자 권한(EPERM)이 필요해서 junction을 씀. 지울 때는 링크만 지워짐
   if (fs.existsSync(path.join(root, 'node_modules'))) {
-    fs.symlinkSync(path.join(root, 'node_modules'), path.join(jobDir, 'node_modules'), 'dir');
+    fs.symlinkSync(path.join(root, 'node_modules'), path.join(jobDir, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   }
   const wsProduct = path.join(jobDir, 'products', productId);
   copyFiltered(productDir, wsProduct, { base: productDir, exclude: PRODUCT_EXCLUDE });
@@ -103,6 +104,11 @@ function claudeArgs({ productId, maxTurns = 40, model }) {
   ];
   if (model) args.push('--model', model);
   return args;
+}
+
+// claude 실행 파일이 .js(테스트의 가짜 Claude 등)면 node로 실행. Windows는 .js를 직접 실행하지 못함(spawn EFTYPE)
+function claudeCommand(bin, args) {
+  return /\.[cm]?js$/i.test(bin) ? [process.execPath, [bin, ...args]] : [bin, args];
 }
 
 function claudeEnv({ mode, jobId, kind, base = process.env }) {
@@ -151,7 +157,8 @@ function runClaude({ bin, args, prompt, cwd, env, timeoutMs, onProgress }) {
     let stderr = '';
     let buffer = '';
     let settled = false;
-    const child = spawn(bin, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
+    const [cmd, cmdArgs] = claudeCommand(bin, args);
+    const child = spawn(cmd, cmdArgs, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
     const timer = setTimeout(() => {
       child.kill('SIGTERM');
       finish({ crash: `시간 제한(${Math.round(timeoutMs / 60000)}분)을 넘겨 멈췄어요` });
@@ -383,6 +390,6 @@ async function runJob({
 
 module.exports = {
   ROOT, JOB_KINDS, MODES, TOOLS, RULE_ENTRIES, RULE_EXCLUDE,
-  allowedTools, newJobId, createWorkspace, fillPrompt, claudeArgs, claudeEnv,
+  allowedTools, newJobId, createWorkspace, fillPrompt, claudeArgs, claudeCommand, claudeEnv,
   describeMessage, parseResultReport, verifyJob, mergeJob, errorCodeOf, runJob,
 };

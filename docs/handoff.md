@@ -57,6 +57,7 @@
 
 ## 검증
 
+- #25 (2026-10-19, 이용석 Windows): 작업 실행기가 Windows에서 동작하도록 수정 — `node_modules` 링크를 Windows에서는 `junction`으로(디렉터리 symlink는 관리자 권한 없으면 `EPERM`, 지울 때 링크만 지워지는 것 확인), claude 실행 파일이 `.js`면 node로 실행(`claudeCommand`, `studio-api.js`도 같이). Windows에서 `npm test` 102개 통과(수정 전 5개 실패). 데스크톱 앱에 든 `claude.exe` 2.1.299가 실행기 인자(`--tools`·`--allowedTools`·`dontAsk` 등)를 받아들이는 것 확인. 이 PC의 CLI는 로그인 전이라 실제 제작은 `claude` 로그인 뒤 가능. `claude`가 PATH에 없으면 `CARDNEWS_CLAUDE_BIN`에 경로 지정.
 - #21: `npm test` 102개 통과(새 `job-runner` 8개·`studio-api` 3개, 가짜 Claude `tests/fixtures/fake-claude.js`). `npm run web:build` 통과. Playwright로 가짜 Claude + 시험용 폴더(`CARDNEWS_STUDIO_SANDBOX`)에서 새 제작(폼·이미지 올리기) → 구성안 → 구성안 수정 요청 → 승인·문구 → 3번 카드 수정 요청 → 최종 승인 → 내보내기 전체 흐름 확인. 모바일 390px 가로 넘침 없음, 콘솔 오류 없음. **실제 `claude -p` 실행은 아직**(Mac에서 확인, 사용량 들어감).
 - `npm test` 88개 통과. `npm run web:build`(타입 검사 + 빌드) 통과, `npm audit` 0건.
 - #18: `npm test` 91개 통과(새 `tests/eval-inputs.test.js` 3개). 입력 확인 결과: 정상 2개 오류·경고 0, 입력 누락 `INPUT_MISSING` 5개, 지시문 경고 5개.
