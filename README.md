@@ -4,18 +4,37 @@
 HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝트입니다.
 제작 과정은 기록으로 남아 시간·수정·품질 지표를 분석할 수 있습니다.
 
-> 현재 버전: v0.5 (기본 틀 + 두 실행 방식 규칙 + 제작 기록·품질 지표 + 자동 테스트 + 규격 파일·지시문 탐지 + 측정 기반 글자 수 기준). `products/toneup-sunscreen`은 구조 확인용 **가상 예시 제품**이에요.
+> 현재 버전: v0.5 (기본 틀 + 세 실행 방식 규칙(대화·웹·평가) + 제작 기록·품질 지표 + 자동 테스트 + 규격 파일·지시문 탐지 + 측정 기반 글자 수 기준). `products/toneup-sunscreen`은 구조 확인용 **가상 예시 제품**이에요.
 
 ## 실행 방식
 
-카드 제작은 로컬 Claude Code로만 하고, 웹은 결과를 보여주는 **결과 보기 웹**(정적 사이트, 배포 링크)입니다. 계획과 역할은 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761)를 보세요.
+카드 제작은 **내 컴퓨터의 Claude Code**가 합니다. 배포된 **결과 보기 웹**(정적 사이트, 배포 링크)은 결과를 보여주기만 해요. 계획과 역할은 노션 [개발 계획서](https://app.notion.com/p/3f56bcfa1f8a8188a029dfbab57ff761)를 보세요.
 
-| | 대화 모드 | 평가 모드 |
-|---|---|---|
-| 쓰는 사람 | 팀원 (실제 제작) | 평가 실행기 (평가용 입력 세트 반복 실행) |
-| 실행 | 터미널의 Claude Code와 대화 | `npm run eval`(예정)이 `claude -p`로 작업 하나씩 실행, 지시문은 `prompts/` |
-| 사람 확인 | 구성안 승인·최종 검토를 대화에서 | 없음. 구성안 승인은 '평가'로 자동 기록 |
-| 결과 보기 | 결과 보기 웹 (`npm run export`로 내보낸 데이터) | 같음 + 평가 대시보드 |
+| | 대화 모드 | 웹 모드 | 평가 모드 |
+|---|---|---|---|
+| 쓰는 사람 | 팀원 (터미널) | 팀원 (로컬 웹 제작 화면) | 평가 실행기 (평가용 입력 세트 반복 실행) |
+| 실행 | 터미널의 Claude Code와 대화 | `npm run studio`로 켠 웹 화면에서 입력·승인·수정 요청 → 작업 실행기가 `claude -p`로 작업 하나씩 실행, 지시문은 `prompts/web/` | `npm run eval`(예정)이 같은 작업 실행기로 실행, 지시문은 `prompts/eval/` |
+| 사람 확인 | 구성안 승인·최종 검토를 대화에서 | 구성안 승인·수정 요청·최종 승인을 웹 화면에서 | 없음. 구성안 승인은 '평가'로 자동 기록 |
+| 결과 보기 | 결과 보기 웹 (`npm run export`로 내보낸 데이터) | 같음. 웹 화면의 [내보내기] 버튼 | 같음 + 평가 대시보드 |
+
+## 사용 방법 (웹 모드)
+
+```bash
+npm run web:install   # 최초 1회
+claude                # Claude Code 로그인 확인 (최초 1회, 로그인돼 있으면 /exit)
+npm run studio        # → http://127.0.0.1:5173/studio
+```
+
+1. **작업실**(`/studio`)에서 [+ 새 제작] → 입력 폼(`config/input-form.json`)을 채우고 이미지를 올리면 `products/<제품ID>/input.md`·`images/`가 만들어지고 입력 확인을 바로 해요.
+2. [구성안 만들기] → 이 컴퓨터에서 `claude -p`가 구성안 작업을 해요. 진행 상황이 화면에 나와요.
+3. 구성안을 보고 [구성안 승인하고 문구 만들기] 또는 [구성안 수정 요청](유형·내용 선택).
+4. 카드 PNG를 보고 [최종 승인] 또는 [카드 수정 요청](카드 번호·유형·내용).
+5. [내보내기] → 결과 보기 웹 데이터(`web/public/data/`)가 갱신돼요. 배포하려면 `web/public/data/`와 `config/export.json`을 커밋합니다.
+
+- 작업 실행기(`scripts/lib/job-runner.js`)는 임시 작업 폴더에 규칙과 이 제품만 복사해 실행하고, 허용된 도구·명령(`cards.json` 쓰기, `check`·`validate`·`render`)만 쓰게 해요. 끝나면 결과를 다시 검증해 통과할 때만 반영해요.
+- 작업은 한 번에 하나씩이고, 사용량은 로그인한 Claude 계정에서 나가요.
+- 로컬 제작 API(`/api/studio`)는 개발 서버에만 있고 `127.0.0.1`에서만 열려요. 배포 사이트에는 들어가지 않아요.
+- 화면 시험: `CARDNEWS_STUDIO_SANDBOX=<폴더> CARDNEWS_CLAUDE_BIN=tests/fixtures/fake-claude.js npm run studio` (가짜 Claude, 시험용 제품 폴더)
 
 ## 설치
 
@@ -63,7 +82,8 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run log -- <제품ID> --summary` | 단계별 시간, 수정 유형, 자동 수정, 1회 통과, 품질 지표 요약 (`--json` 가능) |
 | `npm run new-run -- <원본ID> <새ID>` | 같은 입력으로 실험용 제작 폴더 만들기 |
 | `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성 |
-| `npm run web:install` · `npm run web:dev` · `npm run web:build` | 결과 보기 웹 설치·개발 서버(http://localhost:5173)·빌드. 자세한 내용은 [`web/README.md`](web/README.md) |
+| `npm run web:install` · `npm run web:dev` · `npm run web:build` | 결과 보기 웹 설치·개발 서버(http://127.0.0.1:5173)·빌드. 자세한 내용은 [`web/README.md`](web/README.md) |
+| `npm run studio` | 웹 모드 제작 화면 켜기 (= `web:dev`, 로컬 제작 API 포함) |
 | `npm run export` | 승인된 결과를 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json`, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`) |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
@@ -72,7 +92,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 ## 제작 기록과 분석
 
 - `validate`·`render`는 결과를 `products/<제품ID>/log.jsonl`에 자동으로 남기고, 품질 지표를 `output/quality.json`에 저장합니다.
-- 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 평가 모드에서 평가 실행기가 남깁니다.
+- 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 웹 모드에서 작업 실행기·웹 제작 화면이, 평가 모드에서 평가 실행기가 남깁니다.
 - 모든 기록에 규칙 버전(`config/skill-version.json`)이 붙습니다. 규칙을 고치면 버전을 올려 v1·v2 결과를 비교합니다.
 - **평가 방식 (2026-10-16)**: 실사용자가 없으므로, 평가용 입력 세트 12개(정상 8·경계 4)와 핵심 정보 체크리스트를 평가 실행기(`npm run eval`, 예정)로 반복 실행해 품질·일관성·안전성·규칙 버전 효과를 측정합니다. 자세한 내용은 [공통 맥락](docs/project-context.md) '평가와 미결정'.
 - 형식과 지표 정의: `docs/event-log-spec.md`
@@ -92,7 +112,8 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 ├── .claude/skills/
 │   ├── cardnews-content/SKILL.md     # 콘텐츠 생성 Skill: 입력 확인 ~ 데이터 검증, 수정 요청
 │   └── cardnews-render/SKILL.md      # 카드 출력 Skill: 템플릿 적용 ~ 재출력
-├── prompts/                          # 평가 모드 작업 지시문 (plan, copy)
+├── prompts/web/                      # 웹 모드 작업 지시문 (plan, copy, revise)
+├── prompts/eval/                     # 평가 모드 작업 지시문 (plan, copy)
 ├── schemas/cards.schema.json         # 카드 구성 데이터 JSON 스키마 (형식 규격)
 ├── schemas/web-data/                 # 웹 데이터(결과 보기 웹) JSON 스키마: index·project·timeline
 ├── config/
@@ -115,10 +136,11 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
 ├── scripts/                          # check-input, validate, render, log, compare, new-run, export, lib/
-├── web/                              # 결과 보기 웹 (React·TS·Vite 정적 사이트, 화면별 담당은 web/README.md)
+│   └── lib/job-runner.js · studio-api.js  # 작업 실행기(웹·평가 모드 공통) · 로컬 제작 API(npm run studio)
+├── web/                              # 결과 보기 웹 + 로컬 제작 화면(/studio) (React·TS·Vite, 화면별 담당은 web/README.md)
 │   └── public/data/                  # 내보낸 웹 데이터 (npm run export가 생성, 커밋함)
 ├── eval/inputs/                      # 평가 입력 세트 (input.md + 핵심 정보 체크리스트, 형식 초안: eval/inputs/README.md)
-├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦)
+├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦, fixtures/fake-claude.js: 가짜 Claude Code)
 ├── CONTRIBUTING.md                   # 협업 규칙
 └── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 대화 모드 실행 기록)
 ```

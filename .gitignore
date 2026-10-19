@@ -5,3 +5,4 @@ products/*/.job.json
 /data/
 .DS_Store
 web/dist/
+.studio/
