@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lgdl24/Cardnews-automation/schemas/eval/run-result.schema.json",
+  "title": "평가 실행 결과 result.json",
+  "description": "docs/eval-spec.md '3. 실행 결과'. 평가 실행기가 실행 하나마다 eval/runs/<실행ID>/result.json으로 쓰고, 평가 결과 집계가 읽는다",
+  "type": "object",
+  "required": ["spec_version", "run_id", "batch", "input_id", "input_type", "skill_version", "variant", "repeat", "model", "claude_code_version", "started_at", "finished_at", "jobs", "outcome", "metrics", "checks"],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "const": "0.1" },
+    "run_id": { "type": "string", "pattern": "^eval-[a-z0-9-]+--v[0-9]+(-[a-z0-9-]+)?--r[0-9]+$" },
+    "batch": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "input_id": { "type": "string", "pattern": "^eval-[a-z0-9-]+$" },
+    "input_type": { "enum": ["normal", "boundary"] },
+    "input_source": { "enum": ["실제", "공개 정보", "가상", null] },
+    "skill_version": { "type": "string", "pattern": "^v[0-9]+$" },
+    "variant": { "type": ["string", "null"], "pattern": "^[a-z0-9-]+$" },
+    "repeat": { "type": "integer", "minimum": 1 },
+    "model": { "type": ["string", "null"] },
+    "claude_code_version": { "type": ["string", "null"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "job_id", "ok", "error_code", "duration_ms", "num_turns", "permission_denials", "report"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["plan", "copy"] },
+          "job_id": { "type": "string" },
+          "ok": { "type": "boolean" },
+          "error_code": { "type": ["string", "null"] },
+          "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
+          "num_turns": { "type": ["integer", "null"], "minimum": 0 },
+          "permission_denials": { "type": "integer", "minimum": 0 },
+          "report": {
+            "type": "object",
+            "required": ["결과", "단계", "오류", "알림"],
+            "additionalProperties": false,
+            "properties": {
+              "결과": { "type": ["string", "null"] },
+              "단계": { "type": ["string", "null"] },
+              "오류": { "type": "array", "items": { "type": "string" } },
+              "알림": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "required": ["result", "final_stage", "error_code", "cards_json", "card_count", "check_errors", "check_instruction_warnings", "report_errors", "report_warning_count", "report_caution_count"],
+      "additionalProperties": false,
+      "properties": {
+        "result": { "enum": ["완료", "중단"] },
+        "final_stage": { "enum": ["plan", "copy", "approved", null] },
+        "error_code": { "type": ["string", "null"] },
+        "cards_json": { "type": "boolean" },
+        "card_count": { "type": ["integer", "null"], "minimum": 0 },
+        "check_errors": { "type": "array", "items": { "type": "string" } },
+        "check_instruction_warnings": { "type": "integer", "minimum": 0 },
+        "report_errors": { "type": "array", "items": { "type": "string" } },
+        "report_warning_count": { "type": "integer", "minimum": 0 },
+        "report_caution_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["first_pass", "error_codes", "auto_fix_count", "final_error_count", "coverage", "evidence_rate", "char_usage", "char_usage_max", "caution", "key_info_rate", "key_info_hits", "key_info_copy_rate", "duration_ms", "num_turns"],
+      "additionalProperties": false,
+      "properties": {
+        "first_pass": { "type": ["boolean", "null"] },
+        "error_codes": { "type": "object", "propertyNames": { "pattern": "^[A-Z][A-Z_]+$" }, "additionalProperties": { "type": "integer", "minimum": 1 } },
+        "auto_fix_count": { "type": "integer", "minimum": 0 },
+        "final_error_count": { "type": ["integer", "null"], "minimum": 0 },
+        "coverage": { "$ref": "#/$defs/rate" },
+        "evidence_rate": { "$ref": "#/$defs/rate" },
+        "char_usage": { "type": ["number", "null"], "minimum": 0 },
+        "char_usage_max": { "type": ["number", "null"], "minimum": 0 },
+        "caution": {
+          "type": ["object", "null"],
+          "required": ["total", "in_source", "not_in_source"],
+          "additionalProperties": false,
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "in_source": { "type": "integer", "minimum": 0 },
+            "not_in_source": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "key_info_rate": { "$ref": "#/$defs/rate" },
+        "key_info_hits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "in_evidence", "in_copy"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^K[0-9]+$" },
+              "in_evidence": { "type": "boolean" },
+              "in_copy": { "type": ["boolean", "null"] }
+            }
+          }
+        },
+        "key_info_copy_rate": { "$ref": "#/$defs/rate" },
+        "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
+        "num_turns": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "required": ["expected", "forbidden", "pass"],
+      "additionalProperties": false,
+      "properties": {
+        "expected": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "expected", "actual", "pass"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "enum": ["check", "check_errors", "instruction_warnings", "result", "final_stage", "card_count", "error_code", "cards_json", "report_has_warning", "report_has_caution", "report_lists_missing", "max_remaining_errors"] },
+              "expected": {},
+              "actual": {},
+              "pass": { "type": "boolean" }
+            }
+          }
+        },
+        "forbidden": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "found", "matched"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^F[0-9]+$" },
+              "found": { "type": ["boolean", "null"], "description": "match가 없으면 null (사람 판정 대기)" },
+              "matched": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "pass": { "type": ["boolean", "null"] }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "$defs": {
+    "rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+  }
+}

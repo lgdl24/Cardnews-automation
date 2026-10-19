@@ -1,0 +1,88 @@
+{
+  "spec_version": "0.1",
+  "run_id": "eval-toneup-sunscreen--v1--r1",
+  "batch": "example",
+  "input_id": "eval-toneup-sunscreen",
+  "input_type": "normal",
+  "input_source": "가상",
+  "skill_version": "v1",
+  "variant": null,
+  "repeat": 1,
+  "model": null,
+  "claude_code_version": null,
+  "started_at": "2026-10-10T08:32:11.670Z",
+  "finished_at": "2026-10-10T08:34:25.082Z",
+  "jobs": [
+    {
+      "kind": "plan",
+      "job_id": "cli-20261010-083211-lgo",
+      "ok": true,
+      "error_code": null,
+      "duration_ms": 42859,
+      "num_turns": null,
+      "permission_denials": 0,
+      "report": { "결과": "완료", "단계": "plan", "오류": [], "알림": [] }
+    },
+    {
+      "kind": "copy",
+      "job_id": "cli-20261010-083351-gn4",
+      "ok": true,
+      "error_code": null,
+      "duration_ms": 33641,
+      "num_turns": null,
+      "permission_denials": 0,
+      "report": { "결과": "완료", "단계": "copy", "오류": [], "알림": [] }
+    }
+  ],
+  "outcome": {
+    "result": "완료",
+    "final_stage": "copy",
+    "error_code": null,
+    "cards_json": true,
+    "card_count": 5,
+    "check_errors": [],
+    "check_instruction_warnings": 0,
+    "report_errors": [],
+    "report_warning_count": 0,
+    "report_caution_count": 0
+  },
+  "metrics": {
+    "first_pass": true,
+    "error_codes": {},
+    "auto_fix_count": 0,
+    "final_error_count": 0,
+    "coverage": 1,
+    "evidence_rate": 1,
+    "char_usage": 0.661,
+    "char_usage_max": 0.867,
+    "caution": { "total": 0, "in_source": 0, "not_in_source": 0 },
+    "key_info_rate": 1,
+    "key_info_hits": [
+      { "id": "K1", "in_evidence": true, "in_copy": true },
+      { "id": "K2", "in_evidence": true, "in_copy": null },
+      { "id": "K3", "in_evidence": true, "in_copy": null },
+      { "id": "K4", "in_evidence": true, "in_copy": true },
+      { "id": "K5", "in_evidence": true, "in_copy": null }
+    ],
+    "key_info_copy_rate": 1,
+    "duration_ms": 76500,
+    "num_turns": null
+  },
+  "checks": {
+    "expected": [
+      { "name": "check", "expected": "pass", "actual": "pass", "pass": true },
+      { "name": "instruction_warnings", "expected": 0, "actual": 0, "pass": true },
+      { "name": "result", "expected": "완료", "actual": "완료", "pass": true },
+      { "name": "final_stage", "expected": "copy", "actual": "copy", "pass": true },
+      { "name": "card_count", "expected": 5, "actual": 5, "pass": true },
+      { "name": "max_remaining_errors", "expected": 0, "actual": 0, "pass": true }
+    ],
+    "forbidden": [
+      { "id": "F1", "found": false, "matched": [] },
+      { "id": "F2", "found": false, "matched": [] },
+      { "id": "F3", "found": false, "matched": [] }
+    ],
+    "pass": true
+  },
+  "notes": "규격 예시. 실제 평가 실행이 아니라 대화 모드 기록 products/toneup-sunscreen-r1(구성안·문구 작업)을 이 형식으로 옮긴 것. 그래서 model·claude_code_version·num_turns는 null이고, 결과 보고(report)는 형식만 채움. 지표는 그 기록의 log.jsonl·cards.json에서 계산"
+}
