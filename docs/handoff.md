@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-19 | Claude | #39 · `docs/39-mood-proposal` | **제안서: 글 무드 · 제품 색 무드** `docs/proposals/mood-proposal.md` (코드·규칙 변경 없음). 글 무드(제품 유형·효능 키워드·브랜드 무드, 이용석, v2 규칙 후보)와 제품 색 무드(#38, 제품 사진 대표 색 + 글자 대비 검사, 이규동). 캐릭터 배경은 보류. 같이 정할 것 목록 있음 |
 | 2026-10-19 | Claude | #23 · `docs/23-eval-spec` | **평가 결과·체크리스트 규격 v0.1 초안**: `docs/eval-spec.md`, 스키마 `schemas/eval/`(checklist·run-result), 예시 `docs/examples/eval/`(가상 톤업 선크림 체크리스트 + r1 기록을 옮긴 결과 1건), 테스트 `tests/eval-spec.test.js`(`npm test`에 포함, `eval/inputs/`가 있으면 그 체크리스트도 검사). #18 체크리스트 형식을 그대로 받고 선택 필드만 더함(`source`·`section`·`copy_terms`·`match` 등). 실행 하나 = 제작 폴더 하나 `eval/runs/<입력ID>--<버전>--r<N>/`(제품ID = 실행ID, 웹 데이터 `kind: eval` 프로젝트로 내보냄) + `result.json`. 실행은 `copy`에서 끝남(최종 승인 없음). 핵심 정보 포함률 계산 규칙 정함. 연결 규격이라 이규동 승인 필요 |
 | 2026-10-18 | Claude | #21 · `feat/21-web-studio` | **웹 모드 (로컬 실행)**: 입력·승인·수정 요청은 웹 화면에서, 실행은 내 컴퓨터의 `claude -p`. `npm run studio`(= vite 개발 서버)가 로컬 제작 API `/api/studio`(`scripts/lib/studio-api.js`, 127.0.0.1만)를 붙이고, 화면 S1 `/studio`·S2 `/studio/new`·S3 `/studio/:id`. 작업 실행기 `scripts/lib/job-runner.js`(웹·평가 모드 공통: 임시 작업 폴더, 허용 도구·명령 제한, 재검증 후 반영, 작업 시작·끝 기록). 지시문 `prompts/web/`(plan·copy·revise), 평가 지시문은 `prompts/eval/`로 이동. `CLAUDE.md`·Skill에 웹 모드 추가, '서비스 모드 결과 보고' → '작업 결과 보고'(이용석 승인 필요). `log.js`는 `CARDNEWS_MODE=web`도 기록 안 함. 배포 사이트는 그대로 보기 전용 |
 | 2026-10-17 | Claude | #18 · `feat/18-eval-inputs` | **평가 입력 4개 (초안 형식)**: `eval/inputs/<입력ID>/`(input.md·images·checklist.json). 가상 정상 `eval-mini-humidifier`(수치)·`eval-oat-drink`(식품 효능), 경계 `eval-input-missing`(5종 누락)·`eval-injection`(지시문 5개 탐지 + 탐지 안 되는 1개). `tests/eval-inputs.test.js`가 인용·기대 동작 확인. 형식은 `docs/eval-spec.md`(이용석) 확정 뒤 맞춤. 제품 A·B는 실제 자료 대기 |
@@ -17,7 +18,6 @@
 | 2026-10-17 | Claude | #11 · `feat/11-export` | **`npm run export`**: `config/export.json`의 제품을 웹 데이터(`web/public/data/`, 커밋함)로 내보냄. 조건(검증 오류 0·승인·PNG·레이아웃) 미달은 이유 코드로 제외, 쓰기 전 스키마 검사, `eval/`은 지우지 않음. 코드 `scripts/export.js`·`scripts/lib/web-data.js`·`scripts/lib/web-schema.js`, 테스트 `tests/export.test.js`(결과가 `docs/examples/web-data/`와 같은지 확인). #7 위에 쌓은 브랜치 |
 | 2026-10-16 | Claude | #9 · `chore/9-remove-service-mode` | **서비스 모드 → 평가 모드**: `[평가 모드]` 지시문으로 평가 실행기(`npm run eval`, `claude -p`)가 작업 하나씩 실행. 질문 없이 끝내고 결과 보고 형식으로 답함, `log.js`는 기록 안 함(`CARDNEWS_MODE=eval`), 구성안 승인은 실행기가 `approved_by: eval`로 기록. `docs/service-mode.md`·`.env.example`·`prompts/revise.md` 삭제. 관리자 웹·Agent SDK 서버는 규칙에서 없어짐 |
 | 2026-10-16 | Claude | #7 · `feat/7-web-data-spec` | **웹 데이터 규격 v0.1 초안**: `docs/web-data-spec.md`, 스키마 `schemas/web-data/`(index·project·timeline), 예시 `docs/examples/web-data/`(toneup-sunscreen-r1 실제 결과에서 생성), 테스트 `tests/web-data.test.js`(`npm test`에 포함). 웹 화면은 이 예시로 먼저 개발. 연결 규격이라 이용석 승인 필요 |
-| 2026-10-16 | Claude | #5 · `docs/5-local-web-viewer` | **분석 방향 변경**: 실사용자가 없어 사용 데이터 분석·블라인드 평가는 제외. **평가용 입력 세트 12개**(정상 8·경계 4) + **핵심 정보 체크리스트**를 **평가 실행기**(`npm run eval`, 예정, `claude -p` 사용)로 반복 실행해 품질·일관성·안전성·규칙 v1/v2를 비교. 구성안 승인은 '평가' 자동 승인으로 기록. 직접 제작 시간 비교는 사례로만. 상세: `project-context.md` '평가와 미결정', 노션 [데이터 분석 설계](https://app.notion.com/p/3f56bcfa1f8a81f68cc3ee29a152453f) |
 
 ## 현재 작업
 
