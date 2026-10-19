@@ -1,6 +1,8 @@
-# 결과 보기 웹
+# 결과 보기 웹 + 로컬 제작 화면
 
-로컬 Claude Code로 만든 카드뉴스 결과와 제작 과정을 보여주는 **정적 사이트**입니다. 서버·로그인·입력 기능은 없고, 내보낸 웹 데이터(`public/data/`)만 읽습니다.
+로컬 Claude Code로 만든 카드뉴스 결과와 제작 과정을 보여주는 **정적 사이트**입니다. 배포된 사이트에는 서버·로그인·입력 기능이 없고, 내보낸 웹 데이터(`public/data/`)만 읽습니다.
+
+같은 앱을 내 컴퓨터에서 `npm run studio`(= 개발 서버)로 켜면 **로컬 제작 화면**(`/studio`, 웹 모드)이 함께 열립니다. 개발 서버에 붙는 로컬 제작 API(`/api/studio`, `scripts/lib/studio-api.js`)가 입력을 저장하고 이 컴퓨터의 `claude -p`로 작업을 실행합니다. 빌드 결과(`dist/`)에는 API가 들어가지 않아서 배포 사이트에서 `/studio`를 열면 "내 컴퓨터에서 켰을 때만" 안내가 나옵니다.
 
 - 화면 설계: 노션 [웹 화면 설계](https://app.notion.com/p/3f56bcfa1f8a81b7870fce97265e2ef3) (V1~V4)
 - 데이터 규격: [`docs/web-data-spec.md`](../docs/web-data-spec.md), 스키마 `schemas/web-data/`
@@ -13,7 +15,7 @@
 ```bash
 npm run web:install      # 처음 한 번 (web/node_modules)
 npm run export           # 제작 결과 → web/public/data/ (데이터를 바꿨을 때)
-npm run web:dev          # 개발 서버 http://localhost:5173
+npm run web:dev          # 개발 서버 http://127.0.0.1:5173 (= npm run studio, 제작 화면 포함)
 npm run web:build        # 타입 검사 + 빌드 → web/dist/
 ```
 
@@ -30,6 +32,13 @@ npm run web:build        # 타입 검사 + 빌드 → web/dist/
 | `/projects/:id/timeline` | V2 제작 과정 | 이규동 | `src/screens/project-detail/tabs/TimelineTab.tsx` |
 | `/eval` | V3 평가 대시보드 | 이용석 | `src/screens/eval-dashboard/` |
 | `/compare?a=<id>&b=<id>` | V4 버전 비교 (권장) | 이용석 | `src/screens/version-compare/` |
+| `/studio` | S1 작업실: 제품 목록·Claude Code 상태 (로컬만) | 이규동 | `src/screens/studio/StudioHomePage.tsx` |
+| `/studio/new` · `/studio/:id/edit` | S2 새 제작·입력 고치기 (로컬만) | 이규동 | `src/screens/studio/ProductFormPage.tsx` |
+| `/studio/:id` | S3 제작 진행: 작업 진행·구성안 확인·카드 확인·승인·수정 요청·내보내기 (로컬만) | 이규동 | `src/screens/studio/StudioProductPage.tsx` |
+
+V2 카드 결과(#15)는 크게 보기(`?card=3`으로 공유, ←·→·Esc), PNG 개별·ZIP 묶음 다운로드(브라우저에서 만듦, `src/lib/zip.ts`), 이미지 출처 표, 글자-이미지 겹침 경고까지 있습니다. V2 제작 과정(#17)은 요약 숫자, 단계별 시간 막대(AI 처리/사람 검토), 품질 지표, 작업별 결과, 제작 기록 타임라인(검증 오류·승인 주체·수정 요청 유형·메모)을 보여줍니다.
+
+S1~S3(#21)은 `src/studio/api.ts`로 로컬 제작 API를 부릅니다. 쓰기 요청에는 `X-Studio: 1` 헤더가 붙고, 서버는 `127.0.0.1`·같은 출처 요청만 받습니다. 작업이 도는 동안 2초마다 상태를 다시 불러옵니다.
 
 아직 만들지 않은 화면은 `ScreenPlaceholder`(담당·읽는 데이터·할 일)가 자리를 잡고 있습니다. 담당자가 자기 파일에서 이 부분을 실제 화면으로 바꿉니다.
 
@@ -43,11 +52,14 @@ web/
 │   ├── data/           # [공통] 웹 데이터 타입·불러오기·표시 형식
 │   ├── components/     # [공통] 헤더·하단·배지·지표 카드·탭·상태 표시
 │   ├── styles/         # [공통] 색상·글꼴·페이지 틀
+│   ├── lib/            # [공통] 내려받기·ZIP 만들기
+│   ├── studio/         # 로컬 제작 API 호출·타입 (S1~S3)
 │   └── screens/        # 화면별 폴더 (담당자가 자기 폴더만 고침)
+├── vite.config.ts      # 개발 서버에만 로컬 제작 API를 붙임 (CARDNEWS_STUDIO=0이면 끔)
 └── vercel.json         # 정적 배포 설정 (주소 새로고침 시 index.html)
 ```
 
-- **[공통] 파일**(`data/`, `components/`, `styles/`, `App.tsx`)을 바꿀 때는 PR에 적고 두 사람이 함께 리뷰합니다. 화면 폴더는 담당자가 고치고 상대가 리뷰합니다.
+- **[공통] 파일**(`data/`, `components/`, `styles/`, `lib/`, `App.tsx`)을 바꿀 때는 PR에 적고 두 사람이 함께 리뷰합니다. 화면 폴더는 담당자가 고치고 상대가 리뷰합니다.
 - 화면 전용 스타일은 화면 폴더의 `.css`에 둡니다. 색상은 `styles/global.css`의 변수(`--color-*`, `--stage-*`)를 씁니다.
 - 탭 화면은 `useProjectContext()`로 `project`(project.json)와 `labels`(index.json의 이름표)를 받습니다. `timeline.json`은 `useTimeline(id)`로 따로 불러옵니다.
 - 화면에 보이는 이름(단계·역할·템플릿·수정 유형·단계 이름)은 코드에 적지 않고 `labels`에서 꺼냅니다(`label(labels.roles, card.role)`).

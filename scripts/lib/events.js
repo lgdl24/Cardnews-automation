@@ -9,7 +9,10 @@ const EVENTS = [
 ];
 const JOB_KINDS = ['plan', 'copy', 'revise'];
 
-// 평가 모드: 평가 실행기(npm run eval)가 claude -p를 실행할 때 CARDNEWS_MODE=eval을 넘김
+// 웹 모드·평가 모드: 작업 실행기(scripts/lib/job-runner.js)가 claude -p를 실행할 때 CARDNEWS_MODE=web|eval을 넘김
+// 이때 작업·승인·수정 기록은 실행기(웹 제작 화면·평가 실행기)가 남기므로 log.js는 기록하지 않음
+const RUNNER_MODES = ['web', 'eval'];
+const runnerMode = () => (RUNNER_MODES.includes(process.env.CARDNEWS_MODE) ? process.env.CARDNEWS_MODE : null);
 const isEvalMode = () => process.env.CARDNEWS_MODE === 'eval';
 
 function skillVersion() {
@@ -101,6 +104,6 @@ function resultFields(check, report, extra = {}) {
 const shouldLog = (argv) => !argv.includes('--no-log') && process.env.CARDNEWS_NO_LOG !== '1';
 
 module.exports = {
-  EVENTS, JOB_KINDS, isEvalMode, skillVersion, currentJob, startJob, endJob,
+  EVENTS, JOB_KINDS, RUNNER_MODES, runnerMode, isEvalMode, skillVersion, currentJob, startJob, endJob,
   appendEvent, readEvents, resultFields, shouldLog,
 };
