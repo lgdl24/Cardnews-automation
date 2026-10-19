@@ -13,9 +13,25 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 | | 대화 모드 | 웹 모드 | 평가 모드 |
 |---|---|---|---|
 | 쓰는 사람 | 팀원 (터미널) | 팀원 (로컬 웹 제작 화면) | 평가 실행기 (평가용 입력 세트 반복 실행) |
-| 실행 | 터미널의 Claude Code와 대화 | `npm run studio`로 켠 웹 화면에서 입력·승인·수정 요청 → 작업 실행기가 `claude -p`로 작업 하나씩 실행, 지시문은 `prompts/web/` | `npm run eval`(예정)이 같은 작업 실행기로 실행, 지시문은 `prompts/eval/` |
+| 실행 | 터미널의 Claude Code와 대화 | `npm run studio`로 켠 웹 화면에서 입력·승인·수정 요청 → 작업 실행기가 `claude -p`로 작업 하나씩 실행, 지시문은 `prompts/web/` | `npm run eval`이 같은 작업 실행기로 실행, 지시문은 `prompts/eval/`, 결과는 `eval/runs/<실행ID>/result.json` |
 | 사람 확인 | 구성안 승인·최종 검토를 대화에서 | 구성안 승인·수정 요청·최종 승인을 웹 화면에서 | 없음. 구성안 승인은 '평가'로 자동 기록 |
 | 결과 보기 | 결과 보기 웹 (`npm run export`로 내보낸 데이터) | 같음. 웹 화면의 [내보내기] 버튼 | 같음 + 평가 대시보드 |
+
+## 사용 방법 (평가 모드)
+
+평가용 입력(`eval/inputs/`)을 반복 실행해 품질·일관성·안전성을 잽니다. 규격은 [`docs/eval-spec.md`](docs/eval-spec.md).
+
+```bash
+npm run eval -- --batch v1-base --dry-run                 # 실행 목록만 확인 (사용량 없음)
+npm run eval -- --batch v1-base                           # eval/inputs/의 모든 입력을 1번씩
+npm run eval -- eval-injection --batch v1-repeat --repeat 3   # 한 입력을 3번 (A6 일관성)
+```
+
+- 실행 하나 = 구성안 작업 → 평가 승인(`approved_by: eval`) → 문구·출력 작업. 작업이 실패하면 거기서 멈추고, 그것도 결과로 남겨요.
+- 실행 폴더 `eval/runs/<입력ID>--<규칙 버전>--r<N>/`는 제품 폴더와 모양이 같아요(`CARDNEWS_PRODUCTS_DIR=eval/runs`로 `validate`·`log --summary` 사용 가능). 같은 실행ID가 있으면 시작 전에 멈추니 `--from`으로 반복 번호를 올려요.
+- `result.json`은 쓰기 전에 `schemas/eval/run-result.schema.json`으로 검사해요. 체크리스트 판정(기대 동작·금지 표현)과 핵심 정보 포함률이 들어 있어요.
+- `--variant <이름>`은 실행ID에 비교판 이름만 붙여요(A8). 규칙 일부를 뺀 판을 실제로 만드는 방법은 A8 작업에서 정해요.
+- 사용량이 들어요. 실행마다 `claude -p` 작업 1~2번이라 정상 입력 하나에 몇 분 걸려요. 웹 모드 제작과 동시에 돌리지 마세요.
 
 ## 사용 방법 (웹 모드)
 
@@ -85,6 +101,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run web:install` · `npm run web:dev` · `npm run web:build` | 결과 보기 웹 설치·개발 서버(http://127.0.0.1:5173)·빌드. 자세한 내용은 [`web/README.md`](web/README.md) |
 | `npm run studio` | 웹 모드 제작 화면 켜기 (= `web:dev`, 로컬 제작 API 포함) |
 | `npm run export` | 승인된 결과를 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json`, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`) |
+| `npm run eval -- [입력ID...] --batch <이름>` | 평가 실행기: 평가 입력을 `claude -p`로 실행하고 `eval/runs/<실행ID>/result.json` 남김 (`--repeat`·`--from`·`--variant`·`--model`·`--dry-run`) |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
 미리보기: `products/<제품ID>/output/html/index.html`을 브라우저로 열면 전체 카드를 한 번에 볼 수 있어요.
@@ -94,7 +111,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 - `validate`·`render`는 결과를 `products/<제품ID>/log.jsonl`에 자동으로 남기고, 품질 지표를 `output/quality.json`에 저장합니다.
 - 작업 시작·끝, 승인, 수정 요청(유형 코드 LEN·TONE·FACT 등)은 대화 모드에서 Claude가, 웹 모드에서 작업 실행기·웹 제작 화면이, 평가 모드에서 평가 실행기가 남깁니다.
 - 모든 기록에 규칙 버전(`config/skill-version.json`)이 붙습니다. 규칙을 고치면 버전을 올려 v1·v2 결과를 비교합니다.
-- **평가 방식 (2026-10-16)**: 실사용자가 없으므로, 평가용 입력 세트 12개(정상 8·경계 4)와 핵심 정보 체크리스트를 평가 실행기(`npm run eval`, 예정)로 반복 실행해 품질·일관성·안전성·규칙 버전 효과를 측정합니다. 자세한 내용은 [공통 맥락](docs/project-context.md) '평가와 미결정'.
+- **평가 방식 (2026-10-16)**: 실사용자가 없으므로, 평가용 입력 세트 12개(정상 8·경계 4)와 핵심 정보 체크리스트를 평가 실행기(`npm run eval`)로 반복 실행해 품질·일관성·안전성·규칙 버전 효과를 측정합니다. 자세한 내용은 [공통 맥락](docs/project-context.md) '평가와 미결정'.
 - 형식과 지표 정의: `docs/event-log-spec.md`
 
 실험 예시:
@@ -136,10 +153,11 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   └── handoff.md                    # 개발 인수인계 (현재 작업·최근 변경·다음 행동)
 ├── templates/                        # base.css + 표지형·이미지 강조형·설명형
 ├── scripts/                          # check-input, validate, render, log, compare, new-run, export, lib/
-│   └── lib/job-runner.js · studio-api.js  # 작업 실행기(웹·평가 모드 공통) · 로컬 제작 API(npm run studio)
+│   └── lib/job-runner.js · studio-api.js · eval-runner.js  # 작업 실행기(웹·평가 모드 공통) · 로컬 제작 API · 평가 실행기
 ├── web/                              # 결과 보기 웹 + 로컬 제작 화면(/studio) (React·TS·Vite, 화면별 담당은 web/README.md)
 │   └── public/data/                  # 내보낸 웹 데이터 (npm run export가 생성, 커밋함)
-├── eval/inputs/                      # 평가 입력 세트 (input.md + 핵심 정보 체크리스트, 형식 초안: eval/inputs/README.md)
+├── eval/inputs/                      # 평가 입력 세트 (input.md + 체크리스트, 형식: docs/eval-spec.md · eval/inputs/README.md)
+├── eval/runs/                        # 평가 실행 결과 (npm run eval이 생성, 실행ID 폴더마다 result.json)
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦, fixtures/fake-claude.js: 가짜 Claude Code)
 ├── CONTRIBUTING.md                   # 협업 규칙
 └── products/<제품ID>/                # 제품별 입력·데이터·출력·제작 기록 (test-*: 입력 누락·지시문 테스트 자료, *-r1: 대화 모드 실행 기록)

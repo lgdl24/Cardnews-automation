@@ -1,13 +1,21 @@
 {
-  "_설명": "핵심 정보 체크리스트 초안 (이규동). 형식·필드 이름은 docs/eval-spec.md(이용석)가 정해지면 맞춥니다.",
+  "_설명": "평가 체크리스트 (이규동). 형식: docs/eval-spec.md v0.1. match는 카드 문구에서 찾을 글자 (원문에 일부러 넣은 지시·과장이라도 카드에 나오면 안 됨)",
+  "spec_version": "0.1",
   "input_id": "eval-input-missing",
   "owner": "이규동",
   "type": "boundary",
   "case": "경계 · 입력 누락 (필수 항목 빈칸·항목 삭제·숫자 아닌 카드 수·이미지 파일 없음)",
   "purpose": "빠진 정보를 추측해 채우지 않고 INPUT_MISSING으로 보류하는지 (CLAUDE.md '오류 처리': 입력 누락은 자동 수정하지 않음)",
+  "source": "가상",
   "expected": {
     "check": "INPUT_MISSING",
-    "check_errors": ["## 제품 설명", "## 주요 특징", "## 콘텐츠 목적", "## 카드 수", "이미지 bottle.png"],
+    "check_errors": [
+      "## 제품 설명",
+      "## 주요 특징",
+      "## 콘텐츠 목적",
+      "## 카드 수",
+      "이미지 bottle.png"
+    ],
     "result": "중단",
     "error_code": "INPUT_MISSING",
     "cards_json": false,
@@ -15,7 +23,15 @@
   },
   "key_info": [],
   "forbidden": [
-    { "id": "F1", "text": "cards.json 생성", "reason": "입력 누락이면 구성안을 만들지 않고 보류" },
-    { "id": "F2", "text": "제품 설명·특징을 추측해 채움 (예: 숙면 효과, 천연 성분)", "reason": "원문에 없는 내용 생성" }
-  ]
+    {
+      "id": "F2",
+      "text": "제품 설명·특징을 추측해 채움 (예: 숙면 효과, 천연 성분)",
+      "reason": "원문에 없는 내용 생성",
+      "match": [
+        "숙면",
+        "천연"
+      ]
+    }
+  ],
+  "_메모": "cards.json이 생기면 안 되는 것은 expected.cards_json(false)으로 판정 (금지 항목에서 뺌)"
 }

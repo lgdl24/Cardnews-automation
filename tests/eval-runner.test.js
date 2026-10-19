@@ -1,0 +1,195 @@
+// 평가 실행기 테스트: 가짜 Claude로 평가 입력을 실행해 result.json이 규격(docs/eval-spec.md)대로 나오는지
+// 실제 eval/inputs·eval/runs는 건드리지 않고 임시 폴더에서 실행
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { ROOT } = require('./helpers');
+const { runEval, planRuns, keyInfoMetrics, judgeForbidden, overallPass } = require('../scripts/lib/eval-runner');
+const { parseArgs } = require('../scripts/eval');
+
+const FAKE = path.join(__dirname, 'fixtures', 'fake-claude.js');
+const SRC = 'toneup-sunscreen-r1';
+
+function setup() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-eval-'));
+  const inputsDir = path.join(dir, 'inputs');
+  const runsDir = path.join(dir, 'runs');
+  // 정상 입력: 규격 예시(가상 톤업 선크림) + 이미지
+  const normal = path.join(inputsDir, 'eval-toneup-sunscreen');
+  fs.cpSync(path.join(ROOT, 'docs', 'examples', 'eval', 'inputs', 'eval-toneup-sunscreen'), normal, { recursive: true });
+  fs.mkdirSync(path.join(normal, 'images'));
+  fs.copyFileSync(path.join(ROOT, 'products', SRC, 'images', 'main.png'), path.join(normal, 'images', 'main.png'));
+  // 경계 입력: 입력 누락
+  fs.cpSync(path.join(ROOT, 'eval', 'inputs', 'eval-input-missing'), path.join(inputsDir, 'eval-input-missing'), { recursive: true });
+  process.env.FAKE_CLAUDE_SOURCE = path.join(ROOT, 'products', SRC, 'cards.json');
+  process.env.FAKE_CLAUDE_PNG_DIR = path.join(ROOT, 'docs', 'examples', 'web-data', 'projects', SRC, 'png');
+  const opts = { inputsDir, runsDir, bin: FAKE, jobsDir: path.join(dir, 'jobs') };
+  return { dir, inputsDir, runsDir, opts, cleanup: () => fs.rmSync(dir, { recursive: true, force: true }) };
+}
+
+const readLog = (runDir) => fs.readFileSync(path.join(runDir, 'log.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+
+test('인자: 입력ID·묶음·반복·비교판·dry-run', () => {
+  const o = parseArgs(['eval-a', 'eval-b', '--batch', 'v1-repeat', '--repeat', '3', '--from', '2', '--variant', 'no-quote-rule', '--dry-run']);
+  assert.deepEqual(o.inputIds, ['eval-a', 'eval-b']);
+  assert.equal(o.batch, 'v1-repeat');
+  assert.equal(o.repeat, 3);
+  assert.equal(o.from, 2);
+  assert.equal(o.variant, 'no-quote-rule');
+  assert.equal(o.dryRun, true);
+  assert.throws(() => parseArgs(['--bogus']), /알 수 없는 옵션/);
+  assert.throws(() => parseArgs(['--repeat', 'x']), /정수/);
+});
+
+test('실행 계획: 실행ID 규칙, 묶음 이름 필수, 없는 입력·이미 있는 실행은 시작 전에 멈춤', () => {
+  const s = setup();
+  try {
+    const runs = planRuns({ inputIds: [], batch: 'v1-base', repeat: 2, from: 1, inputsDir: s.inputsDir, runsDir: s.runsDir });
+    assert.deepEqual(runs.map((r) => r.runId), [
+      'eval-input-missing--v1--r1', 'eval-input-missing--v1--r2',
+      'eval-toneup-sunscreen--v1--r1', 'eval-toneup-sunscreen--v1--r2',
+    ]);
+    const v = planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-quote-rule', from: 3, inputsDir: s.inputsDir, runsDir: s.runsDir });
+    assert.equal(v[0].runId, 'eval-toneup-sunscreen--v1-no-quote-rule--r3');
+    assert.throws(() => planRuns({ inputIds: [], batch: '', inputsDir: s.inputsDir, runsDir: s.runsDir }), /--batch/);
+    assert.throws(() => planRuns({ inputIds: ['eval-nothing'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /평가 입력이 없거나/);
+    assert.throws(() => planRuns({ inputIds: ['toneup'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /eval-로 시작/);
+    fs.mkdirSync(path.join(s.runsDir, 'eval-toneup-sunscreen--v1--r1'), { recursive: true });
+    assert.throws(() => planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /이미 있는 실행/);
+  } finally {
+    s.cleanup();
+  }
+});
+
+test('dry-run은 아무 폴더도 만들지 않음', async () => {
+  const s = setup();
+  try {
+    const out = await runEval({ ...s.opts, batch: 'v1-base', dryRun: true });
+    assert.equal(out.runs.length, 2);
+    assert.equal(out.results.length, 0);
+    assert.equal(fs.existsSync(s.runsDir), false);
+  } finally {
+    s.cleanup();
+  }
+});
+
+test('정상 입력: 구성안 → 평가 승인 → 문구·출력, result.json이 규격을 통과하고 체크리스트 통과', async () => {
+  const s = setup();
+  try {
+    const { results } = await runEval({ ...s.opts, inputIds: ['eval-toneup-sunscreen'], batch: 'v1-base' });
+    assert.equal(results.length, 1);
+    const { result: r, schemaErrors, file } = results[0];
+    assert.deepEqual(schemaErrors, []);
+    assert.equal(path.basename(file), 'result.json');
+    assert.ok(fs.existsSync(file));
+    assert.equal(r.run_id, 'eval-toneup-sunscreen--v1--r1');
+    assert.equal(r.batch, 'v1-base');
+    assert.equal(r.input_source, '가상');
+    assert.equal(r.model, 'fake-model');
+    assert.equal(r.claude_code_version, '9.9.9');
+    assert.deepEqual(r.jobs.map((j) => [j.kind, j.ok]), [['plan', true], ['copy', true]]);
+    assert.equal(r.jobs[0].num_turns, 4);
+    assert.equal(r.jobs[0].permission_denials, 0);
+    assert.deepEqual(r.outcome, {
+      result: '완료', final_stage: 'copy', error_code: null, cards_json: true, card_count: 5,
+      check_errors: [], check_instruction_warnings: 0, report_errors: [], report_warning_count: 0, report_caution_count: 0,
+    });
+    assert.equal(r.metrics.first_pass, true);
+    assert.equal(r.metrics.final_error_count, 0);
+    assert.equal(r.metrics.key_info_rate, 1);
+    assert.equal(r.metrics.key_info_hits.length, 5);
+    assert.equal(r.metrics.coverage, 1);
+    assert.equal(typeof r.metrics.duration_ms, 'number');
+    assert.ok(r.checks.expected.length >= 5 && r.checks.expected.every((x) => x.pass), JSON.stringify(r.checks.expected));
+    assert.equal(r.checks.pass, true);
+    // 기록: 평가 승인은 approved_by eval, 최종 승인 없음
+    const log = readLog(path.join(s.runsDir, r.run_id));
+    const names = log.map((e) => e.event);
+    assert.equal(names[0], 'input_submitted');
+    assert.deepEqual(log.filter((e) => e.event === 'plan_approved').map((e) => e.approved_by), ['eval']);
+    assert.ok(!names.includes('final_approved'));
+    assert.equal(log.filter((e) => e.event === 'job_finished').length, 2);
+    // 입력 폴더는 그대로
+    assert.ok(!fs.existsSync(path.join(s.inputsDir, 'eval-toneup-sunscreen', 'cards.json')));
+    // 같은 실행ID는 다시 돌리지 않음
+    await assert.rejects(runEval({ ...s.opts, inputIds: ['eval-toneup-sunscreen'], batch: 'v1-base' }), /이미 있는 실행/);
+  } finally {
+    s.cleanup();
+  }
+});
+
+test('입력 누락 입력: 구성안 작업에서 중단, 문구 작업 없음, 입력 확인 오류 기록', async () => {
+  const s = setup();
+  process.env.FAKE_CLAUDE_SCENARIO = 'stopped';
+  try {
+    const { results } = await runEval({ ...s.opts, inputIds: ['eval-input-missing'], batch: 'v1-base' });
+    const { result: r, schemaErrors } = results[0];
+    assert.deepEqual(schemaErrors, []);
+    assert.equal(r.jobs.length, 1);
+    assert.equal(r.outcome.result, '중단');
+    assert.equal(r.outcome.error_code, 'INPUT_MISSING');
+    assert.equal(r.outcome.cards_json, false);
+    assert.equal(r.outcome.final_stage, null);
+    assert.ok(r.outcome.check_errors.includes('## 제품 설명'), JSON.stringify(r.outcome.check_errors));
+    const row = (name) => r.checks.expected.find((x) => x.name === name);
+    for (const name of ['check', 'check_errors', 'result', 'error_code', 'cards_json']) assert.equal(row(name).pass, true, name);
+    // 가짜 Claude 보고는 누락 항목을 하나만 적으므로 '누락 항목을 모두 적었는가'는 실패로 판정돼야 함
+    assert.equal(row('report_lists_missing').pass, false);
+    assert.equal(r.checks.pass, false);
+    assert.equal(r.metrics.key_info_rate, null);
+    const log = readLog(path.join(s.runsDir, r.run_id));
+    assert.ok(!log.some((e) => e.event === 'plan_approved'));
+  } finally {
+    delete process.env.FAKE_CLAUDE_SCENARIO;
+    s.cleanup();
+  }
+});
+
+test('핵심 정보 포함률·금지 표현 판정 (docs/eval-spec.md 4-1·5장)', () => {
+  const cards = {
+    stage: 'copy',
+    sources: [
+      { id: 'S1', quote: 'SPF50+ PA++++ 자외선 차단' },
+      { id: 'S2', quote: '50ml' },
+      { id: 'S3', quote: '외출 30분 전에 바르고, 땀을 흘린 뒤에는 덧발라 줍니다.' },
+    ],
+    cards: [
+      { no: 1, evidence: ['S1', 'S2'], copy: { title: 'SPF50+ PA++++', subtitle: '가볍게 미백까지' } },
+      { no: 2, evidence: ['S3'], copy: { items: ['외출 30분 전에 발라요'] } },
+    ],
+  };
+  const m = keyInfoMetrics(cards, [
+    { id: 'K1', quote: 'SPF50+ PA++++ 자외선 차단', copy_terms: ['SPF50+', 'PA++++'] },
+    { id: 'K2', quote: '50ml 휴대용 튜브' }, // 짧은 인용(50ml)은 길이 절반 조건으로 포함 안 됨
+    { id: 'K3', quote: '땀을 흘린 뒤에는 덧발라' },
+    { id: 'K4', quote: '외출 30분 전에 바르고', copy_terms: ['30분', '1시간'] },
+  ]);
+  assert.deepEqual(m.key_info_hits, [
+    { id: 'K1', in_evidence: true, in_copy: true },
+    { id: 'K2', in_evidence: false, in_copy: null },
+    { id: 'K3', in_evidence: true, in_copy: null },
+    { id: 'K4', in_evidence: true, in_copy: false },
+  ]);
+  assert.equal(m.key_info_rate, 0.75);
+  assert.equal(m.key_info_copy_rate, 0.5);
+  // 구성안 단계(문구 없음)면 in_copy는 null
+  const plan = keyInfoMetrics({ ...cards, stage: 'plan', cards: cards.cards.map(({ copy, ...c }) => c) }, [{ id: 'K1', quote: 'SPF50+ PA++++ 자외선 차단', copy_terms: ['SPF50+'] }]);
+  assert.equal(plan.key_info_hits[0].in_copy, null);
+  assert.equal(plan.key_info_copy_rate, null);
+
+  const f = judgeForbidden([
+    { id: 'F1', match: ['미백', '화이트닝'] },
+    { id: 'F2', match: ['최고'] },
+    { id: 'F3' },
+  ], cards);
+  assert.deepEqual(f, [
+    { id: 'F1', found: true, matched: ['미백'] },
+    { id: 'F2', found: false, matched: [] },
+    { id: 'F3', found: null, matched: [] },
+  ]);
+  assert.equal(overallPass([{ pass: true }], f), false);
+  assert.equal(overallPass([{ pass: true }], f.slice(1)), null);
+  assert.equal(overallPass([{ pass: true }], [f[1]]), true);
+});

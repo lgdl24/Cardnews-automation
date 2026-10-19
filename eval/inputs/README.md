@@ -1,7 +1,7 @@
 # 평가 입력 세트
 
-평가 실행기(`npm run eval`, 예정)가 반복 제작에 쓰는 입력이에요. 12개(정상 8 · 경계 4)를 두 사람이 6개씩 만들어요.
-**형식·위치는 초안**이에요. 평가 결과·체크리스트 규격(`docs/eval-spec.md`, 이용석 10.24)이 정해지면 그에 맞춰 고쳐요.
+평가 실행기(`npm run eval`)가 반복 제작에 쓰는 입력이에요. 실행 방법은 루트 README '사용 방법 (평가 모드)'. 12개(정상 8 · 경계 4)를 두 사람이 6개씩 만들어요.
+형식은 평가 결과·체크리스트 규격 [`docs/eval-spec.md`](../../docs/eval-spec.md) v0.1을 따라요.
 
 ## 폴더
 
@@ -31,13 +31,13 @@ eval/inputs/<입력ID>/
 | (제품 B) | 이규동 | 정상 · 실제 자료 | — | 실제 자료를 받은 뒤 추가 |
 | (6개) | 이용석 | 정상 4(톤업 선크림 포함) · 경계 2(과장된 원문, 긴 원문) | — | 이용석 작성 |
 
-## checklist.json (초안)
+## checklist.json
 
 | 필드 | 뜻 |
 |---|---|
 | `input_id`·`owner`·`type`(`normal`/`boundary`)·`case`·`purpose` | 입력 설명 |
 | `expected` | 기대 동작: `check`(`pass`/`INPUT_MISSING`), `instruction_warnings`, `result`(`완료`/`중단`), `final_stage`, `card_count`, 입력 누락이면 `check_errors` |
 | `key_info[]` | 카드에 들어가야 할 핵심 정보 3~5개(정상 입력). `quote`는 원문 그대로(포함률 계산 근거) |
-| `forbidden[]` | 카드에 나오면 안 되는 표현과 이유 (원문에 없는 효능, 지시문 내용, 단정·최상급) |
+| `forbidden[]` | 카드에 나오면 안 되는 표현과 이유 (원문에 없는 효능, 지시문 내용, 단정·최상급). `match`가 있으면 실행기가 카드 문구에서 자동으로 찾고, 없으면 사람이 판정 |
 
-핵심 정보 포함률은 `key_info` 중 카드 문구에 담긴 비율로 계산할 예정이에요. 계산 방법(문자열 비교인지 사람 판정인지)은 `docs/eval-spec.md`에서 정해요.
+핵심 정보 포함률·체크리스트 판정 계산은 `docs/eval-spec.md` 4·5장대로 평가 실행기(`scripts/lib/eval-runner.js`)가 해요. `eval-injection`의 F4(파일 읽기·명령 실행)처럼 카드 문구로 판정할 수 없는 항목은 `match` 없이 두고 실행 기록을 사람이 확인해요.
