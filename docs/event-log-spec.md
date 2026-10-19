@@ -1,6 +1,6 @@
-# 제작 기록(이벤트)·지표 규격 — v0.1
+# 제작 기록(이벤트)·지표 규격 — v0.2
 
-데이터 분석(A1~A8)의 원본 데이터 형식입니다. 대화 모드와 평가 모드 모두 제품(평가 실행이면 실행별) 폴더의 `products/<제품ID>/log.jsonl`에 한 줄씩 저장합니다.
+데이터 분석(A1~A8)의 원본 데이터 형식입니다. 대화 모드·웹 모드·평가 모드 모두 제품(평가 실행이면 실행별) 폴더의 `products/<제품ID>/log.jsonl`에 한 줄씩 저장합니다.
 결과 보기 웹에는 내보내기(`npm run export`)가 공개해도 되는 필드만 옮깁니다(`docs/web-data-spec.md`).
 계산 코드: `scripts/lib/metrics.js`(품질 지표), `scripts/lib/analysis.js`(과정 지표).
 
@@ -11,22 +11,23 @@
 | `ts` | 기록 시각 (ISO 8601, UTC) |
 | `event` | 이벤트 이름 |
 | `project_id` | 제품ID |
-| `job_id` | 작업 ID. 작업 밖 이벤트는 `null`. 대화 모드는 `cli-YYYYMMDD-HHMMSS-xxx`, 평가 모드는 평가 실행기가 정한 ID(`CARDNEWS_JOB_ID`) |
+| `job_id` | 작업 ID. 작업 밖 이벤트는 `null`. 대화 모드는 `cli-YYYYMMDD-HHMMSS-xxx`, 웹 모드·평가 모드는 작업 실행기가 정한 ID(`job-YYYYMMDD-HHMMSS-xxx`, `CARDNEWS_JOB_ID`) |
 | `skill_version` | `config/skill-version.json`의 `version` |
 
 ## 이벤트
 
-| 이벤트 | 추가 필드 | 누가 남기나 (대화 / 평가) |
+| 이벤트 | 추가 필드 | 누가 남기나 (대화 / 웹 / 평가) |
 |---|---|---|
-| `input_submitted` | `form_started_at`(선택, 입력 작성을 시작한 시각) | Claude / 평가 실행기 |
-| `job_started` | `kind`: `plan` · `copy` · `revise` | Claude / 평가 실행기 |
-| `job_finished` | `kind`, `ok`, `error_code` | Claude / 평가 실행기 |
-| `validate_result` | `check`: `data` · `layout`, `ok`, `error_codes`, `error_count`, `cards_with_errors`, `caution_count`, `stage`, `metrics`(data만), `rendered_cards`(layout만) | `validate`·`render` 스크립트 (두 모드 같음) |
-| `plan_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 평가 실행기(`eval`) |
-| `final_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / (평가 모드는 남기지 않음) |
-| `revision_requested` | `stage`: `plan` · `final`, `cards`(카드 번호 배열, 전체면 빈 배열), `types`(유형 코드 배열), `memo` | Claude / (평가 모드에는 없음) |
+| `input_submitted` | `form_started_at`(선택, 입력 작성을 시작한 시각) | Claude / 웹 제작 화면 / 평가 실행기 |
+| `job_started` | `kind`: `plan` · `copy` · `revise`, `executor`(웹·평가 모드: `claude-cli`) | Claude / 작업 실행기 / 작업 실행기 |
+| `job_finished` | `kind`, `ok`, `error_code` | Claude / 작업 실행기 / 작업 실행기 |
+| `validate_result` | `check`: `data` · `layout`, `ok`, `error_codes`, `error_count`, `cards_with_errors`, `caution_count`, `stage`, `metrics`(data만), `rendered_cards`(layout만) | `validate`·`render` 스크립트 (세 모드 같음) |
+| `plan_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 웹 제작 화면(`human`) / 평가 실행기(`eval`) |
+| `final_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 웹 제작 화면(`human`) / (평가 모드는 남기지 않음) |
+| `revision_requested` | `stage`: `plan` · `final`, `cards`(카드 번호 배열, 전체면 빈 배열 — 웹 모드는 전체면 `cards`를 남기지 않음), `types`(유형 코드 배열), `memo` | Claude / 웹 제작 화면 / (평가 모드에는 없음) |
 
-- 평가 모드(`CARDNEWS_MODE=eval`)에서는 `log.js`가 기록하지 않고, 평가 실행기가 작업·승인 이벤트를 직접 남깁니다. `validate_result`는 두 모드 모두 스크립트가 남깁니다.
+- 웹 모드·평가 모드(`CARDNEWS_MODE=web|eval`)에서는 `log.js`가 기록하지 않습니다. 작업 시작·끝은 작업 실행기(`scripts/lib/job-runner.js`)가, 입력·승인·수정 요청은 웹 모드는 웹 제작 화면(로컬 제작 API `scripts/lib/studio-api.js`)이, 평가 모드는 평가 실행기가 남깁니다. `validate_result`는 세 모드 모두 스크립트가 남깁니다.
+- 분석 코드(`scripts/lib/analysis.js`)는 `revision_requested`에 `cards`가 없으면 빈 배열(전체)로 읽습니다.
 - `approved_by`가 없으면 사람이 승인한 것으로 봅니다. 평가 실행의 자동 승인은 `eval`로 남겨 실제 제작과 구분합니다.
 - `validate`·`render`에 `--no-log`를 붙이거나 `CARDNEWS_NO_LOG=1`이면 기록하지 않습니다. (평가 실행기의 재검증용)
 - 유형 코드는 `config/revision-types.json`이 원본입니다.
@@ -74,3 +75,4 @@ npm run compare -- toneup-sunscreen-r1 toneup-sunscreen-r2 toneup-sunscreen-r3  
 ## 버전
 
 - v0.1 (2026-10-10): 첫 정의. 이벤트·필드를 추가하면 부 버전, 의미를 바꾸면 주 버전을 올리고 노션 '데이터 분석 설계'도 함께 고칩니다.
+- v0.2 (2026-10-19, 이용석 리뷰): 웹 모드(#21) 반영 — 누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 모드 `job_id` 형식, 웹 모드의 `revision_requested.cards` 생략. 기록 내용은 바뀌지 않음(코드에 이미 있는 것을 문서에 맞춤)
