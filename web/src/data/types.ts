@@ -1,4 +1,4 @@
-// 웹 데이터 타입 — docs/web-data-spec.md v0.1, schemas/web-data/*.schema.json과 같은 모양
+// 웹 데이터 타입 — docs/web-data-spec.md v0.2, schemas/web-data/*.schema.json과 같은 모양
 // 스키마를 바꾸면 이 파일도 함께 고치고, 두 사람이 리뷰한다 (공통 파일)
 
 export type Kind = 'production' | 'example' | 'eval';
@@ -54,7 +54,7 @@ export interface ProjectSummary {
 }
 
 export interface WebIndex {
-  spec_version: '0.1';
+  spec_version: '0.2';
   exported_at: string;
   skill_version: string;
   labels: Labels;
@@ -100,6 +100,8 @@ export interface Caution {
   term: string;
   category: string;
   in_source: boolean;
+  /** 표현이 나온 문구 칸 (v0.2). items 필드는 항목 번호, 나머지는 null */
+  fields: { field: string; index: number | null }[];
 }
 
 /** 템플릿별 문구 필드 (cards.schema.json). 화면은 필요한 필드만 꺼내 씀 */
@@ -163,7 +165,7 @@ export interface Quality {
 }
 
 export interface Project {
-  spec_version: '0.1';
+  spec_version: '0.2';
   id: string;
   kind: Kind;
   label: string | null;
@@ -237,7 +239,7 @@ export interface TimelineEvent {
 }
 
 export interface Timeline {
-  spec_version: '0.1';
+  spec_version: '0.2';
   id: string;
   summary: {
     complete: boolean;

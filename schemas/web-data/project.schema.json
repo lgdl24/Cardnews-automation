@@ -7,7 +7,7 @@
   "required": ["spec_version", "id", "kind", "label", "stage", "skill_version", "updated_at", "product", "images", "sources", "analysis", "cards", "plan_revisions", "quality"],
   "additionalProperties": false,
   "properties": {
-    "spec_version": { "const": "0.1" },
+    "spec_version": { "const": "0.2" },
     "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
     "kind": { "$ref": "index.schema.json#/$defs/kind" },
     "label": { "type": ["string", "null"] },
@@ -91,12 +91,26 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["term", "category", "in_source"],
+            "required": ["term", "category", "in_source", "fields"],
             "additionalProperties": false,
             "properties": {
               "term": { "type": "string" },
               "category": { "type": "string" },
-              "in_source": { "type": "boolean" }
+              "in_source": { "type": "boolean" },
+              "fields": {
+                "description": "표현이 나온 문구 칸. items는 index로 몇 번째 항목인지(0부터), 그 외는 null (v0.2)",
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["field", "index"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "field": { "type": "string", "pattern": "^[a-z_]+$" },
+                    "index": { "type": ["integer", "null"], "minimum": 0 }
+                  }
+                }
+              }
             }
           }
         },

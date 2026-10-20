@@ -21,15 +21,21 @@ function coverageItems(input) {
 }
 
 // 주의 표현 찾기: 문구에 쓰인 목록 표현과, 같은 표현이 원문에도 있는지
+// 표현 하나는 카드마다 한 번만 셈. fields는 그 표현이 나온 문구 칸(items는 index로 몇 번째인지)
 function findCautions(data, sourceText, caution) {
   const found = [];
   for (const card of data.cards || []) {
     if (!card.copy || typeof card.copy !== 'object') continue;
-    const texts = Object.values(card.copy).flat().filter((t) => typeof t === 'string');
+    const texts = [];
+    for (const [field, value] of Object.entries(card.copy)) {
+      if (typeof value === 'string') texts.push({ field, index: null, text: value });
+      else if (Array.isArray(value)) value.forEach((t, index) => typeof t === 'string' && texts.push({ field, index, text: t }));
+    }
     for (const group of caution.groups) {
       for (const term of group.terms) {
-        if (texts.some((t) => t.includes(term))) {
-          found.push({ card: card.no, term, category: group.category, in_source: sourceText.includes(term) });
+        const fields = texts.filter((t) => t.text.includes(term)).map(({ field, index }) => ({ field, index }));
+        if (fields.length) {
+          found.push({ card: card.no, term, category: group.category, in_source: sourceText.includes(term), fields });
         }
       }
     }
