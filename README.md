@@ -27,6 +27,7 @@ npm run eval -- --batch v1-base                           # eval/inputs/의 모�
 npm run eval -- eval-injection --batch v1-repeat --repeat 3   # 한 입력을 3번 (A6 일관성)
 npm run eval -- eval-oat-drink --batch v1-base --export       # 끝나면 결과 보기 웹 데이터로 내보내기
 npm run compare -- --eval --batch v1-repeat                # 반복 실행 일관성 (A6): 입력 × 규칙 버전별로 반복끼리 비교
+npm run eval -- --batch a8 --variant no-quote-rule         # 비교판 (A8): eval/variants/<이름>/의 바꾼 규칙으로 실행
 ```
 
 - 실행 하나 = 구성안 작업 → 평가 승인(`approved_by: eval`) → 문구·출력 작업. 작업이 실패하면 거기서 멈추고, 그것도 결과로 남겨요.
@@ -159,6 +160,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 ├── web/                              # 결과 보기 웹 + 로컬 제작 화면(/studio) (React·TS·Vite, 화면별 담당은 web/README.md)
 │   └── public/data/                  # 내보낸 웹 데이터 (npm run export가 생성, 커밋함)
 ├── eval/inputs/                      # 평가 입력 세트 (input.md + 체크리스트, 형식: docs/eval-spec.md · eval/inputs/README.md)
+├── eval/variants/                    # 평가 비교판 (A8): 바꾼 규칙 파일, 형식은 eval/variants/README.md
 ├── eval/runs/                        # 평가 실행 결과 (npm run eval이 생성, 실행ID 폴더마다 result.json)
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦, fixtures/fake-claude.js: 가짜 Claude Code)
 ├── CONTRIBUTING.md                   # 협업 규칙

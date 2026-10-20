@@ -55,7 +55,8 @@ function copyFiltered(src, dst, { base, exclude }) {
 }
 
 // ── 1) 작업 폴더
-function createWorkspace({ jobId, productId, productDir, root = ROOT, jobsDir = path.join(os.tmpdir(), 'cardnews-jobs') }) {
+// overlayDir: 평가 비교판(A8)의 바꾼 규칙 파일 (저장소와 같은 경로). 규칙을 복사한 뒤 덮어씀
+function createWorkspace({ jobId, productId, productDir, root = ROOT, jobsDir = path.join(os.tmpdir(), 'cardnews-jobs'), overlayDir = null }) {
   assertId(productId);
   if (!fs.existsSync(path.join(productDir, 'input.md'))) throw new Error(`input.md가 없어요: ${productDir}`);
   const jobDir = path.join(jobsDir, jobId);
@@ -63,6 +64,10 @@ function createWorkspace({ jobId, productId, productDir, root = ROOT, jobsDir = 
   for (const entry of RULE_ENTRIES) {
     const src = path.join(root, entry);
     if (fs.existsSync(src)) copyFiltered(src, path.join(jobDir, entry), { base: root, exclude: RULE_EXCLUDE });
+  }
+  if (overlayDir) {
+    // prompts/는 작업 폴더에 복사하지 않고 지시문으로만 씀(fillPrompt). 규칙 문서만 덮어씀
+    fs.cpSync(overlayDir, jobDir, { recursive: true, filter: (p) => !path.relative(overlayDir, p).split(path.sep).join('/').startsWith('prompts') });
   }
   // node_modules는 복사하지 않고 링크 (Playwright·Pretendard)
   // Windows는 디렉터리 symlink에 관리자 권한(EPERM)이 필요해서 junction을 씀. 지울 때는 링크만 지워짐
@@ -79,10 +84,13 @@ function createWorkspace({ jobId, productId, productDir, root = ROOT, jobsDir = 
 }
 
 // ── 지시문 (prompts/<mode>/<kind>.md, {{변수}} 채우기)
-function fillPrompt({ mode, kind, vars, root = ROOT }) {
+// overlayDir(평가 비교판)에 같은 지시문이 있으면 그것을 씀
+function fillPrompt({ mode, kind, vars, root = ROOT, overlayDir = null }) {
   if (!MODES[mode]) throw new Error(`실행 방식은 ${Object.keys(MODES).join(' / ')} 중 하나예요: ${mode}`);
   if (!JOB_KINDS.includes(kind)) throw new Error(`작업 종류는 ${JOB_KINDS.join(' / ')} 중 하나예요: ${kind}`);
-  const template = fs.readFileSync(path.join(root, 'prompts', mode, `${kind}.md`), 'utf8');
+  const rel = path.join('prompts', mode, `${kind}.md`);
+  const file = overlayDir && fs.existsSync(path.join(overlayDir, rel)) ? path.join(overlayDir, rel) : path.join(root, rel);
+  const template = fs.readFileSync(file, 'utf8');
   const out = template.replace(/\{\{(\w+)\}\}/g, (m, key) => (vars[key] === undefined ? m : String(vars[key])));
   const left = out.match(/\{\{\w+\}\}/g);
   if (left) throw new Error(`지시문에 채우지 않은 값이 있어요: ${[...new Set(left)].join(', ')}`);
@@ -317,13 +325,14 @@ function errorCodeOf({ report, result, crash, verify }) {
  * @param {string} o.productDir   제품 폴더 (결과를 반영할 곳)
  * @param {'web'|'eval'} [o.mode]
  * @param {object} [o.revision]   수정 작업: { stage: 'plan'|'final', cards: number[], types: string[], memo }
+ * @param {string} [o.overlayDir] 평가 비교판(A8)에서 바꾼 규칙 파일 폴더 (CLAUDE.md·Skill·prompts/eval). 기본 없음
  * @param {string} [o.bin]        claude 실행 파일 (테스트는 가짜 claude). 기본 CARDNEWS_CLAUDE_BIN 또는 'claude'
  * @param {(p) => void} [o.onProgress]
  */
 async function runJob({
   kind, productId, productDir, mode = 'web', revision = null,
   bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude', model, maxTurns, timeoutMs = 20 * 60 * 1000,
-  root = ROOT, jobsDir, reportsDir, keep = false, onProgress, onStart,
+  root = ROOT, jobsDir, reportsDir, keep = false, onProgress, onStart, overlayDir = null,
 }) {
   assertId(productId);
   if (kind === 'revise' && !revision) throw new Error('수정 작업에는 수정 요청 내용이 필요해요');
@@ -338,8 +347,8 @@ async function runJob({
       memo: revision.memo || '(메모 없음)',
     });
   }
-  const prompt = fillPrompt({ mode, kind, vars, root });
-  const ws = createWorkspace({ jobId, productId, productDir, root, jobsDir });
+  const prompt = fillPrompt({ mode, kind, vars, root, overlayDir });
+  const ws = createWorkspace({ jobId, productId, productDir, root, jobsDir, overlayDir });
   appendLines(path.join(productDir, 'log.jsonl'), [event(productId, jobId, 'job_started', { kind, executor: 'claude-cli' }, root)]);
   if (onStart) onStart({ job_id: jobId, kind, started_at: startedAt });
 
