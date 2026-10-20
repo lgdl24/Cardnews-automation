@@ -8,7 +8,7 @@ const { summarize, PHASES } = require('./analysis');
 const { findCautions, round } = require('./metrics');
 const { pad } = require('./card-html');
 
-const SPEC_VERSION = '0.1';
+const SPEC_VERSION = '0.2';
 const KINDS = { production: '실제 제작', example: '예시', eval: '평가 실행' };
 const STAGE_LABELS = { plan: '구성안', copy: '문구', approved: '승인 완료' };
 const ROLE_LABELS = { cover: '표지', feature: '특징', usage: '사용법', detail: '상세', closing: '마무리' };
@@ -112,7 +112,7 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
     copy: c.copy || null,
     png: pngs[i].rel,
     chars: charRows(c, templates),
-    cautions: cautions.filter((x) => x.card === c.no).map(({ term, category, in_source }) => ({ term, category, in_source })),
+    cautions: cautions.filter((x) => x.card === c.no).map(({ term, category, in_source, fields }) => ({ term, category, in_source, fields })),
     layout: layout.get(c.no),
     revisions: revisions.filter((r) => r.stage === 'final' && (r.cards || []).includes(c.no)).map(revisionOf),
   }));
