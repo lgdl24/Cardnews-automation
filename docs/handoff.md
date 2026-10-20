@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-20 | Claude | #47 · `feat/47-a6-consistency` | **반복 실행 일관성(A6) 도구**: `npm run compare -- --eval [--runs eval/runs] [--batch <묶음>] [--json]`이 평가 실행을 입력 × 규칙 버전 × 비교판으로 묶어 반복끼리 비교(실행·완료·체크리스트 통과·1회 통과 수, 중단 오류 코드, 결과가 모두 같은지, 완료된 반복끼리 카드 역할·템플릿 순서 일치율·근거 겹침·커버리지·글자 수 활용률 편차, `result.json`의 핵심 정보 포함률·처리 시간 평균·편차). 계산은 `scripts/lib/compare.js`로 분리, 기존 `compare <ID...>` 출력은 그대로(같은 결과 확인). 집계 표·V3 형식은 이용석 몫이라 안 정함. 테스트 `tests/compare.test.js` |
 | 2026-10-20 | Claude | #38 · `feat/38-product-color` | **카드 색 (제품 색 + 글자 대비)**: 입력 양식 `제작 조건 > 카드 색`(`기본`|`제품 색`, 선택, 새 필드 형식 `choice`·`options`, 양식 v1.1). `render`가 색을 정해 카드 HTML의 `--color-*`만 바꿈 — 제품 색이면 카드에 쓴 첫 사진의 대표 색으로 색 7개, 어느 쪽이든 글자가 색 위에 놓이는 7곳을 대비 4.5 이상으로 조정(글자 쪽 밝기만 낮춤). **기본 테마도 3곳 미달이라 출력 색이 바뀜**(`muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A, `theme.json`은 그대로). 기록은 `render-report.json`의 `colors`, 못 맞추면 `[경고] 카드 색`. 설명 `docs/card-color.md`, 코드 `scripts/lib/color-mood.js`, 테스트 `tests/color-mood.test.js`. 규칙 버전은 그대로 |
 | 2026-10-20 | Claude | #42 · `feat/42-eval-export` | **평가 실행 내보내기**: `npm run export`가 `eval/runs/*/result.json` 중 완료된 실행을 `kind: eval` 프로젝트로 함께 내보냄(`eval` 필드는 `result.json`에서, `label` `평가 · <묶음>`, `config/export.json`에 안 적어도 됨). `--no-eval`로 뺄 수 있음. `npm run eval -- … --export`는 끝난 묶음의 완료된 실행만 `--only`로 바로 내보냄. 함수 `exportWebData`는 `evalRuns`를 줄 때만 평가 실행을 읽음(테스트가 실제 `eval/runs`를 안 건드리게). V2 제작 과정의 근거 연결률 설명을 실제 계산(전체 카드 기준)에 맞춤 |
 | 2026-10-20 | Claude | #44 · `docs/44-handoff-codex` | **인계 문서 정리(이용석)**: '현재 작업'을 이용석 기준으로 교체, '도구 분담'(카드 제작·평가 실행은 Claude Code만, 화면·스크립트 구현은 Codex, PR 전 교차 검토), '이용석 인계 상세'(작업 폴더·완료 PR·미커밋·테스트·미검증), '이규동 요청·피드백'(직접 할 일·검토 요청·공동 결정·이미 끝난 일) 추가. 병합된 옛 '현재 작업'·'다음 행동' 정리. 문서만 변경 |
@@ -17,7 +18,6 @@
 | 2026-10-19 | Claude | #34 · `feat/34-eval-inputs-toneup` | **이용석 평가 입력 6개 (경계 2 + 정상 4) + 달바 톤업 선크림 조사**: 정상 4개는 무드가 다른 제품 — `eval-toneup-purple`(실제, 선케어·프리미엄), `eval-derma-barrier-cream`(가상, 스킨케어·더마), `eval-natural-cleansing-oil`(가상, 클렌징·내추럴), `eval-trendy-sheet-mask`(가상, 마스크팩·트렌디). A5 v1·v2 비교용(#39 제안). 경계: 가상 경계 `eval-exaggerated-cream`(원문 자체에 최상급·의약품 오인·즉각 효과·안전성 단정·천연 100% 표현, 카드에는 사실만 쓰는지(금지 표현 match))·`eval-long-serum`(주요 특징 12개·긴 문장, 글자 수 안에서 강조 정보를 고르고 '도움을 줄 수 있어요'를 강화하지 않는지). 형식은 `docs/eval-spec.md` v0.1. 실제 제품 조사 노트 `docs/research/dalba-toneup.md`(핑크·퍼플·블루·그린 4종, 출처·고시 위치·누끼컷 주소). 실제 제작 1세트는 퍼플 `products/dalba-toneup-purple`(상세 이미지·고시 원문을 그대로 옮김, 이미지 사용 가능 여부 '확인 중' → 결과 보기 웹 공개 전 멘토 확인) |
 | 2026-10-19 | Claude | #39 · `docs/39-mood-proposal` | **제안서: 글 무드 · 제품 색 무드** `docs/proposals/mood-proposal.md` (코드·규칙 변경 없음). 글 무드(제품 유형·효능 키워드·브랜드 무드, 이용석, v2 규칙 후보)와 제품 색 무드(#38, 제품 사진 대표 색 + 글자 대비 검사, 이규동). 캐릭터 배경은 보류. 같이 정할 것 목록 있음 |
 | 2026-10-19 | Claude | #28 · `feat/28-eval-runner` | **평가 실행기 `npm run eval`**: `scripts/eval.js`·`scripts/lib/eval-runner.js`. 입력 × 반복으로 `eval/runs/<입력ID>--<버전>[-<비교판>]--r<N>/`를 만들고 구성안 → 평가 승인(`approved_by: eval`) → 문구·출력을 작업 실행기(`runJob`, 평가 모드)로 실행, `result.json`(eval-spec v0.1)을 스키마 검사 후 씀. 같은 실행ID가 있으면 시작 전에 멈춤, `--dry-run`. 내 평가 입력 4개 체크리스트에 `spec_version`·`source`·금지 표현 `match` 추가(입력 누락의 'cards.json 생성' 금지 항목은 `expected.cards_json`과 중복이라 뺌). `.gitignore`에 `eval/runs/*/output/png·html/`. 테스트 `tests/eval-runner.test.js`(가짜 Claude) |
-| 2026-10-19 | Claude | #23 · `docs/23-eval-spec` | **평가 결과·체크리스트 규격 v0.1 초안**: `docs/eval-spec.md`, 스키마 `schemas/eval/`(checklist·run-result), 예시 `docs/examples/eval/`(가상 톤업 선크림 체크리스트 + r1 기록을 옮긴 결과 1건), 테스트 `tests/eval-spec.test.js`(`npm test`에 포함, `eval/inputs/`가 있으면 그 체크리스트도 검사). #18 체크리스트 형식을 그대로 받고 선택 필드만 더함(`source`·`section`·`copy_terms`·`match` 등). 실행 하나 = 제작 폴더 하나 `eval/runs/<입력ID>--<버전>--r<N>/`(제품ID = 실행ID, 웹 데이터 `kind: eval` 프로젝트로 내보냄) + `result.json`. 실행은 `copy`에서 끝남(최종 승인 없음). 핵심 정보 포함률 계산 규칙 정함. 연결 규격이라 이규동 승인 필요 |
 
 ## 현재 작업 (이용석 · Claude Code → Codex 인계, 2026-10-20)
 
@@ -30,11 +30,12 @@
 ## 현재 작업 (이규동, 2026-10-20)
 
 - 확인일·작성 도구: 2026-10-20 · Claude.
-- 이슈·PR: [#38](https://github.com/lgdl24/Cardnews-automation/issues/38) · PR [#46](https://github.com/lgdl24/Cardnews-automation/pull/46)(기준 `main`, **#45 → #43 → #46 순서로 병합** — 이 브랜치는 `feat/42-eval-export` 위에서 시작해 #43 커밋을 포함). 리뷰 이용석(제안자). **`main` 병합은 이규동.**
-- 상태: 구현·테스트 완료(`npm test`, `npm run test:render`). 기본 테마 조정 전후·제품 색 예시를 출력해 확인.
-- 목표·완료 조건: `카드 색: 제품 색`이면 제품 사진 색으로 카드가 나오고, 모든 출력이 글자 대비 7곳 4.5 이상. 기본은 지금처럼 기본 테마(대비만 조정).
-- 작업 브랜치: `feat/38-product-color` · 기준 `feat/42-eval-export`(`9cc99be`).
-- 변경 파일: `scripts/lib/color-mood.js`(새로), `scripts/render.js`, `scripts/check-input.js`, `config/input-form.json`, `docs/input-form.md`, `docs/card-color.md`(새로), `docs/proposals/mood-proposal.md`(상태), `.claude/skills/cardnews-render/SKILL.md`(경고 한 줄), `web/src/studio/api.ts`·`web/src/screens/studio/ProductFormPage.tsx`(선택 칸), `tests/color-mood.test.js`(새로)·`tests/render.test.js`·`tests/check-input.test.js`, `package.json`(test 목록), `README.md`, 이 문서.
+- 이슈·PR: [#47](https://github.com/lgdl24/Cardnews-automation/issues/47) · PR은 push 후 생성(기준 `main`, **#45 → #43 → #46 다음에 병합** — 이 브랜치는 `feat/38-product-color` 위에서 시작). 리뷰 이용석(평가 집계가 이 값을 씀). **`main` 병합은 이규동.**
+- 상태: 구현·테스트 완료(`npm test` 134개). 실제 반복 실행(사용량 들어감)은 A6 실험 때(11.26~).
+- 목표·완료 조건: `eval/runs/`의 반복 실행을 입력 × 규칙 버전으로 묶어 일관성 지표를 CLI·`--json`으로 냄. 기존 제품 비교 결과는 그대로.
+- 작업 브랜치: `feat/47-a6-consistency` · 기준 `feat/38-product-color`(`c25aea7`).
+- 변경 파일: `scripts/lib/compare.js`(새로), `scripts/compare.js`, `tests/compare.test.js`(새로), `package.json`(test 목록), `README.md`, 이 문서.
+- 이전 작업: 카드 색 #38 → PR [#46](https://github.com/lgdl24/Cardnews-automation/pull/46), 평가 내보내기 #42 → PR [#43](https://github.com/lgdl24/Cardnews-automation/pull/43) (둘 다 리뷰 대기).
 - 실행 중인 작업: 없음.
 
 ## 도구 분담 (이용석 작업, Claude Code · Codex)
@@ -193,6 +194,7 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 
 ## 검증
 
+- #47 반복 일관성 (2026-10-20, 클라우드): `npm test` 134개 통과(새 `tests/compare.test.js` 5개 — 인자, 계산, 제품 비교, 가짜 Claude로 정상 입력 2회·입력 누락 2회+다른 묶음 1회 실행 후 묶음·완료·중단 오류 코드·일치율·CLI·`--json` 확인). 리팩터링 전후 `compare toneup-sunscreen toneup-sunscreen-r1 --json` 출력이 같음.
 - #38 카드 색 (2026-10-20, 클라우드·Mac): `npm test` 129개, `npm run test:render` 5개 통과(새 `tests/color-mood.test.js` 11개, render 2개, check-input 1개). 색상 36개 × 채도·밝기 5가지 대표 색이 모두 자동 조정 후 대비 7곳 4.5 이상. 기본 테마·가상 초록 제품·보라 캡 제품을 출력해 비교(보라 primary #7F4FA6, 이용석 시제품 #7E50A5).
 - #42: `npm test` 117개 통과(새 테스트: 가짜 Claude로 정상·중단 평가 실행 → 완료된 실행만 `kind: eval`로 내보내고 `eval` 필드·PNG·`--only` 확인). `npm run web:build` 통과.
 - 이용석 인계 정리 (2026-10-20, Windows): `origin/main` `54465ed`에서 `npm test` 116개 통과. 문서에 적힌 파일·`npm run` 명령이 실제로 있는지 대조(없는 것 0, 일반 파일 이름 언급 제외).
@@ -232,7 +234,7 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 
 2026-10-20 기준. 자세한 근거는 위 '이규동 요청·피드백'.
 
-1. 이규동: PR #45 → #43 → #46 순서로 `main` 병합 → `theme.json`·Figma 색 변수 결정 → 근거 연결률 정의(이용석과) → 시연 준비·배포(10.28).
+1. 이규동: PR #45 → #43 → #46 → #47(A6 도구) 순서로 `main` 병합 → `theme.json`·Figma 색 변수 결정 → 근거 연결률 정의(이용석과) → 시연 준비·배포(10.28).
 2. 이용석: PR #43 리뷰 → #38 리뷰(PR #46) → 퍼플 첫 제작 최종 승인·기록 → V2 구성안·근거 화면 PR(`cardnews-v2plan`, `main` 위로 옮긴 뒤) → 핵심 정보 포함률 범위 결정 → v1 평가 분석·v2 규칙(글 무드), 평가 집계·V3.
 3. 공동: 근거 연결률, 기본 테마 색, 쓴 색 내보내기, 평가 기본 내보내기, 규칙 버전, 제안서 #39 결정 사항, 멘토 확인.
 4. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
