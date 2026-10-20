@@ -10,6 +10,7 @@
 |---|---|---|---|
 | 2026-10-20 | Claude | #38 · `feat/38-product-color` | **카드 색 (제품 색 + 글자 대비)**: 입력 양식 `제작 조건 > 카드 색`(`기본`|`제품 색`, 선택, 새 필드 형식 `choice`·`options`, 양식 v1.1). `render`가 색을 정해 카드 HTML의 `--color-*`만 바꿈 — 제품 색이면 카드에 쓴 첫 사진의 대표 색으로 색 7개, 어느 쪽이든 글자가 색 위에 놓이는 7곳을 대비 4.5 이상으로 조정(글자 쪽 밝기만 낮춤). **기본 테마도 3곳 미달이라 출력 색이 바뀜**(`muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A, `theme.json`은 그대로). 기록은 `render-report.json`의 `colors`, 못 맞추면 `[경고] 카드 색`. 설명 `docs/card-color.md`, 코드 `scripts/lib/color-mood.js`, 테스트 `tests/color-mood.test.js`. 규칙 버전은 그대로 |
 | 2026-10-20 | Claude | #42 · `feat/42-eval-export` | **평가 실행 내보내기**: `npm run export`가 `eval/runs/*/result.json` 중 완료된 실행을 `kind: eval` 프로젝트로 함께 내보냄(`eval` 필드는 `result.json`에서, `label` `평가 · <묶음>`, `config/export.json`에 안 적어도 됨). `--no-eval`로 뺄 수 있음. `npm run eval -- … --export`는 끝난 묶음의 완료된 실행만 `--only`로 바로 내보냄. 함수 `exportWebData`는 `evalRuns`를 줄 때만 평가 실행을 읽음(테스트가 실제 `eval/runs`를 안 건드리게). V2 제작 과정의 근거 연결률 설명을 실제 계산(전체 카드 기준)에 맞춤 |
+| 2026-10-20 | Claude | #44 · `docs/44-handoff-codex` | **인계 문서 정리(이용석)**: '현재 작업'을 이용석 기준으로 교체, '도구 분담'(카드 제작·평가 실행은 Claude Code만, 화면·스크립트 구현은 Codex, PR 전 교차 검토), '이용석 인계 상세'(작업 폴더·완료 PR·미커밋·테스트·미검증), '이규동 요청·피드백'(직접 할 일·검토 요청·공동 결정·이미 끝난 일) 추가. 병합된 옛 '현재 작업'·'다음 행동' 정리. 문서만 변경 |
 | 2026-10-19 | Claude | #36 · `docs/36-web-mode-review` | **웹 모드 규칙 문구 리뷰 (#21, 이용석)**: `CLAUDE.md`·Skill·`prompts/web/`을 작업 실행기·로컬 제작 API 코드와 대조. 고친 곳 — `CLAUDE.md` 입력 자료 취급에 웹 모드 수정 요청 메모도 자료로 다룬다는 한 줄(지시문 `prompts/web/revise.md`와 같게), `cardnews-render` Skill 최종 승인 줄에 `[대화]` 표시와 웹·평가 모드는 `copy`에서 끝난다는 줄, `docs/event-log-spec.md` v0.2(누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 `job_id` 형식, 웹 모드 `revision_requested.cards` 생략), `README.md` 한 줄. 동작 변경 없음 |
 | 2026-10-19 | Claude | #30 · `feat/30-caution-expressions` | **주의 표현 목록 v1**: `config/caution-expressions.json`을 식약처 지침 원문(안내서-0086-07, 2025-08-14) 별표 1·2, 시행규칙 별표 5, KCIA 해설서 기준으로 확정 — 분류 4개 → 9개, 분류마다 `basis`(근거 항목)·`extended`(근거 문서에 글자 그대로 없는 같은 뜻 표현), 맨 위 `references`(식약처 지침·시행규칙 별표 5·KCIA 해설서 2025, 원문 PDF로 확인). 형식(`groups[].category·terms`)은 그대로라 검증·내보내기·웹 코드 수정 없음. 판단 기준 `docs/style-guide.md` '주의 표현 판단 기준', `cardnews-content` Skill 6단계 문구 변경. 테스트 `tests/caution.test.js`(표현 겹침 금지, 예시 제품 문구 0건). 규칙 버전은 그대로 v1(변경 여부 미결정) |
 | 2026-10-19 | Claude | #31 · `feat/31-webdata-v2` | **웹 데이터 규격 v0.2 (이용석 리뷰)**: V2 구성안·근거에 필요한 필드를 노션 화면 설계·Figma W5·W6과 대조 → `project.json` `cards[].cautions[].fields`(주의 표현이 나온 문구 칸 `field`·`index`)만 추가. `spec_version` 0.1 → 0.2(스키마 3개·`web-data.js`·`types.ts`·예시·`web/public/data`). `findCautions`(`scripts/lib/metrics.js`)가 `fields`를 함께 돌려줌 — 셈(카드마다 표현 한 번)과 검증 메시지는 그대로. 근거는 카드 단위 유지(문구 칸별 근거는 `cards.json` 규격 변경이라 안 함) |
@@ -17,17 +18,152 @@
 | 2026-10-19 | Claude | #39 · `docs/39-mood-proposal` | **제안서: 글 무드 · 제품 색 무드** `docs/proposals/mood-proposal.md` (코드·규칙 변경 없음). 글 무드(제품 유형·효능 키워드·브랜드 무드, 이용석, v2 규칙 후보)와 제품 색 무드(#38, 제품 사진 대표 색 + 글자 대비 검사, 이규동). 캐릭터 배경은 보류. 같이 정할 것 목록 있음 |
 | 2026-10-19 | Claude | #28 · `feat/28-eval-runner` | **평가 실행기 `npm run eval`**: `scripts/eval.js`·`scripts/lib/eval-runner.js`. 입력 × 반복으로 `eval/runs/<입력ID>--<버전>[-<비교판>]--r<N>/`를 만들고 구성안 → 평가 승인(`approved_by: eval`) → 문구·출력을 작업 실행기(`runJob`, 평가 모드)로 실행, `result.json`(eval-spec v0.1)을 스키마 검사 후 씀. 같은 실행ID가 있으면 시작 전에 멈춤, `--dry-run`. 내 평가 입력 4개 체크리스트에 `spec_version`·`source`·금지 표현 `match` 추가(입력 누락의 'cards.json 생성' 금지 항목은 `expected.cards_json`과 중복이라 뺌). `.gitignore`에 `eval/runs/*/output/png·html/`. 테스트 `tests/eval-runner.test.js`(가짜 Claude) |
 | 2026-10-19 | Claude | #23 · `docs/23-eval-spec` | **평가 결과·체크리스트 규격 v0.1 초안**: `docs/eval-spec.md`, 스키마 `schemas/eval/`(checklist·run-result), 예시 `docs/examples/eval/`(가상 톤업 선크림 체크리스트 + r1 기록을 옮긴 결과 1건), 테스트 `tests/eval-spec.test.js`(`npm test`에 포함, `eval/inputs/`가 있으면 그 체크리스트도 검사). #18 체크리스트 형식을 그대로 받고 선택 필드만 더함(`source`·`section`·`copy_terms`·`match` 등). 실행 하나 = 제작 폴더 하나 `eval/runs/<입력ID>--<버전>--r<N>/`(제품ID = 실행ID, 웹 데이터 `kind: eval` 프로젝트로 내보냄) + `result.json`. 실행은 `copy`에서 끝남(최종 승인 없음). 핵심 정보 포함률 계산 규칙 정함. 연결 규격이라 이규동 승인 필요 |
-| 2026-10-18 | Claude | #21 · `feat/21-web-studio` | **웹 모드 (로컬 실행)**: 입력·승인·수정 요청은 웹 화면에서, 실행은 내 컴퓨터의 `claude -p`. `npm run studio`(= vite 개발 서버)가 로컬 제작 API `/api/studio`(`scripts/lib/studio-api.js`, 127.0.0.1만)를 붙이고, 화면 S1 `/studio`·S2 `/studio/new`·S3 `/studio/:id`. 작업 실행기 `scripts/lib/job-runner.js`(웹·평가 모드 공통: 임시 작업 폴더, 허용 도구·명령 제한, 재검증 후 반영, 작업 시작·끝 기록). 지시문 `prompts/web/`(plan·copy·revise), 평가 지시문은 `prompts/eval/`로 이동. `CLAUDE.md`·Skill에 웹 모드 추가, '서비스 모드 결과 보고' → '작업 결과 보고'(이용석 승인 필요). `log.js`는 `CARDNEWS_MODE=web`도 기록 안 함. 배포 사이트는 그대로 보기 전용 |
 
-## 현재 작업
+## 현재 작업 (이용석 · Claude Code → Codex 인계, 2026-10-20)
+
+- 확인일·작성 도구: 2026-10-20 · Claude Code(데스크톱 앱, 이용석 Windows). 받는 쪽: Codex(`/codex:transfer`로 같은 세션 이어받기).
+- 기준: `origin/main` `54465ed`(#29 병합까지). `npm test` 116개 통과.
+- 이용석이 맡는 범위(이규동 담당 구현은 가져오지 않음): V2 구성안·근거·V3 평가 대시보드·V4 버전 비교 화면, 핵심 정보 포함률·평가 집계·주의 표현 기준, `CLAUDE.md`·Skill(v2 규칙·글 무드), 톤업 선크림 실제 제작, 이용석 평가 입력 6개, A5·A7, 이규동 PR 중 이용석에게 요청된 리뷰. 템플릿·출력(`templates/`·`render`)·내보내기·웹 골격·평가 실행기·배포는 이규동 담당.
+- 진행 중 1: **V2 구성안·근거 화면** — 이슈 [#41](https://github.com/lgdl24/Cardnews-automation/issues/41), 폴더 `C:\Users\LG\cardnews-v2plan`, 브랜치 `feat/41-v2-plan-evidence`(기준 `feat/31-webdata-v2` `06df437`, 그 브랜치는 #33으로 `main`에 병합됨 → 커밋 전에 `origin/main` 위로 옮길 것). 미커밋. `npm run web:build`·`npm test` 106 통과(그 기준에서), 임시 데이터로 [주의] 강조·수정 이력·[참고] 표시 확인 후 임시 데이터 되돌림. PR은 Figma V2 수정 반영 후 10/28~29 목표.
+- 진행 중 2: **톤업 선크림 첫 제작(대화 모드)** — `products/dalba-toneup-purple`(입력은 #35로 `main`에 있음). 구성안 승인 → 문구·출력 완료(PNG 5장, 레이아웃 오류 0, 커버리지 47%), **최종 승인 대기**(이용석이 카드 수정 요청 예정이라 했고 내용은 아직 안 줌). 결과 파일 `cards.json`·`log.jsonl`은 `C:\Users\LG\cardnews-evalinputs`(브랜치 `feat/34-eval-inputs-toneup`, 이미 병합된 브랜치)에 **미커밋**으로 있음 → 새 이슈·브랜치로 옮겨 커밋할지 이용석 결정 필요. `output/`은 git 제외.
+
+## 현재 작업 (이규동, 2026-10-20)
 
 - 확인일·작성 도구: 2026-10-20 · Claude.
-- 이슈·PR: [#38](https://github.com/lgdl24/Cardnews-automation/issues/38) · PR은 push 후 생성(기준 `main`, **#43 다음에 병합** — 이 브랜치는 `feat/42-eval-export` 위에서 시작해 #43 커밋을 포함). 리뷰 이용석(제안자). **`main` 병합은 이규동.**
+- 이슈·PR: [#38](https://github.com/lgdl24/Cardnews-automation/issues/38) · PR [#46](https://github.com/lgdl24/Cardnews-automation/pull/46)(기준 `main`, **#45 → #43 → #46 순서로 병합** — 이 브랜치는 `feat/42-eval-export` 위에서 시작해 #43 커밋을 포함). 리뷰 이용석(제안자). **`main` 병합은 이규동.**
 - 상태: 구현·테스트 완료(`npm test`, `npm run test:render`). 기본 테마 조정 전후·제품 색 예시를 출력해 확인.
 - 목표·완료 조건: `카드 색: 제품 색`이면 제품 사진 색으로 카드가 나오고, 모든 출력이 글자 대비 7곳 4.5 이상. 기본은 지금처럼 기본 테마(대비만 조정).
 - 작업 브랜치: `feat/38-product-color` · 기준 `feat/42-eval-export`(`9cc99be`).
 - 변경 파일: `scripts/lib/color-mood.js`(새로), `scripts/render.js`, `scripts/check-input.js`, `config/input-form.json`, `docs/input-form.md`, `docs/card-color.md`(새로), `docs/proposals/mood-proposal.md`(상태), `.claude/skills/cardnews-render/SKILL.md`(경고 한 줄), `web/src/studio/api.ts`·`web/src/screens/studio/ProductFormPage.tsx`(선택 칸), `tests/color-mood.test.js`(새로)·`tests/render.test.js`·`tests/check-input.test.js`, `package.json`(test 목록), `README.md`, 이 문서.
 - 실행 중인 작업: 없음.
+
+## 도구 분담 (이용석 작업, Claude Code · Codex)
+
+2026-10-20 이용석이 정함. 두 도구 모두 GitHub·노션·Figma를 직접 보므로 서로 '학습'시키지 않는다. 대신 **아직 어디에도 안 올라간 상태**(미커밋 변경, 진행 중 작업, 말로 정한 결정)는 이 문서에만 있으니 교대할 때마다 이 문서를 갱신한다. Claude 쪽 개인 메모리는 Codex가 못 본다.
+
+**바꾸면 안 되는 것**: 카드 제작(대화·웹·평가 모드)과 평가 실행(`npm run eval`)은 **Claude Code로만** 한다. 이 프로젝트는 Claude Code(`claude -p`)가 `CLAUDE.md`·Skill을 따르는 과정 자체를 평가(A5 v1·v2 비교 등)하므로, Codex로 카드를 만들면 실험이 깨진다.
+
+| 일 | 도구 | 이유 |
+|---|---|---|
+| 실제 카드 제작·수정·최종 승인 (퍼플 등) | Claude Code | 규칙·Skill이 Claude 기준 |
+| `CLAUDE.md`·Skill v2(글 무드) 작성·시험 | Claude Code | Claude가 따를 규칙이라 Claude로 시험 |
+| 평가 실행·결과 분석 | Claude Code | 실행이 `claude -p` |
+| Figma(V2·무드 템플릿)·Canva 배경 | Claude Code | 이 PC에서 Figma 쓰기·Canva가 Claude에 연결됨 |
+| 노션 정리·트래커, GitHub 이슈·PR 글(이규동 어투), 제안서 | Claude Code | 긴 맥락·어투 규칙·브라우저 작업 |
+| V2 구성안·근거 화면 코드 다듬기·테스트 | Codex | 코드 구현 집중 |
+| V3 평가 대시보드·V4 버전 비교 구현 | Codex | 화면 코드량 많음 |
+| 평가 집계·핵심 정보 포함률 등 Node 스크립트 + 테스트 | Codex | 코드·테스트 반복 |
+| 버그 원인 조사·테스트 보강·코드 정리 | Codex | 코드 분석 |
+| PR 전 코드 검토 | 만든 쪽의 반대 도구 | 다른 모델이 보면 같은 실수를 덜 놓침. Claude Code에서는 `/codex:review` |
+| 이규동 PR 리뷰 | Codex 코드 검토 → Claude 규격·문서 대조·리뷰 글 | 코드 판단과 소통 글을 나눔 |
+
+규칙: ① 한 폴더는 한 도구만(동시에 쓰면 worktree를 나눔) ② 넘기기 전 커밋 + 이 문서 갱신 ③ 작업 하나 = 이슈 하나 ④ 커밋·push·PR·노션 수정·상대 PR 승인은 이용석 승인 후 ⑤ 공동 결정 사항(아래 '이규동 요청·피드백' 3번)은 임의로 확정하지 않음.
+
+Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피드백'·'다음 행동'을 먼저 읽고, 위 표에서 Codex 몫만 맡는다. Claude Code 몫(카드 제작·평가 실행·Figma·노션 쓰기)이 필요하면 하지 말고 이 문서에 '다음 행동'으로 남긴다.
+
+## 이용석 인계 상세
+
+### 작업 폴더 (모두 같은 저장소의 worktree)
+
+| 절대 경로 | 브랜치 | 상태 | 비고 |
+|---|---|---|---|
+| `C:\Users\LG\OneDrive\Desktop\카드뉴스_자동화` | `docs/36-web-mode-review` | 깨끗(병합됨) | **OneDrive 폴더**: 10/20 `.git` 팩 인덱스 유실·추적 파일 25개 삭제가 있었음(git으로 복구, 손실 없음). `node_modules`에 `ajv` 없음 → 여기서 테스트하려면 `npm install`. 새 작업은 OneDrive 밖 폴더 권장 |
+| `C:\Users\LG\cardnews-handoff` | `docs/44-handoff-codex`(이 문서, #44) | 기준 `origin/main` `54465ed` | 병합되면 지워도 됨 |
+| `C:\Users\LG\cardnews-v2plan` | `feat/41-v2-plan-evidence` | 미커밋 3개 | 아래 '미커밋 변경' |
+| `C:\Users\LG\cardnews-evalinputs` | `feat/34-eval-inputs-toneup` | 미추적 2개 | `node_modules`가 실제 설치본(다른 폴더는 여기로 junction) |
+| `C:\Users\LG\cardnews-proposal`·`cardnews-webdata`·`cardnews-win` | 병합된 브랜치 | 깨끗 | 지워도 됨(junction `node_modules`는 `[IO.Directory]::Delete`로 링크만 지울 것) |
+
+### 완료한 작업 (모두 `main` 병합, 병합은 이규동)
+
+| 이슈 → PR | 내용 |
+|---|---|
+| #23 → #24 | 평가 결과·체크리스트 규격 `docs/eval-spec.md` v0.1 |
+| #25 → #26 | Windows 작업 실행기(junction, `.js` 실행) — 이슈 #25는 아직 열려 있음 |
+| #30 → #32 | 주의 표현 목록 v1(`config/caution-expressions.json`, 식약처 지침 기준) |
+| #31 → #33 | 웹 데이터 v0.2(`cards[].cautions[].fields`) |
+| #34 → #35 | 이용석 평가 입력 6개 + 달바 조사 + `products/dalba-toneup-purple` 입력 — 이슈 #34 열려 있음 |
+| #36 → #37 | 웹 모드 규칙 문구 리뷰 — 이슈 #36 열려 있음 |
+| #39 → #40 | 제안서 `docs/proposals/mood-proposal.md`(글 무드·제품 색 무드) — 이슈 #39는 결정 대기라 열어 둠 |
+| (리뷰) #29 | 이규동 평가 실행기 승인 리뷰 |
+| #38 | 제안 이슈(제품 색 + 대비 검사) → 이규동이 `feat/38-product-color`로 구현 중 |
+
+### 미커밋 변경과 이유
+
+| 폴더 | 파일 | 이유 |
+|---|---|---|
+| `cardnews-v2plan` | `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx`(자리표시 → 화면), `plan-evidence.css`(새로, 클래스 `pe-`), `docs/handoff.md`(한 줄) | V2 구성안·근거 화면 1차 구현. Figma V2 확정 전이라 PR 보류 |
+| `cardnews-evalinputs` | `products/dalba-toneup-purple/cards.json`·`log.jsonl` | 첫 제작 결과(최종 승인 전). 병합된 브랜치에 있어 그대로 커밋하지 말 것 |
+| `cardnews-handoff` | `docs/handoff.md` | 이 인계 정리 |
+
+### 저장소 밖에 있는 것 (커밋 대상 아님)
+
+- 템플릿 시제품: v3(장식형)·v4(에디토리얼, Noto Serif KR·Garamond) — 이용석은 v3 투박, v4도 아쉽다고 함. 원인은 사진 소재 부족으로 판단 → 무드별 AI 배경 장면 + 제품 색 보정 방향으로 진행 중. 파일은 Claude 세션 임시 폴더(scratchpad)라 **Codex에서는 안 보임**. 필요하면 다시 만듦.
+- 무드 배경 장면 5종(프리미엄·더마·비건클린·데일리·선케어): Canva에서 생성(원본 1264px, 이용석 Canva 라이브러리). Figma AI는 팀 파일에서 꺼져 있어 실패. 원본은 이용석이 Canva에서 내려받아 폴더에 넣기로 함(미완료).
+- Figma: '02 웹 와이어프레임'에 `V2 구성안·근거 (이용석)` 프레임 `68:403`(초안, 이용석이 고칠 곳 있다고 함·내용 미수령), 새 페이지 `06 무드별 카드 템플릿 (이용석 제안)` `75:2`(빈 페이지).
+- 노션: 설계 문서 아래 '(제안) 글 무드 · 제품 색 무드 — 이용석'.
+
+### 실행한 테스트와 결과 (2026-10-20)
+
+- `origin/main`(`54465ed`) `npm test` 116개 통과(`C:\Users\LG\cardnews-handoff`).
+- `feat/41-v2-plan-evidence`: `npm run web:build` 통과, `npm test` 106 통과(기준 `06df437`), 데스크톱 1280px·모바일 375px 가로 넘침 없음.
+- 퍼플 첫 제작: `check` 오류 0(이미지 '확인 중' 경고 1), `validate` 오류 0, `render` PNG 5장·레이아웃 오류 0.
+- 이 PC: Playwright Chromium 1248 설치함(이전 1243은 Windows 실행 오류).
+
+### 남은 문제·미검증
+
+- V2 화면은 `main` 기준으로 다시 빌드·테스트 안 함(기준 브랜치가 병합된 뒤 옮겨야 함).
+- 퍼플 카드 최종 승인·수정 요청 내용 미정, 노션 '테스트·제작 기록' 미입력.
+- 이용석 Claude Code CLI 로그인 안 됨(데스크톱 앱 번들 `claude.exe` 2.1.299, PATH 없음) → 실제 `npm run eval`·웹 모드는 아직 이 PC에서 못 돌림.
+- 노션 트래커의 이용석 행 상태가 실제와 다름(아래 '이규동 요청·피드백' 1번).
+- 확인 못 한 자료: Figma 댓글(읽기 도구 없음), 노션 페이지 댓글, 노션 트래커 새 행(카드 색·평가 내보내기)의 '리뷰' 칸, GitHub·노션 밖 대화(메신저 등).
+
+## 이규동 요청·피드백 (2026-10-20 확인, 이용석 입장)
+
+확인한 곳: GitHub 이슈·PR 본문·리뷰·댓글(#21~#43), `main`과 `feat/38-product-color`·`feat/42-eval-export`의 `docs/handoff.md`, 노션 작업 트래커·'이용석 작업 안내'. 노션 체크박스가 아니라 실제 병합 PR·코드와 대조함.
+
+### 1. 이용석이 직접 구현·수정해야 하는 일
+
+| 요청 (원문) | 할 일 | 완료 조건 | 우선 | 상태·선행 | 이규동에게 확인할 것 |
+|---|---|---|---|---|---|
+| V2 구성안·근거 화면 — 노션 트래커, 이규동 handoff '다음 행동 2', [#41](https://github.com/lgdl24/Cardnews-automation/issues/41) | `cardnews-v2plan`을 `origin/main` 위로 옮기고 Figma V2 수정 반영 → PR | `web:build`·`npm test` 통과, 리뷰 이규동 | 높음 (10.29~11.11) | 1차 구현 미커밋 / 선행: Figma V2 수정 내용(이용석) | 탭 틀·`?card=` 주소 공유 방식이 카드 결과 탭과 겹쳐도 되는지 |
+| 대화 모드 첫 제작 — 이규동 handoff '다음 행동 2'(#38 리뷰 다음), 노션 트래커 | 카드 수정 요청 반영 → 최종 승인 → 노션 테스트·제작 기록 → 결과 커밋(새 이슈) | `stage: approved`, 기록 입력 | 높음 | 출력 완료·최종 승인 대기 / 선행: 이용석 수정 요청 | 제작 결과(`cards.json`·`log.jsonl`)를 저장소에 올릴지, 이미지 공개 범위(멘토) |
+| 핵심 정보 포함률 지표 — 노션 트래커(10.29~) | 3번 결정 뒤 범위 확정 | — | 중간 | **#29가 `result.json`에서 이미 계산**(`key_info_rate`) → `quality.json`에 따로 넣을지 중복 확인 | 대화 모드 제작물에도 필요한지(체크리스트가 없음) |
+| v1 평가 분석·v2 규칙, 평가 집계·V3 대시보드 — 이규동 handoff '다음 행동 2' | 순서대로 | — | 낮음(11.12~) | 선행: 평가 실제 실행(로그인), #43 | V3 근거: 노션은 W8 바탕이라 적혀 있으나 이용석이 W8 제외 → 화면 근거 다시 정하기 |
+| 노션 트래커 상태 옮기기·PR 번호 메모 — 협업 규칙(노션 '이용석 작업 안내') | 끝난 5개 행 '완료'(또는 '검토 중'), 메모에 PR | 행 상태가 실제와 같음 | 중간 | 미착수(이용석 승인 필요) | — |
+| 끝난 이슈 닫기 #25·#34·#36 | 이용석 이슈라 직접 닫기 | 닫힘 | 낮음 | 미착수 | — |
+| Claude Code CLI 로그인 — 이규동 handoff '다음 행동 2' | 이용석이 직접 로그인 | `claude auth status` 로그인 | 중간 | 미완료 | — |
+
+### 2. 이규동이 구현했고 이용석에게 검토·피드백을 요청한 일
+
+| 요청 (원문) | 할 일 | 완료 조건 | 우선 | 상태·선행 | 확인할 것 |
+|---|---|---|---|---|---|
+| PR [#43](https://github.com/lgdl24/Cardnews-automation/pull/43) 평가 실행 웹 내보내기 — 본문 '리뷰 포인트 (이용석)' | V3·V4가 읽을 `label`·`eval` 값 확인, 평가 실행 기본 내보내기 여부 의견, 테스트 | 리뷰 남김(승인 여부는 이용석이 정함) | **높음**(#38보다 먼저 병합 예정) | 열림·리뷰어 미지정 | 기본 내보내기 vs `--eval` 옵션(3번) |
+| 카드 색 #38 — `feat/38-product-color` handoff "리뷰 이용석(제안자)", "퍼플 등 4색 시제품 결과와 비교" | 이용석 시제품(퍼플 #7E50A5, 핑크 #915746, 블루 #376C81, 그린 #38753C, 대비 7곳 4.5↑)과 결과 비교, 기본 테마 색 변화 확인 | 리뷰 남김 | 높음 | PR [#46](https://github.com/lgdl24/Cardnews-automation/pull/46) 열림 / 선행 #43 | 아래 3번의 색 결정 |
+
+### 3. 두 사람이 함께 결정해야 하는 사항 (임의 확정 금지)
+
+| 사항 (원문) | 선택지 | 비고 |
+|---|---|---|
+| 근거 연결률 정의 — `main` handoff '남은 문제', #43에서 화면 설명만 계산에 맞춤 | ① 전체 카드 기준 유지 + 설명 고침 ② 지표 빼거나 바꿈 | 오래 미뤄짐. V2·V3 표시에 영향 |
+| 기본 테마 색 조정 반영 — `feat/38` handoff | `theme.json`·Figma `color/*`를 조정값(`primary` #A2442A 등)으로 맞출지, 주색은 장식에만 쓸지 | 출력 색이 바뀜 |
+| 쓴 색을 웹 데이터로 내보낼지(V2) — `feat/38` handoff | 내보냄 / 안 함 | V2 화면(이용석)에 영향 |
+| 평가 실행 기본 내보내기 — #43 리뷰 포인트 | 기본 포함 / `--eval`일 때만 | |
+| 규칙 버전 v1 유지·변경 — #9·#30 기록, 제안서 #39 | v1 유지 / v2 | 글 무드(해요체 고정 해제)는 v2 후보 |
+| 제안서 #39 '같이 정할 것' 6개 | 해요체, 무드 개수, 입력 양식 칸, `analysis` 필드, 색 적용 방식, 디자인 프리셋 | 색 적용 일부는 #38 구현으로 진행됨 |
+| eval-spec 미결정 — `copy_terms` 띄어쓰기·대소문자, `eval/runs` 커밋 | | `eval/runs` png·html 제외는 #29로 적용됨 |
+| 멘토 확인 — 노션 트래커 '멘토 확인'(공동, 10.28) | 이미지 공개 범위(달바 '확인 중'), 평가 기준 | |
+
+### 4. 이미 처리돼 다시 할 필요 없는 일
+
+- 웹 데이터 규격 리뷰(노션 10.21) → #33 병합. 노션 트래커는 아직 '시작 전'.
+- eval-spec 초안(노션 10.24) → #24 병합. `main` handoff '남은 문제'의 "이규동 리뷰·승인 대기"는 지난 내용.
+- 톤업 실제 자료(노션 10.24, 예시 이름 `toneup-sunscreen-real`) → 실제로는 `dalba-toneup-purple`로 #35 병합.
+- 주의 표현 목록(노션 10.28) → #32 병합.
+- 웹 모드 문구 리뷰(#21의 "'작업 결과 보고' 이용석 승인 필요") → #37 병합.
+- PR #24·#26 리뷰 반영, #30·#31 리뷰 반영(`main` handoff '다음 행동'의 옛 항목) → 모두 병합.
+- 평가 실행기 리뷰(#29) → 승인·병합. 이용석 평가 입력 6개 → #35 병합(노션은 '시작 전').
+
+오래된 요청과 새 요청 차이: 노션 '이용석 작업 안내'(10.16 기준)의 순서·마감은 GitHub 병합으로 대부분 끝남. 이규동 최신 handoff(`feat/38`)의 이용석 순서는 "#38 리뷰 → 대화 모드 첫 제작 → V2 화면·포함률 → v2 규칙·V3"이고, #43 리뷰가 그 앞에 있음.
 
 ## 완료한 내용과 결정
 
@@ -57,7 +193,9 @@
 
 ## 검증
 
+- #38 카드 색 (2026-10-20, 클라우드·Mac): `npm test` 129개, `npm run test:render` 5개 통과(새 `tests/color-mood.test.js` 11개, render 2개, check-input 1개). 색상 36개 × 채도·밝기 5가지 대표 색이 모두 자동 조정 후 대비 7곳 4.5 이상. 기본 테마·가상 초록 제품·보라 캡 제품을 출력해 비교(보라 primary #7F4FA6, 이용석 시제품 #7E50A5).
 - #42: `npm test` 117개 통과(새 테스트: 가짜 Claude로 정상·중단 평가 실행 → 완료된 실행만 `kind: eval`로 내보내고 `eval` 필드·PNG·`--only` 확인). `npm run web:build` 통과.
+- 이용석 인계 정리 (2026-10-20, Windows): `origin/main` `54465ed`에서 `npm test` 116개 통과. 문서에 적힌 파일·`npm run` 명령이 실제로 있는지 대조(없는 것 0, 일반 파일 이름 언급 제외).
 - 웹 모드 규칙 문구 리뷰 (2026-10-19, Windows): 문서만 변경, `npm test` 105개 통과.
 - 주의 표현 목록 (2026-10-19, Windows): `npm test` 109개 통과(새 `tests/caution.test.js` 4개). 기존 예시 제품(`toneup-sunscreen`·`-r1`) 문구에서 잡히는 표현 0건이라 `docs/examples/web-data`와 `export` 테스트 결과가 그대로. `eval/inputs/eval-oat-drink` 원문의 '설탕 무첨가'는 카드에 쓰면 [주의]로 잡힘(판단 기준상 원문 그대로 둘 수 있음). `npm run web:build`는 이 PC에 웹 의존성이 없어 안 돌림(웹 코드 변경 없음).
 - 웹 데이터 v0.2 (2026-10-19, Windows): `npm test` 106개 통과(`tests/export.test.js`에 주의 표현 `fields` 내보내기 1개 추가), `npm run web:build`(타입 검사·빌드) 통과. 주의 표현 목록 작업(#30)과 임시로 합쳐 관련 테스트 48개 통과.
@@ -83,16 +221,18 @@
 ## 남은 문제·미결정
 
 - 멘토 확인: 결과 보기 웹으로 '웹으로 구현' 피드백을 충족하는지, 웹 공개 범위, 실제 제품 자료 제공 시점, 평가 기준 (노션 '1차 멘토링 — 확인할 질문').
-- 웹 데이터 규격: 이용석 리뷰(10.19)로 V2 필드 확인, `cautions[].fields` 추가해 v0.2. ZIP 생성 위치(브라우저)는 확정 필요. 수정 요청·주의 표현이 있는 예시는 톤업 선크림 첫 제작 뒤 추가.
-- 평가 결과·체크리스트 규격 v0.1 초안 작성(`docs/eval-spec.md`, 이용석 10.19) → 이규동 리뷰·승인 대기. 미결정: `eval/runs/` 커밋 여부, `result.json` 작성 방식(실행기), `copy_terms` 비교에서 띄어쓰기·대소문자 무시 여부. 집계 결과 형식은 V3 때 v0.2로 추가.
+- 웹 데이터 규격 v0.2(`cautions[].fields`)는 #33으로 병합. ZIP 생성 위치(브라우저)는 확정 필요. 수정 요청·주의 표현이 있는 예시는 톤업 선크림 첫 제작 뒤 추가.
+- 평가 결과·체크리스트 규격 v0.1(`docs/eval-spec.md`)은 #24로 병합. 미결정: `eval/runs/` 커밋 여부(#29가 png·html만 제외), `copy_terms` 비교에서 띄어쓰기·대소문자 무시 여부. 집계 결과 형식은 V3 때 v0.2로 추가.
 - 근거 연결률(`evidence_rate`)은 '근거 있는 카드 ÷ 전체 카드'라서, 규칙상 근거가 없어도 되는 표지·마무리 카드 때문에 실제 웹 모드 결과가 60%로 나옴. 분모를 근거 필수 카드(특징·사용법·상세)로 바꾸면 스키마가 그 카드들에 근거를 강제하므로 **검증 통과 결과는 항상 100%**가 되어 의미가 없음. 정의를 다시 정해야 함(두 사람 결정): ① 전체 카드 기준 유지 + 화면 설명 고침, ② 지표를 빼거나 다른 것(예: 문구와 연결 인용의 글자 겹침)으로 바꿈. 지금 V2 제작 과정 화면 설명('특징·사용법 문구 중')과 계산이 다름.
-- 카드 색(#38): 기본 테마가 대비 3곳 미달이라 출력 때 조정됨(주색이 살구색 → 진한 적갈색). `config/theme.json`과 Figma `color/*` 변수를 조정된 값으로 맞출지, 주색은 장식에만 쓰고 글자 쪽을 따로 둘지 결정 필요. 쓴 색을 웹 데이터로 내보낼지(V2)도 미정.
 - 배포처(Vercel 예정)와 공개 링크 접근 제한 여부는 미정. 배포 계정 연결은 사람이 한다(설정값은 `web/README.md` '배포').
 - 작업 실행기의 `claude -p` 옵션은 Mac의 Claude Code 2.1.123에서 **인자 해석까지 확인**(모르는 옵션은 `unknown option`으로 거부되는데, 실행기 옵션 전체는 통과. `--max-turns`는 도움말에 없지만 받아들임). `--tools`의 `Skill`과 `Bash(npm run render -- <ID> --card:*)` 규칙이 실제로 허용·차단되는지는 첫 실제 실행에서 확인하고, 다르면 `claudeArgs`·`allowedTools`를 고친다.
 - 평가 실행기: 작업 실행기(`runJob({mode:'eval'})`)를 그대로 쓰고, 평가 결과 파일 위치·형식만 `docs/eval-spec.md`를 따름. 평가 결과 파일 위치·형식과 평가 세트 형식(`input.md` + 체크리스트)은 `docs/eval-spec.md`를 따름.
 
 ## 다음 행동
 
-1. 이규동: PR #43 → #38 순서로 `main` 병합 → `theme.json`·Figma 색 변수를 조정된 기본 색으로 바꿀지 결정 → 근거 연결률 정의 결정(이용석과, '남은 문제') → 시연 준비(웹 모드 톤업 제품 이미지 교체 등). 배포는 맨 뒤.
-2. 이용석: #38 리뷰(퍼플 등 4색 시제품 결과와 비교) → 대화 모드 첫 제작 → V2 구성안·근거 화면, 핵심 정보 포함률 지표 → v1 평가 분석·v2 규칙(글 무드), 평가 집계·V3 대시보드.
-3. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
+2026-10-20 기준. 자세한 근거는 위 '이규동 요청·피드백'.
+
+1. 이규동: PR #45 → #43 → #46 순서로 `main` 병합 → `theme.json`·Figma 색 변수 결정 → 근거 연결률 정의(이용석과) → 시연 준비·배포(10.28).
+2. 이용석: PR #43 리뷰 → #38 리뷰(PR #46) → 퍼플 첫 제작 최종 승인·기록 → V2 구성안·근거 화면 PR(`cardnews-v2plan`, `main` 위로 옮긴 뒤) → 핵심 정보 포함률 범위 결정 → v1 평가 분석·v2 규칙(글 무드), 평가 집계·V3.
+3. 공동: 근거 연결률, 기본 테마 색, 쓴 색 내보내기, 평가 기본 내보내기, 규칙 버전, 제안서 #39 결정 사항, 멘토 확인.
+4. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
