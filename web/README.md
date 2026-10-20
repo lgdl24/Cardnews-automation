@@ -73,4 +73,5 @@ web/
 정적 사이트라 `web/`을 빌드한 `dist/`만 올리면 됩니다. 배포처는 아직 정하지 않았습니다(Vercel 예정).
 
 - Vercel: 프로젝트 Root Directory `web`, Build Command `npm run build`, Output Directory `dist`. `vercel.json`이 `/projects/...` 같은 주소를 새로고침해도 화면이 열리게 합니다.
-- 데이터는 커밋된 `web/public/data/`로 배포되므로, 새 결과를 보이려면 `npm run export` → 커밋 → 배포 순서입니다.
+- 데이터는 커밋된 `web/public/data/`로 배포되므로, 새 결과를 보이려면 `npm run export` → `npm run web:build` → **`npm run check:web`** → 커밋 → 배포 순서입니다.
+- `npm run check:web`(배포 전 점검)은 오류가 있으면 종료 코드 1이에요. 웹 데이터 규격에 없는 파일·목록에 없는 프로젝트 폴더·빠진 PNG(`DEPLOY_FILE`), 스키마(`SCHEMA_ERROR`), 비밀 값 형태(`SECRET`, 값은 출력 안 함), 카드에 쓴 이미지의 사용 가능 여부가 '가능'이 아님(`IMAGE_RIGHTS`), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등을 봐요. 소스 맵은 경고만.

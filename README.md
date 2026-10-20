@@ -104,6 +104,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run web:install` · `npm run web:dev` · `npm run web:build` | 결과 보기 웹 설치·개발 서버(http://127.0.0.1:5173)·빌드. 자세한 내용은 [`web/README.md`](web/README.md) |
 | `npm run studio` | 웹 모드 제작 화면 켜기 (= `web:dev`, 로컬 제작 API 포함) |
 | `npm run export` | 승인된 결과와 완료된 평가 실행(`eval/runs/`)을 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json` + 평가 실행, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`, `--no-eval`) |
+| `npm run check:web` | 배포 전 점검: 웹 데이터(`web/public/data/`)·빌드 결과(`web/dist/`)에 규격 밖 파일·비밀 값·사용 확인 안 된 이미지(`가능`이 아닌 것)가 없는지. 오류면 종료 코드 1 (`--data`·`--dist`·`--no-dist`·`--json`) |
 | `npm run eval -- [입력ID...] --batch <이름>` | 평가 실행기: 평가 입력을 `claude -p`로 실행하고 `eval/runs/<실행ID>/result.json` 남김 (`--repeat`·`--from`·`--variant`·`--model`·`--dry-run`·`--export`) |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
