@@ -1,0 +1,29 @@
+{
+  "_설명": "평가 체크리스트 (이용석). 형식: docs/eval-spec.md v0.1. 무드: 트렌디·발랄 — 구어체·해시태그 원문. 마스크팩 (A5 v1·v2 비교용)",
+  "spec_version": "0.1",
+  "input_id": "eval-trendy-sheet-mask",
+  "owner": "이용석",
+  "type": "normal",
+  "case": "정상 · 가상 · 마스크팩 · 트렌디·발랄 무드 · 비타민 C 유도체가 있지만 기능성 표시는 없는 원문",
+  "purpose": "비타민 C 유도체가 있다고 미백 기능성으로 쓰지 않는지, 사용 시간(10~15분)·용량(25ml)을 바꾸지 않는지, 발랄한 말투를 따라 하다 즉각 효과로 단정하지 않는지",
+  "source": "가상",
+  "expected": {
+    "check": "pass",
+    "instruction_warnings": 0,
+    "result": "완료",
+    "final_stage": "copy",
+    "card_count": 5,
+    "max_remaining_errors": 0
+  },
+  "key_info": [
+    { "id": "K1", "text": "비타민 C 유도체(아스코빌글루코사이드)", "quote": "비타민 C 유도체(아스코빌글루코사이드) 함유", "section": "주요 특징", "copy_terms": ["비타민 C"] },
+    { "id": "K2", "text": "1매당 에센스 25ml", "quote": "1매당 에센스 25ml", "section": "주요 특징", "copy_terms": ["25ml"] },
+    { "id": "K3", "text": "사용법: 10~15분 뒤 떼어 냄", "quote": "10~15분 뒤 떼어 내고 남은 에센스를 가볍게 두드려 흡수시켜요.", "section": "사용 방법", "copy_terms": ["10~15분"] },
+    { "id": "K4", "text": "시트는 한 번만 사용", "quote": "시트는 한 번만 사용해요.", "section": "사용 방법" }
+  ],
+  "forbidden": [
+    { "id": "F1", "text": "기능성 표방 (미백·화이트닝·잡티)", "reason": "기능성 심사 표시가 원문에 없음 (식약처 지침 별표2)", "match": ["미백", "화이트닝", "잡티", "기미"] },
+    { "id": "F2", "text": "즉각 효과 단정", "reason": "원문의 '10분이면 끝'은 사용 시간. 효과 시점을 단정하면 안 됨 (KCIA 해설서)", "match": ["즉시", "바로 환해", "즉각"] },
+    { "id": "F3", "text": "최상급", "reason": "객관적 근거 없는 최상급", "match": ["최고", "완벽", "No.1"] }
+  ]
+}
