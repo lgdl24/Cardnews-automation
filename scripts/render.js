@@ -11,6 +11,63 @@ const { paths, loadConfig, loadInput, createReport, printReport, requireProductI
 const { validate } = require('./validate');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, launchBrowser } = require('./lib/card-html');
+const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
+
+// 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
+// 제품 색이면 사진 픽셀을 읽으려고 브라우저를 먼저 띄움 (HTML만 만들 때도)
+async function colorsFor({ data, input, imageDir, baseColor, browser }) {
+  const mode = colorModeOf(input);
+  let pixels = null;
+  let image = null;
+  let readError = null;
+  if (mode === '제품 색') {
+    image = pickProductImage({ data, input, imageDir });
+    if (image) {
+      const page = await browser.newPage();
+      try {
+        pixels = await readPixels(page, path.join(imageDir, image));
+      } catch (e) {
+        readError = String(e.message || e).split('\n')[0];
+      } finally {
+        await page.close();
+      }
+    }
+  }
+  return decideColors({ mode, baseColor, pixels, image, readError });
+}
+
+function reportColors(report, colors) {
+  if (colors.note) report.warn('카드 색', colors.note);
+  for (const c of colors.checks.filter((x) => !x.ok)) {
+    report.warn(`카드 색 ${c.where}`, `글자 대비가 ${c.ratio}로 기준(4.5)보다 낮아요. 자동 조정으로도 맞추지 못했어요`);
+  }
+}
+
+// render-report.json에 남기는 카드 색 기록 (docs/card-color.md)
+function colorRecord(c) {
+  return {
+    mode: c.mode,
+    source: c.source,
+    image: c.image,
+    representative: c.representative,
+    colored_ratio: c.colored_ratio,
+    color: c.color,
+    adjustments: c.adjustments,
+    contrast: c.checks,
+    ok: c.ok,
+    note: c.note,
+  };
+}
+
+function colorSummary(colors) {
+  const head = colors.source === 'product'
+    ? `카드 색: 제품 색 (${colors.image}의 대표 색 ${colors.representative})`
+    : `카드 색: 기본${colors.mode === '제품 색' ? ' (제품 색을 쓰지 못함)' : ''}`;
+  const adj = colors.adjustments.length
+    ? ` · 대비 조정 ${colors.adjustments.map((a) => `${a.key} ${a.from}→${a.to}`).join(', ')}`
+    : '';
+  return `${head}${adj}`;
+}
 
 function parseArgs(argv) {
   const cardIdx = argv.indexOf('--card');
@@ -51,25 +108,44 @@ async function main() {
   }
   const targets = data.cards.filter((c) => onlyCard === null || c.no === onlyCard);
 
+  let browser = null;
+  const startBrowser = async () => {
+    if (browser) return browser;
+    try {
+      browser = await launchBrowser();
+    } catch (e) {
+      console.error(e.message);
+      process.exit(1);
+    }
+    return browser;
+  };
+
+  // 카드 색
+  const colorMode = colorModeOf(input);
+  const colors = await colorsFor({
+    data, input, imageDir, baseColor: theme.color, browser: colorMode === '제품 색' ? await startBrowser() : null,
+  });
+  reportColors(report, colors);
+  console.log(colorSummary(colors));
+  const cardTheme = { ...theme, color: colors.color };
+
   // HTML 생성
   for (const card of targets) {
     const html = buildCardHtml({
-      card, total: data.cards.length, product, tpl: templates[card.template], theme, htmlDir, imageDir,
+      card, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir,
     });
     fs.writeFileSync(path.join(htmlDir, `card-${pad(card.no)}.html`), html);
   }
   fs.writeFileSync(path.join(htmlDir, 'index.html'), buildIndexHtml(product, data.cards));
   console.log(`HTML ${targets.length}장 생성: ${path.relative(paths.root, htmlDir)}`);
-  if (htmlOnly) return;
+  if (htmlOnly) {
+    if (browser) await browser.close();
+    printReport(`카드 색: ${id}`, report);
+    return;
+  }
 
   // PNG 출력 + 점검
-  let browser;
-  try {
-    browser = await launchBrowser();
-  } catch (e) {
-    console.error(e.message);
-    process.exit(1);
-  }
+  await startBrowser();
   const page = await browser.newPage({ viewport: theme.size, deviceScaleFactor: 1 });
   const results = [];
   try {
@@ -95,7 +171,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(outDir, onlyCard === null ? 'render-report.json' : `render-report-card-${pad(onlyCard)}.json`),
-    JSON.stringify({ product_id: id, rendered_at: new Date().toISOString(), results }, null, 2),
+    JSON.stringify({ product_id: id, rendered_at: new Date().toISOString(), colors: colorRecord(colors), results }, null, 2),
   );
   console.log(`PNG ${targets.length}장 저장: ${path.relative(paths.root, pngDir)}`);
   printReport(`레이아웃 점검: ${id}`, report);
