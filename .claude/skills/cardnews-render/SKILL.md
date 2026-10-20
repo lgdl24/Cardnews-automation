@@ -45,8 +45,10 @@ npm run render -- <제품ID>
 
 오류가 0개면 최종 검토 대기로 넘어갑니다.
 `[대화] node scripts/log.js <제품ID> job_finished --ok true` 후 결과를 보여주고 답을 기다립니다.
-- 승인: `node scripts/log.js <제품ID> final_approved` 후 `cards.json`의 `stage`를 `"approved"`로 바꿉니다.
-- 수정 요청: `cardnews-content` Skill의 '수정 요청'
+- `[대화]` 승인: `node scripts/log.js <제품ID> final_approved` 후 `cards.json`의 `stage`를 `"approved"`로 바꿉니다.
+- `[대화]` 수정 요청: `cardnews-content` Skill의 '수정 요청'
+
+웹 모드·평가 모드는 여기서 작업을 끝냅니다. `stage`는 `"copy"`로 두고 `"approved"`로 바꾸지 않습니다. (웹 모드의 최종 승인은 사람이 웹 제작 화면에서 함)
 
 ## 3. 단일 카드 재출력
 
