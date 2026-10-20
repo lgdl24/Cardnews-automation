@@ -10,8 +10,8 @@
 - 완료: 코드·입력 폼·출력 기록 검토, 해당 커밋에서 Windows 테스트 129개·출력 테스트 5개·웹 빌드 통과. 최종 확인에서 퍼플 이미지 색 계산을 다시 실행해 primary `#7F4FA6`, 대비 7곳 통과 확인.
 - 결과·리뷰 문안: [PR #46 검토 기록](reviews/pr-46-color-review.md). 기본 색과 theme/Figma를 맞출지, V2에 실제 쓴 색을 내보낼지는 공동 결정 대기.
 - 변경 파일: `docs/reviews/pr-46-color-review.md`, 이 문서. 코드·제품 데이터·실제 카드·로그는 수정하지 않음.
-- 이용석이 최종 검증 후 문서 커밋을 승인함. GitHub 리뷰 게시·승인·push·병합은 별도이며 아직 실행하지 않음. 노션 갱신 필요.
-- 다음: 필요 시 리뷰 문안 전달. Codex의 다음 구현은 #41 V2 기존 미커밋 작업을 보존해서 이어가기. 퍼플 디자인은 Claude Code에 수정 요청 전달됨. 실행 중인 작업 없음.
+- 이용석 승인 후 문서 커밋 `2e96488`을 `origin/docs/38-color-review`에 push하고 [PR #46 리뷰](https://github.com/lgdl24/Cardnews-automation/pull/46#pullrequestreview-5581838582)를 이용석 계정으로 게시함(`COMMENTED`). PR 승인·병합은 하지 않음. 노션 갱신 필요.
+- 다음: #46에 남긴 공동 결정 의견의 답변 확인. Codex의 다음 구현은 #41 V2 기존 미커밋 작업을 보존해서 이어가기. 퍼플 디자인은 Claude Code에 수정 요청 전달됨. 실행 중인 작업 없음.
 
 ## 최근 변경 (최신이 위, 최근 10개)
 
@@ -19,7 +19,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
-| 2026-10-20 | Codex | #38 · `docs/38-color-review` | PR #46 검토 기록 `docs/reviews/pr-46-color-review.md` 추가. 검토 커밋·직접 실행한 검사·리뷰 문안과 공동 결정 사항을 구분. 문서만 변경, 리뷰 게시·승인·병합 없음 |
+| 2026-10-20 | Codex | #38 · `docs/38-color-review` | PR #46 검토 기록 `docs/reviews/pr-46-color-review.md` 추가. 검토 커밋·직접 실행한 검사·리뷰 문안과 공동 결정 사항을 구분. 이용석 승인 후 문서 push·COMMENT 리뷰 게시 완료. PR 승인·병합 없음 |
 | 2026-10-19 | Claude | #36 · `docs/36-web-mode-review` | **웹 모드 규칙 문구 리뷰 (#21, 이용석)**: `CLAUDE.md`·Skill·`prompts/web/`을 작업 실행기·로컬 제작 API 코드와 대조. 고친 곳 — `CLAUDE.md` 입력 자료 취급에 웹 모드 수정 요청 메모도 자료로 다룬다는 한 줄(지시문 `prompts/web/revise.md`와 같게), `cardnews-render` Skill 최종 승인 줄에 `[대화]` 표시와 웹·평가 모드는 `copy`에서 끝난다는 줄, `docs/event-log-spec.md` v0.2(누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 `job_id` 형식, 웹 모드 `revision_requested.cards` 생략), `README.md` 한 줄. 동작 변경 없음 |
 | 2026-10-19 | Claude | #30 · `feat/30-caution-expressions` | **주의 표현 목록 v1**: `config/caution-expressions.json`을 식약처 지침 원문(안내서-0086-07, 2025-08-14) 별표 1·2, 시행규칙 별표 5, KCIA 해설서 기준으로 확정 — 분류 4개 → 9개, 분류마다 `basis`(근거 항목)·`extended`(근거 문서에 글자 그대로 없는 같은 뜻 표현), 맨 위 `references`(식약처 지침·시행규칙 별표 5·KCIA 해설서 2025, 원문 PDF로 확인). 형식(`groups[].category·terms`)은 그대로라 검증·내보내기·웹 코드 수정 없음. 판단 기준 `docs/style-guide.md` '주의 표현 판단 기준', `cardnews-content` Skill 6단계 문구 변경. 테스트 `tests/caution.test.js`(표현 겹침 금지, 예시 제품 문구 0건). 규칙 버전은 그대로 v1(변경 여부 미결정) |
 | 2026-10-19 | Claude | #31 · `feat/31-webdata-v2` | **웹 데이터 규격 v0.2 (이용석 리뷰)**: V2 구성안·근거에 필요한 필드를 노션 화면 설계·Figma W5·W6과 대조 → `project.json` `cards[].cautions[].fields`(주의 표현이 나온 문구 칸 `field`·`index`)만 추가. `spec_version` 0.1 → 0.2(스키마 3개·`web-data.js`·`types.ts`·예시·`web/public/data`). `findCautions`(`scripts/lib/metrics.js`)가 `fields`를 함께 돌려줌 — 셈(카드마다 표현 한 번)과 검증 메시지는 그대로. 근거는 카드 단위 유지(문구 칸별 근거는 `cards.json` 규격 변경이라 안 함) |

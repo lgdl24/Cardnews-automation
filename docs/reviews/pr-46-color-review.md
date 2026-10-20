@@ -3,7 +3,7 @@
 - 확인일: 2026-10-20 · 검토 도구: Codex
 - 대상: [PR #46](https://github.com/lgdl24/Cardnews-automation/pull/46), 이슈 [#38](https://github.com/lgdl24/Cardnews-automation/issues/38)
 - 검토 커밋: `c25aea7be6658210fd5080284921411b14d4aae3` (`feat/38-product-color`)
-- 상태: 로컬 검토 기록. GitHub 리뷰는 아직 게시하지 않음. 아래 의견은 팀 합의나 최종 디자인 승인을 대신하지 않음.
+- 상태: [GitHub 리뷰 게시 완료](https://github.com/lgdl24/Cardnews-automation/pull/46#pullrequestreview-5581838582) (`COMMENTED`, 이용석 계정). 아래 의견은 팀 합의나 최종 디자인 승인을 대신하지 않음.
 
 ## 리뷰 문안
 
