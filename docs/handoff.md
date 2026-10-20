@@ -2,12 +2,24 @@
 
 프로젝트 개발을 교대할 때 실제 파일·Git 상태와 함께 확인한다. 운영 규칙은 [project-context.md](project-context.md), 카드 제작 상태·승인은 해당 제품 데이터와 제작 로그가 기준이다.
 
+## 현재 작업 (Codex · PR #46 검토, 2026-10-20)
+
+- 이슈·대상 PR: #38 · [PR #46](https://github.com/lgdl24/Cardnews-automation/pull/46). 이용석 담당 코드 검토이며, 제품 색 구현 자체는 이규동 담당.
+- 작업 브랜치: `docs/38-color-review`, 기준 `origin/main` `54465ed`. 기능 브랜치에 검토 문서 커밋을 섞지 않음.
+- 검토 기준: `feat/38-product-color` `c25aea7`. 최종 확인 시 원격 head도 같음.
+- 완료: 코드·입력 폼·출력 기록 검토, 해당 커밋에서 Windows 테스트 129개·출력 테스트 5개·웹 빌드 통과. 최종 확인에서 퍼플 이미지 색 계산을 다시 실행해 primary `#7F4FA6`, 대비 7곳 통과 확인.
+- 결과·리뷰 문안: [PR #46 검토 기록](reviews/pr-46-color-review.md). 기본 색과 theme/Figma를 맞출지, V2에 실제 쓴 색을 내보낼지는 공동 결정 대기.
+- 변경 파일: `docs/reviews/pr-46-color-review.md`, 이 문서. 코드·제품 데이터·실제 카드·로그는 수정하지 않음.
+- 이용석이 최종 검증 후 문서 커밋을 승인함. GitHub 리뷰 게시·승인·push·병합은 별도이며 아직 실행하지 않음. 노션 갱신 필요.
+- 다음: 필요 시 리뷰 문안 전달. Codex의 다음 구현은 #41 V2 기존 미커밋 작업을 보존해서 이어가기. 퍼플 디자인은 Claude Code에 수정 요청 전달됨. 실행 중인 작업 없음.
+
 ## 최근 변경 (최신이 위, 최근 10개)
 
 다음 도구가 모르면 틀리게 작업할 규칙·용어·파일 변경만 적는다. 자세한 내용은 커밋과 PR에서 본다.
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-20 | Codex | #38 · `docs/38-color-review` | PR #46 검토 기록 `docs/reviews/pr-46-color-review.md` 추가. 검토 커밋·직접 실행한 검사·리뷰 문안과 공동 결정 사항을 구분. 문서만 변경, 리뷰 게시·승인·병합 없음 |
 | 2026-10-19 | Claude | #36 · `docs/36-web-mode-review` | **웹 모드 규칙 문구 리뷰 (#21, 이용석)**: `CLAUDE.md`·Skill·`prompts/web/`을 작업 실행기·로컬 제작 API 코드와 대조. 고친 곳 — `CLAUDE.md` 입력 자료 취급에 웹 모드 수정 요청 메모도 자료로 다룬다는 한 줄(지시문 `prompts/web/revise.md`와 같게), `cardnews-render` Skill 최종 승인 줄에 `[대화]` 표시와 웹·평가 모드는 `copy`에서 끝난다는 줄, `docs/event-log-spec.md` v0.2(누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 `job_id` 형식, 웹 모드 `revision_requested.cards` 생략), `README.md` 한 줄. 동작 변경 없음 |
 | 2026-10-19 | Claude | #30 · `feat/30-caution-expressions` | **주의 표현 목록 v1**: `config/caution-expressions.json`을 식약처 지침 원문(안내서-0086-07, 2025-08-14) 별표 1·2, 시행규칙 별표 5, KCIA 해설서 기준으로 확정 — 분류 4개 → 9개, 분류마다 `basis`(근거 항목)·`extended`(근거 문서에 글자 그대로 없는 같은 뜻 표현), 맨 위 `references`(식약처 지침·시행규칙 별표 5·KCIA 해설서 2025, 원문 PDF로 확인). 형식(`groups[].category·terms`)은 그대로라 검증·내보내기·웹 코드 수정 없음. 판단 기준 `docs/style-guide.md` '주의 표현 판단 기준', `cardnews-content` Skill 6단계 문구 변경. 테스트 `tests/caution.test.js`(표현 겹침 금지, 예시 제품 문구 0건). 규칙 버전은 그대로 v1(변경 여부 미결정) |
 | 2026-10-19 | Claude | #31 · `feat/31-webdata-v2` | **웹 데이터 규격 v0.2 (이용석 리뷰)**: V2 구성안·근거에 필요한 필드를 노션 화면 설계·Figma W5·W6과 대조 → `project.json` `cards[].cautions[].fields`(주의 표현이 나온 문구 칸 `field`·`index`)만 추가. `spec_version` 0.1 → 0.2(스키마 3개·`web-data.js`·`types.ts`·예시·`web/public/data`). `findCautions`(`scripts/lib/metrics.js`)가 `fields`를 함께 돌려줌 — 셈(카드마다 표현 한 번)과 검증 메시지는 그대로. 근거는 카드 단위 유지(문구 칸별 근거는 `cards.json` 규격 변경이라 안 함) |
@@ -17,7 +29,6 @@
 | 2026-10-19 | Claude | #23 · `docs/23-eval-spec` | **평가 결과·체크리스트 규격 v0.1 초안**: `docs/eval-spec.md`, 스키마 `schemas/eval/`(checklist·run-result), 예시 `docs/examples/eval/`(가상 톤업 선크림 체크리스트 + r1 기록을 옮긴 결과 1건), 테스트 `tests/eval-spec.test.js`(`npm test`에 포함, `eval/inputs/`가 있으면 그 체크리스트도 검사). #18 체크리스트 형식을 그대로 받고 선택 필드만 더함(`source`·`section`·`copy_terms`·`match` 등). 실행 하나 = 제작 폴더 하나 `eval/runs/<입력ID>--<버전>--r<N>/`(제품ID = 실행ID, 웹 데이터 `kind: eval` 프로젝트로 내보냄) + `result.json`. 실행은 `copy`에서 끝남(최종 승인 없음). 핵심 정보 포함률 계산 규칙 정함. 연결 규격이라 이규동 승인 필요 |
 | 2026-10-18 | Claude | #21 · `feat/21-web-studio` | **웹 모드 (로컬 실행)**: 입력·승인·수정 요청은 웹 화면에서, 실행은 내 컴퓨터의 `claude -p`. `npm run studio`(= vite 개발 서버)가 로컬 제작 API `/api/studio`(`scripts/lib/studio-api.js`, 127.0.0.1만)를 붙이고, 화면 S1 `/studio`·S2 `/studio/new`·S3 `/studio/:id`. 작업 실행기 `scripts/lib/job-runner.js`(웹·평가 모드 공통: 임시 작업 폴더, 허용 도구·명령 제한, 재검증 후 반영, 작업 시작·끝 기록). 지시문 `prompts/web/`(plan·copy·revise), 평가 지시문은 `prompts/eval/`로 이동. `CLAUDE.md`·Skill에 웹 모드 추가, '서비스 모드 결과 보고' → '작업 결과 보고'(이용석 승인 필요). `log.js`는 `CARDNEWS_MODE=web`도 기록 안 함. 배포 사이트는 그대로 보기 전용 |
 | 2026-10-17 | Claude | #18 · `feat/18-eval-inputs` | **평가 입력 4개 (초안 형식)**: `eval/inputs/<입력ID>/`(input.md·images·checklist.json). 가상 정상 `eval-mini-humidifier`(수치)·`eval-oat-drink`(식품 효능), 경계 `eval-input-missing`(5종 누락)·`eval-injection`(지시문 5개 탐지 + 탐지 안 되는 1개). `tests/eval-inputs.test.js`가 인용·기대 동작 확인. 형식은 `docs/eval-spec.md`(이용석) 확정 뒤 맞춤. 제품 A·B는 실제 자료 대기 |
-| 2026-10-17 | Claude | #17 · `feat/17-timeline` | **V2 제작 과정 완성**: 요약 숫자, 단계별 시간 막대(AI `#C8664E` / 사람 `#3B78C4`, 색약 구분 검증), 품질 지표, 작업별 결과 표, 제작 기록 타임라인(경과 시간, 검증 오류 코드·카드, 승인 주체 사람/평가, 수정 요청 유형 칩·메모). 단계 순서·처리 주체는 `scripts/lib/analysis.js`와 같게 화면 코드에 둠. 공통 변경: `formatMinutes`가 1분 미만을 초로, 10분 미만을 '분 초'로 표시, 표 스타일을 `components.css`로 이동 |
 
 ## 현재 작업
 
