@@ -232,9 +232,9 @@ in_copy = K.copy_terms의 모든 글자가 어느 카드 copy(모든 필드)에�
 
 ## 미결정
 
-- `eval/runs/`를 git에 커밋할지 (`products/*/output/`처럼 `png/`·`html/`은 빼는 안이 유력). 웹에는 내보낸 데이터가 커밋되므로 원본 실행 폴더는 빼도 됨
+- `eval/runs/`를 git에 커밋할지 (`products/*/output/`처럼 `png/`·`html/`은 빼는 안이 유력). 웹에는 내보낸 데이터가 커밋되므로 원본 실행 폴더는 빼도 됨. 평가 실행기(#28)는 유력안대로 `.gitignore`에 `eval/runs/*/output/png/`·`html/`만 넣어 둠
 - `copy_terms` 판정에서 띄어쓰기·대소문자를 무시할지
-- 실행기의 `result.json` 작성: 작업 실행기(`runJob`, #21)의 반환값과 `reportsDir`의 작업별 요약에서 옮기는 것으로 예상. 이규동 리뷰에서 확정
+- ~~실행기의 `result.json` 작성~~ → 확정(#28): 평가 실행기(`scripts/lib/eval-runner.js`)가 `runJob` 반환값(`result.duration_ms`·`num_turns`·`permission_denials` 개수·`report`)과 실행 폴더의 `log.jsonl`·`cards.json`·`output/quality.json`에서 계산하고, 쓰기 전에 스키마로 검사. 스키마에 안 맞으면 `result.invalid.json`으로 남기고 실패로 알림
 
 ## 버전
 

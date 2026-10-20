@@ -6,3 +6,6 @@ products/*/.job.json
 .DS_Store
 web/dist/
 .studio/
+# 평가 실행 폴더: result.json·cards.json·log.jsonl은 커밋, 출력 이미지·HTML은 뺌 (docs/eval-spec.md 미결정의 유력안)
+eval/runs/*/output/png/
+eval/runs/*/output/html/
