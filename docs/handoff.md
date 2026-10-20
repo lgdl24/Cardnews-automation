@@ -58,7 +58,7 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 | 절대 경로 | 브랜치 | 상태 | 비고 |
 |---|---|---|---|
 | `C:\Users\LG\OneDrive\Desktop\카드뉴스_자동화` | `docs/36-web-mode-review` | 깨끗(병합됨) | **OneDrive 폴더**: 10/20 `.git` 팩 인덱스 유실·추적 파일 25개 삭제가 있었음(git으로 복구, 손실 없음). `node_modules`에 `ajv` 없음 → 여기서 테스트하려면 `npm install`. 새 작업은 OneDrive 밖 폴더 권장 |
-| `C:\Users\LG\cardnews-handoff` | `docs/44-handoff-codex`(이 문서, #44) | 기준 `origin/main` `54465ed` | 커밋 전 이슈 번호를 받아 브랜치 이름을 맞출 것 |
+| `C:\Users\LG\cardnews-handoff` | `docs/44-handoff-codex`(이 문서, #44) | 기준 `origin/main` `54465ed` | 병합되면 지워도 됨 |
 | `C:\Users\LG\cardnews-v2plan` | `feat/41-v2-plan-evidence` | 미커밋 3개 | 아래 '미커밋 변경' |
 | `C:\Users\LG\cardnews-evalinputs` | `feat/34-eval-inputs-toneup` | 미추적 2개 | `node_modules`가 실제 설치본(다른 폴더는 여기로 junction) |
 | `C:\Users\LG\cardnews-proposal`·`cardnews-webdata`·`cardnews-win` | 병합된 브랜치 | 깨끗 | 지워도 됨(junction `node_modules`는 `[IO.Directory]::Delete`로 링크만 지울 것) |
