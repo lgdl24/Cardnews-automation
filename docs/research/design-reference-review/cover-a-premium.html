@@ -1,0 +1,56 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- [시안 A · 프리미엄 에디토리얼] 제품 색의 옅은 단색 그라데이션, 가운데 세리프 제목, 제품을 바닥 그림자 위에 크게. 문구는 cards.json 1번과 원문(input.md)에서만 -->
+<link rel="stylesheet" href="fonts.css">
+<style>
+  .card {
+    background: linear-gradient(180deg, #F7F3F9 0%, #ECE4F1 58%, #DCCFE5 100%);
+    color: #2E2535;
+    text-align: center;
+  }
+  .halo {
+    position: absolute; left: 50%; top: 470px; width: 760px; height: 760px; transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0) 70%);
+  }
+  .top {
+    position: absolute; left: 96px; right: 96px; top: 80px;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: 'Gara', serif; font-style: italic; font-size: 30px; color: #5E4E6C;
+  }
+  .rule { position: absolute; left: 96px; right: 96px; top: 132px; height: 1px; background: rgba(46,37,53,0.22); }
+  .kicker {
+    position: absolute; left: 0; right: 0; top: 184px;
+    font-size: 22px; font-weight: 600; letter-spacing: 0.32em; color: #6B3F93;
+  }
+  .title {
+    position: absolute; left: 96px; right: 96px; top: 230px;
+    font-family: 'Serif KR', serif; font-size: 74px; line-height: 1.28; letter-spacing: -0.035em; font-weight: 300;
+    padding-bottom: 12px;
+  }
+  .title b { font-weight: 500; color: #5B2F82; }
+  .product {
+    position: absolute; left: 50%; bottom: 100px; height: 600px; transform: translateX(-50%);
+    filter: drop-shadow(0 30px 28px rgba(60, 35, 80, 0.18));
+  }
+  .floor {
+    position: absolute; left: 50%; bottom: 196px; width: 300px; height: 40px; transform: translateX(-50%);
+    border-radius: 50%; background: radial-gradient(ellipse, rgba(70,40,90,0.22) 0%, rgba(70,40,90,0) 70%);
+  }
+  .foot {
+    position: absolute; left: 96px; right: 96px; bottom: 56px;
+    display: flex; justify-content: space-between;
+    font-size: 22px; letter-spacing: 0.08em; color: #5E4E6C;
+  }
+</style>
+<div class="card">
+  <div class="halo"></div>
+  <div class="top"><span>d'Alba</span><span>01 / 05</span></div>
+  <div class="rule"></div>
+  <div class="kicker">3중 기능성 · SPF50+/PA++++</div>
+  <h1 class="title" data-text>노란 톤은 잡고
+<b>화사한 쿨톤으로</b></h1>
+  <div class="floor"></div>
+  <img class="product" src="../../../products/dalba-toneup-purple/images/main.png" alt="">
+  <div class="foot"><span>워터풀 톤업 선크림(퍼플)</span><span>50ml</span></div>
+</div>

@@ -1,0 +1,65 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- [시안 B · 더마·팩트] 흰 바탕 + 가는 격자, 수치(SPF·PA)를 가장 크게, 기능성 3칸 표, 제품은 오른쪽 패널에 중간 크기, 근거 각주. 문구는 원문(input.md)에서만 -->
+<link rel="stylesheet" href="fonts.css">
+<style>
+  .card {
+    background-color: #FFFFFF;
+    background-image:
+      linear-gradient(rgba(43,36,51,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(43,36,51,0.05) 1px, transparent 1px);
+    background-size: 54px 54px;
+    background-position: 0 0;
+    color: #231D29;
+  }
+  .top {
+    position: absolute; left: 88px; right: 88px; top: 72px; height: 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 22px; font-weight: 600; letter-spacing: 0.06em;
+  }
+  .tag { border: 2px solid #5B2F82; color: #5B2F82; padding: 8px 18px; }
+  .pager { color: #5F566A; }
+  .eyebrow { position: absolute; left: 88px; top: 190px; font-size: 22px; font-weight: 700; letter-spacing: 0.28em; color: #5F566A; }
+  .spf { position: absolute; left: 80px; top: 232px; font-size: 138px; font-weight: 800; letter-spacing: -0.05em; line-height: 1; }
+  .pa { position: absolute; left: 88px; top: 392px; font-size: 64px; font-weight: 700; letter-spacing: -0.01em; color: #5B2F82; line-height: 1; }
+  .title {
+    position: absolute; left: 88px; top: 520px; width: 520px;
+    font-size: 50px; font-weight: 700; line-height: 1.3; letter-spacing: -0.03em;
+  }
+  .panel {
+    position: absolute; right: 88px; top: 160px; width: 360px; height: 600px;
+    background: #F2EFF5; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .panel img { height: 470px; filter: drop-shadow(0 18px 18px rgba(30,20,40,0.14)); }
+  .panel .cap {
+    position: absolute; left: 20px; bottom: 16px;
+    font-size: 18px; letter-spacing: 0.08em; color: #5F566A;
+  }
+  .spec {
+    position: absolute; left: 88px; right: 88px; top: 800px;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 2px solid #231D29;
+  }
+  .spec div { padding: 18px 0 0; border-right: 1px solid rgba(35,29,41,0.18); padding-left: 20px; }
+  .spec div:first-child { padding-left: 0; }
+  .spec div:last-child { border-right: 0; }
+  .spec small { display: block; font-size: 18px; font-weight: 700; color: #5B2F82; letter-spacing: 0.1em; }
+  .spec span { display: block; margin-top: 6px; font-size: 36px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { position: absolute; left: 88px; right: 88px; bottom: 56px; font-size: 20px; color: #5F566A; }
+</style>
+<div class="card">
+  <div class="top"><span class="tag">기능성 화장품</span><span class="pager">01 / 05</span></div>
+  <div class="eyebrow">UV PROTECTION</div>
+  <div class="spf">SPF50+</div>
+  <div class="pa">PA++++</div>
+  <h1 class="title" data-text>노란기는 잡고
+백탁 없이 쿨톤 보정</h1>
+  <div class="panel"><img src="../../../products/dalba-toneup-purple/images/main.png" alt=""><span class="cap">워터풀 톤업 선크림(퍼플) · 50ml</span></div>
+  <div class="spec">
+    <div><small>01</small><span>미백</span></div>
+    <div><small>02</small><span>주름개선</span></div>
+    <div><small>03</small><span>자외선차단</span></div>
+  </div>
+  <p class="note">* 화장품법에 따른 기능성 화장품 심사(또는 보고)를 필함</p>
+</div>
