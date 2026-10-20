@@ -70,7 +70,7 @@ npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드
 - 작업은 이슈 → 브랜치 → PR 순서로 하고, `main` 병합은 관리자가 결정합니다. ([CONTRIBUTING.md](CONTRIBUTING.md))
 - 작은 작업이 끝나거나 중단될 때마다 인수인계를 갱신합니다. 규칙·용어·파일이 바뀌면 '최근 변경'에 남겨 다음 도구가 알 수 있게 합니다.
 - 교대 전에 편집·실행을 끝내고, 같은 폴더에서는 한 도구만 수정합니다.
-- 카드 제작(대화 모드·평가 모드)의 승인 절차는 `CLAUDE.md`가 기준이며, 인수인계가 대신하지 않습니다.
+- 카드 제작(대화 모드·웹 모드·평가 모드)의 승인 절차는 `CLAUDE.md`가 기준이며, 인수인계가 대신하지 않습니다.
 
 새 세션에서 요청할 예시:
 
@@ -138,7 +138,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── input-safety.json             # 입력 자료 속 지시문 탐지 패턴
 │   ├── templates.json                # 템플릿별 필드·글자 수 기준 (측정값 기반)
 │   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름)
-│   ├── caution-expressions.json      # 주의 표현 목록 (초안)
+│   ├── caution-expressions.json      # 주의 표현 목록 (식약처 지침 기준, 판단은 docs/style-guide.md)
 │   ├── revision-types.json           # 수정 요청 유형 코드
 │   ├── export.json                   # 웹에 내보낼 제품 목록·출력 폴더 (npm run export)
 │   └── skill-version.json            # 규칙 버전

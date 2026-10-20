@@ -67,6 +67,27 @@ test('공개하지 않는 값(입력 원문 전체·입력 이미지·토큰·�
   }
 });
 
+test('주의 표현은 나온 문구 칸(fields)과 함께 내보낸다 (v0.2)', () => {
+  const ws = setup();
+  try {
+    ws.editCards((d) => {
+      d.cards[0].copy.badge = '최고 인기';
+      const desc = d.cards.find((c) => Array.isArray(c.copy && c.copy.items));
+      desc.copy.items[1] = '최고의 밀착력';
+    });
+    const r = ws.export();
+    assert.deepEqual(r.schemaErrors, []);
+    assert.deepEqual(r.exported, [ID]);
+    const project = ws.read(`projects/${ID}/project.json`);
+    assert.deepEqual(project.cards[0].cautions, [{ term: '최고', category: '절대·최상급 표현', in_source: false, fields: [{ field: 'badge', index: null }] }]);
+    const desc = project.cards.find((c) => Array.isArray(c.copy && c.copy.items));
+    assert.deepEqual(desc.cautions[0].fields, [{ field: 'items', index: 1 }]);
+    assert.equal(project.quality.caution.total, 2, '표현 하나는 카드마다 한 번만 셈');
+  } finally {
+    ws.cleanup();
+  }
+});
+
 test('승인 전(stage: copy)은 제외되고, 평가 실행(kind: eval)은 copy도 내보낸다', () => {
   const ws = setup();
   try {
