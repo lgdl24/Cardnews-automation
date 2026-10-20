@@ -47,11 +47,14 @@
 npm run export                         # config/export.json의 제품 전체 → web/public/data/
 npm run export -- --only <제품ID>      # 그 제품만 다시 내보냄 (index.json의 다른 프로젝트는 유지)
 npm run export -- --out <폴더>         # 다른 폴더로 (확인용)
+npm run export -- --no-eval            # 평가 실행은 빼고 config/export.json의 제품만
 ```
+
+- 평가 실행: `eval/runs/*/result.json` 중 `outcome.result`가 `완료`인 실행을 `kind: "eval"` 프로젝트로 함께 내보냅니다. `eval` 필드(`input_id`·`run_id`·`repeat`·`variant`)는 `result.json`에서, `label`은 `평가 · <실행 묶음>`. `config/export.json`에 적지 않아도 됩니다. 평가가 끝난 직후 그 실행만 내보내려면 `npm run eval -- ... --export` (#42)
 
 | 조건 | 안 될 때 이유 코드 |
 |---|---|
-| 내보낼 목록(`config/export.json`)에 있음. 평가 실행은 평가 실행기가 평가 결과 목록(`docs/eval-spec.md`)에서 목록을 넘김 | — |
+| 내보낼 목록(`config/export.json`)에 있음. 평가 실행은 `eval/runs/`에서 완료된 실행을 찾음(`docs/eval-spec.md` '웹으로 내보낼 때') | — |
 | `input.md`·`cards.json`이 있고 `validate` 오류 0개 | `INPUT_MISSING`, `VALIDATE_ERROR` |
 | `stage`가 `approved` (평가 실행은 `copy` 이상 — 사람의 최종 승인이 없음) | `NOT_APPROVED` |
 | 모든 카드의 PNG가 있음 | `PNG_MISSING` |

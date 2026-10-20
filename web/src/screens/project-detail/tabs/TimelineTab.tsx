@@ -113,7 +113,7 @@ function Quality({ project }: { project: Project }) {
       </h2>
       <MetricGrid>
         <MetricCard label="원문 커버리지" value={formatPercent(q.coverage)} hint={`원문 항목 ${q.coverage_detail.covered}/${q.coverage_detail.total}개를 카드에 사용`} />
-        <MetricCard label="근거 연결률" value={formatPercent(q.evidence_rate)} hint="특징·사용법 문구 중 원문 인용이 연결된 비율" />
+        <MetricCard label="근거 연결률" value={formatPercent(q.evidence_rate)} hint="전체 카드 중 원문 인용이 1개 이상 붙은 카드 비율 (표지·마무리는 근거가 선택이라 100%가 아닐 수 있음)" />
         <MetricCard label="글자 수 활용률" value={formatPercent(q.char_usage)} hint={`가장 높은 필드 ${formatPercent(q.char_usage_max)}`} />
         <MetricCard
           label="[주의] 표현"

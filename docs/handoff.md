@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-20 | Claude | #42 · `feat/42-eval-export` | **평가 실행 내보내기**: `npm run export`가 `eval/runs/*/result.json` 중 완료된 실행을 `kind: eval` 프로젝트로 함께 내보냄(`eval` 필드는 `result.json`에서, `label` `평가 · <묶음>`, `config/export.json`에 안 적어도 됨). `--no-eval`로 뺄 수 있음. `npm run eval -- … --export`는 끝난 묶음의 완료된 실행만 `--only`로 바로 내보냄. 함수 `exportWebData`는 `evalRuns`를 줄 때만 평가 실행을 읽음(테스트가 실제 `eval/runs`를 안 건드리게). V2 제작 과정의 근거 연결률 설명을 실제 계산(전체 카드 기준)에 맞춤 |
 | 2026-10-19 | Claude | #36 · `docs/36-web-mode-review` | **웹 모드 규칙 문구 리뷰 (#21, 이용석)**: `CLAUDE.md`·Skill·`prompts/web/`을 작업 실행기·로컬 제작 API 코드와 대조. 고친 곳 — `CLAUDE.md` 입력 자료 취급에 웹 모드 수정 요청 메모도 자료로 다룬다는 한 줄(지시문 `prompts/web/revise.md`와 같게), `cardnews-render` Skill 최종 승인 줄에 `[대화]` 표시와 웹·평가 모드는 `copy`에서 끝난다는 줄, `docs/event-log-spec.md` v0.2(누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 `job_id` 형식, 웹 모드 `revision_requested.cards` 생략), `README.md` 한 줄. 동작 변경 없음 |
 | 2026-10-19 | Claude | #30 · `feat/30-caution-expressions` | **주의 표현 목록 v1**: `config/caution-expressions.json`을 식약처 지침 원문(안내서-0086-07, 2025-08-14) 별표 1·2, 시행규칙 별표 5, KCIA 해설서 기준으로 확정 — 분류 4개 → 9개, 분류마다 `basis`(근거 항목)·`extended`(근거 문서에 글자 그대로 없는 같은 뜻 표현), 맨 위 `references`(식약처 지침·시행규칙 별표 5·KCIA 해설서 2025, 원문 PDF로 확인). 형식(`groups[].category·terms`)은 그대로라 검증·내보내기·웹 코드 수정 없음. 판단 기준 `docs/style-guide.md` '주의 표현 판단 기준', `cardnews-content` Skill 6단계 문구 변경. 테스트 `tests/caution.test.js`(표현 겹침 금지, 예시 제품 문구 0건). 규칙 버전은 그대로 v1(변경 여부 미결정) |
 | 2026-10-19 | Claude | #31 · `feat/31-webdata-v2` | **웹 데이터 규격 v0.2 (이용석 리뷰)**: V2 구성안·근거에 필요한 필드를 노션 화면 설계·Figma W5·W6과 대조 → `project.json` `cards[].cautions[].fields`(주의 표현이 나온 문구 칸 `field`·`index`)만 추가. `spec_version` 0.1 → 0.2(스키마 3개·`web-data.js`·`types.ts`·예시·`web/public/data`). `findCautions`(`scripts/lib/metrics.js`)가 `fields`를 함께 돌려줌 — 셈(카드마다 표현 한 번)과 검증 메시지는 그대로. 근거는 카드 단위 유지(문구 칸별 근거는 `cards.json` 규격 변경이라 안 함) |
@@ -17,25 +18,16 @@
 | 2026-10-19 | Claude | #23 · `docs/23-eval-spec` | **평가 결과·체크리스트 규격 v0.1 초안**: `docs/eval-spec.md`, 스키마 `schemas/eval/`(checklist·run-result), 예시 `docs/examples/eval/`(가상 톤업 선크림 체크리스트 + r1 기록을 옮긴 결과 1건), 테스트 `tests/eval-spec.test.js`(`npm test`에 포함, `eval/inputs/`가 있으면 그 체크리스트도 검사). #18 체크리스트 형식을 그대로 받고 선택 필드만 더함(`source`·`section`·`copy_terms`·`match` 등). 실행 하나 = 제작 폴더 하나 `eval/runs/<입력ID>--<버전>--r<N>/`(제품ID = 실행ID, 웹 데이터 `kind: eval` 프로젝트로 내보냄) + `result.json`. 실행은 `copy`에서 끝남(최종 승인 없음). 핵심 정보 포함률 계산 규칙 정함. 연결 규격이라 이규동 승인 필요 |
 | 2026-10-18 | Claude | #21 · `feat/21-web-studio` | **웹 모드 (로컬 실행)**: 입력·승인·수정 요청은 웹 화면에서, 실행은 내 컴퓨터의 `claude -p`. `npm run studio`(= vite 개발 서버)가 로컬 제작 API `/api/studio`(`scripts/lib/studio-api.js`, 127.0.0.1만)를 붙이고, 화면 S1 `/studio`·S2 `/studio/new`·S3 `/studio/:id`. 작업 실행기 `scripts/lib/job-runner.js`(웹·평가 모드 공통: 임시 작업 폴더, 허용 도구·명령 제한, 재검증 후 반영, 작업 시작·끝 기록). 지시문 `prompts/web/`(plan·copy·revise), 평가 지시문은 `prompts/eval/`로 이동. `CLAUDE.md`·Skill에 웹 모드 추가, '서비스 모드 결과 보고' → '작업 결과 보고'(이용석 승인 필요). `log.js`는 `CARDNEWS_MODE=web`도 기록 안 함. 배포 사이트는 그대로 보기 전용 |
 | 2026-10-17 | Claude | #18 · `feat/18-eval-inputs` | **평가 입력 4개 (초안 형식)**: `eval/inputs/<입력ID>/`(input.md·images·checklist.json). 가상 정상 `eval-mini-humidifier`(수치)·`eval-oat-drink`(식품 효능), 경계 `eval-input-missing`(5종 누락)·`eval-injection`(지시문 5개 탐지 + 탐지 안 되는 1개). `tests/eval-inputs.test.js`가 인용·기대 동작 확인. 형식은 `docs/eval-spec.md`(이용석) 확정 뒤 맞춤. 제품 A·B는 실제 자료 대기 |
-| 2026-10-17 | Claude | #17 · `feat/17-timeline` | **V2 제작 과정 완성**: 요약 숫자, 단계별 시간 막대(AI `#C8664E` / 사람 `#3B78C4`, 색약 구분 검증), 품질 지표, 작업별 결과 표, 제작 기록 타임라인(경과 시간, 검증 오류 코드·카드, 승인 주체 사람/평가, 수정 요청 유형 칩·메모). 단계 순서·처리 주체는 `scripts/lib/analysis.js`와 같게 화면 코드에 둠. 공통 변경: `formatMinutes`가 1분 미만을 초로, 10분 미만을 '분 초'로 표시, 표 스타일을 `components.css`로 이동 |
 
 ## 현재 작업
 
-- 확인일·작성 도구: 2026-10-19 · Claude (이용석 Windows).
-- 이슈·PR: [#30](https://github.com/lgdl24/Cardnews-automation/issues/30) · PR은 push 후 생성. 리뷰 이규동. 웹 데이터 v0.2(#31)는 따로. **`main` 병합은 이규동.**
-- 상태: 완료 (PR 리뷰 대기).
-- 목표·완료 조건: 주의 표현 목록을 식약처 지침 원문 기준으로 확정하고 근거·판단 기준을 남김. 기존 검증·내보내기·웹 코드와 그대로 맞물리고 `npm test` 통과.
-- 작업 브랜치: `feat/30-caution-expressions` · 기준 `main`(`8992542`).
-- 변경 파일: `config/caution-expressions.json`, `docs/style-guide.md`, `.claude/skills/cardnews-content/SKILL.md`(6단계 한 줄), `tests/caution.test.js`(새로), `package.json`(test 목록), `README.md`(폴더 설명), 이 문서.
-
-## 현재 작업
-
-- 확인일·작성 도구: 2026-10-19 · Claude.
-- 이슈·PR: [#28](https://github.com/lgdl24/Cardnews-automation/issues/28) · PR은 push 후 생성(기준 `main`). 리뷰 이용석(평가 결과를 읽는 쪽). **`main` 병합은 이규동.**
-- 상태: 구현·가짜 Claude 테스트 완료. 실제 Claude로 경계 입력(입력 누락) 1건 확인 예정.
-- 목표·완료 조건: `docs/eval-spec.md` v0.1대로 평가 입력을 실행하고 `result.json`을 남김. 정상·경계 입력이 스키마를 통과, `npm test` 통과.
-- 작업 브랜치: `feat/28-eval-runner` · 기준 `main`(`8992542`, #27·#24 병합 후).
-- 변경 파일: `scripts/eval.js`·`scripts/lib/eval-runner.js`(새로), `tests/eval-runner.test.js`(새로), `package.json`(`eval`, test 목록), `.gitignore`, `eval/inputs/*/checklist.json`·`README.md`, `docs/eval-spec.md`(미결정 중 result.json 작성 확정 표시), `README.md`, 이 문서.
+- 확인일·작성 도구: 2026-10-20 · Claude.
+- 이슈·PR: [#42](https://github.com/lgdl24/Cardnews-automation/issues/42) · PR은 push 후 생성(기준 `main`). 리뷰 이용석(V3·V4가 이 데이터를 읽음). **`main` 병합은 이규동.**
+- 상태: 구현·테스트 완료.
+- 목표·완료 조건: 완료된 평가 실행이 결과 보기 웹 데이터에 `kind: eval`로 들어감. 중단된 실행은 빠짐. `npm test` 통과.
+- 작업 브랜치: `feat/42-eval-export` · 기준 `main`(`54465ed`, PR #37·#32·#33·#35·#40·#29 병합 후).
+- 변경 파일: `scripts/export.js`, `scripts/eval.js`, `tests/eval-runner.test.js`, `web/src/screens/project-detail/tabs/TimelineTab.tsx`(근거 연결률 설명), `docs/web-data-spec.md`, `docs/eval-spec.md`, `README.md`, 이 문서.
+- 다음: 제품 색 무드(#38, 이규동 담당) — 제작 조건 선택 칸, `render`에서 제품 사진 대표 색 → 색 7개 → 글자 대비 검사.
 - 실행 중인 작업: 없음.
 
 ## 완료한 내용과 결정
@@ -66,6 +58,7 @@
 
 ## 검증
 
+- #42: `npm test` 117개 통과(새 테스트: 가짜 Claude로 정상·중단 평가 실행 → 완료된 실행만 `kind: eval`로 내보내고 `eval` 필드·PNG·`--only` 확인). `npm run web:build` 통과.
 - 웹 모드 규칙 문구 리뷰 (2026-10-19, Windows): 문서만 변경, `npm test` 105개 통과.
 - 주의 표현 목록 (2026-10-19, Windows): `npm test` 109개 통과(새 `tests/caution.test.js` 4개). 기존 예시 제품(`toneup-sunscreen`·`-r1`) 문구에서 잡히는 표현 0건이라 `docs/examples/web-data`와 `export` 테스트 결과가 그대로. `eval/inputs/eval-oat-drink` 원문의 '설탕 무첨가'는 카드에 쓰면 [주의]로 잡힘(판단 기준상 원문 그대로 둘 수 있음). `npm run web:build`는 이 PC에 웹 의존성이 없어 안 돌림(웹 코드 변경 없음).
 - 웹 데이터 v0.2 (2026-10-19, Windows): `npm test` 106개 통과(`tests/export.test.js`에 주의 표현 `fields` 내보내기 1개 추가), `npm run web:build`(타입 검사·빌드) 통과. 주의 표현 목록 작업(#30)과 임시로 합쳐 관련 테스트 48개 통과.

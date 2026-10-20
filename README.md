@@ -25,6 +25,7 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 npm run eval -- --batch v1-base --dry-run                 # 실행 목록만 확인 (사용량 없음)
 npm run eval -- --batch v1-base                           # eval/inputs/의 모든 입력을 1번씩
 npm run eval -- eval-injection --batch v1-repeat --repeat 3   # 한 입력을 3번 (A6 일관성)
+npm run eval -- eval-oat-drink --batch v1-base --export       # 끝나면 결과 보기 웹 데이터로 내보내기
 ```
 
 - 실행 하나 = 구성안 작업 → 평가 승인(`approved_by: eval`) → 문구·출력 작업. 작업이 실패하면 거기서 멈추고, 그것도 결과로 남겨요.
@@ -100,8 +101,8 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성 |
 | `npm run web:install` · `npm run web:dev` · `npm run web:build` | 결과 보기 웹 설치·개발 서버(http://127.0.0.1:5173)·빌드. 자세한 내용은 [`web/README.md`](web/README.md) |
 | `npm run studio` | 웹 모드 제작 화면 켜기 (= `web:dev`, 로컬 제작 API 포함) |
-| `npm run export` | 승인된 결과를 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json`, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`) |
-| `npm run eval -- [입력ID...] --batch <이름>` | 평가 실행기: 평가 입력을 `claude -p`로 실행하고 `eval/runs/<실행ID>/result.json` 남김 (`--repeat`·`--from`·`--variant`·`--model`·`--dry-run`) |
+| `npm run export` | 승인된 결과와 완료된 평가 실행(`eval/runs/`)을 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json` + 평가 실행, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`, `--no-eval`) |
+| `npm run eval -- [입력ID...] --batch <이름>` | 평가 실행기: 평가 입력을 `claude -p`로 실행하고 `eval/runs/<실행ID>/result.json` 남김 (`--repeat`·`--from`·`--variant`·`--model`·`--dry-run`·`--export`) |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
 미리보기: `products/<제품ID>/output/html/index.html`을 브라우저로 열면 전체 카드를 한 번에 볼 수 있어요.

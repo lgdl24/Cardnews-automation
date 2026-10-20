@@ -193,3 +193,40 @@ test('핵심 정보 포함률·금지 표현 판정 (docs/eval-spec.md 4-1·5장
   assert.equal(overallPass([{ pass: true }], f.slice(1)), null);
   assert.equal(overallPass([{ pass: true }], [f[1]]), true);
 });
+
+test('완료된 평가 실행은 웹 데이터로 kind: eval 프로젝트가 되고, 중단된 실행은 빠진다', async () => {
+  const s = setup();
+  const { exportWebData, evalTargets } = require('../scripts/export');
+  try {
+    await runEval({ ...s.opts, inputIds: ['eval-toneup-sunscreen'], batch: 'v1-base' });
+    process.env.FAKE_CLAUDE_SCENARIO = 'stopped';
+    await runEval({ ...s.opts, inputIds: ['eval-input-missing'], batch: 'v1-base' });
+    delete process.env.FAKE_CLAUDE_SCENARIO;
+
+    const targets = evalTargets(s.runsDir);
+    assert.deepEqual(targets.map((t) => t.id), ['eval-toneup-sunscreen--v1--r1']);
+
+    const out = path.join(s.dir, 'web');
+    const config = path.join(s.dir, 'export.json');
+    fs.writeFileSync(config, JSON.stringify({ out_dir: out, projects: [] }));
+    const r = exportWebData({ config, evalRuns: s.runsDir, exportedAt: '2026-10-20T00:00:00.000Z' });
+    assert.deepEqual(r.schemaErrors, []);
+    assert.deepEqual(r.excluded, []);
+    assert.deepEqual(r.exported, ['eval-toneup-sunscreen--v1--r1']);
+    const index = JSON.parse(fs.readFileSync(path.join(out, 'index.json'), 'utf8'));
+    const p = index.projects[0];
+    assert.equal(p.kind, 'eval');
+    assert.equal(p.stage, 'copy');
+    assert.equal(p.label, '평가 · v1-base');
+    assert.deepEqual(p.eval, { input_id: 'eval-toneup-sunscreen', run_id: 'eval-toneup-sunscreen--v1--r1', repeat: 1, variant: null });
+    assert.ok(fs.existsSync(path.join(out, 'projects', p.id, 'png', 'card-01.png')));
+    // 제품 폴더 위치는 원래대로
+    assert.equal(process.env.CARDNEWS_PRODUCTS_DIR, undefined);
+    // --only로 평가 실행 하나만 다시 내보낼 수 있음
+    const again = exportWebData({ config, evalRuns: s.runsDir, only: p.id });
+    assert.deepEqual(again.exported, [p.id]);
+  } finally {
+    delete process.env.FAKE_CLAUDE_SCENARIO;
+    s.cleanup();
+  }
+});

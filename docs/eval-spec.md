@@ -111,7 +111,7 @@ eval/runs/<실행ID>/   ← 실행 하나 = 제작 폴더 하나 (제품ID = 실
 
 ### 웹으로 내보낼 때 (웹 데이터 규격과의 경계)
 
-- **평가 결과 목록** = `eval/runs/*/result.json` 전체입니다. 따로 목록 파일을 두지 않습니다. 실행기가 `outcome.result`가 `완료`인 실행의 실행ID를 내보내기에 넘깁니다.
+- **평가 결과 목록** = `eval/runs/*/result.json` 전체입니다. 따로 목록 파일을 두지 않습니다. `outcome.result`가 `완료`인 실행은 `npm run export`가 찾아서 함께 내보내고, `npm run eval -- … --export`는 그 묶음의 완료된 실행만 바로 내보냅니다 (#42).
 - 내보낸 실행은 웹 데이터의 `projects/<실행ID>/`가 되고, `index.json`에서 `kind: "eval"`, `eval: { input_id, run_id, repeat, variant }`를 이 문서의 같은 이름 필드에서 채웁니다.
 - 중단된 실행(입력 누락 등)은 프로젝트로 내보내지 않고, 집계 표(7장)에서만 보입니다.
 
