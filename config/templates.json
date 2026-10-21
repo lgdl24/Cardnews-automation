@@ -28,5 +28,50 @@
       "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 30, "maxCharsPerLine": 21, "maxLines": 2 }
     },
     "image": "none"
+  },
+  "_designs": {
+    "프리미엄": {
+      "_defaults": { "colorMode": "제품 색" },
+      "cover": {
+        "label": "표지형",
+        "file": "templates/premium/cover.html",
+        "fields": {
+          "title": { "required": true, "maxChars": 20, "maxCharsPerLine": 9, "maxLines": 3 },
+          "subtitle": { "required": false, "maxChars": 42, "maxCharsPerLine": 12, "maxLines": 2 },
+          "badge": { "required": false, "maxChars": 12, "maxCharsPerLine": 12, "maxLines": 1 }
+        },
+        "image": "optional", "trimImage": true, "roles": ["cover", "closing"]
+      },
+      "image": {
+        "label": "이미지 강조형",
+        "file": "templates/premium/image.html",
+        "fields": {
+          "title": { "required": true, "maxChars": 20, "maxCharsPerLine": 7, "maxLines": 3 },
+          "caption": { "required": false, "maxChars": 72, "maxCharsPerLine": 12, "maxLines": 6 }
+        },
+        "image": "required", "trimImage": true, "roles": ["feature", "detail", "usage"]
+      },
+      "description": {
+        "label": "설명형",
+        "file": "templates/premium/description.html",
+        "fields": {
+          "title": { "required": true, "maxChars": 20, "maxCharsPerLine": 7, "maxLines": 3 },
+          "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 28, "maxCharsPerLine": 12, "maxLines": 3 }
+        },
+        "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
+      }
+    }
+  },
+  "_design_measured": {
+    "design": "프리미엄", "date": "2026-10-21", "font": "Pretendard", "full_cases": 64,
+    "fields": [
+      { "template": "cover", "field": "title", "capacity": { "total": 25, "perLine": 9 } },
+      { "template": "cover", "field": "subtitle", "capacity": { "total": 49, "perLine": 18 } },
+      { "template": "cover", "field": "badge", "capacity": { "total": 18, "perLine": 18 } },
+      { "template": "image", "field": "title", "capacity": { "total": 25, "perLine": 9 } },
+      { "template": "image", "field": "caption", "capacity": { "total": 110, "perLine": 16 } },
+      { "template": "description", "field": "title", "capacity": { "total": 25, "perLine": 9 } },
+      { "template": "description", "field": "items", "capacity": { "total": 30, "perLine": 14 } }
+    ]
   }
 }

@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-21 | Codex | #53 · `feat/53-lilac-design` | **라일락 → 프리미엄 첫 무드 프리셋**: `디자인` 기본·프리미엄, `templates/premium/` 3개. 색 비움은 제품 색, 직접 지정 우선. Point N·How to·STEP·분할 면·큰 제품·역할별 배치, 칸별 실측 7개·최대 문구 45경우 통과. 기본 템플릿·카드 스키마·규칙 버전 유지. 로컬 구현, 커밋 전 |
 | 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
@@ -17,23 +18,17 @@
 | 2026-10-20 | Claude | #42 · `feat/42-eval-export` | **평가 실행 내보내기**: `npm run export`가 `eval/runs/*/result.json` 중 완료된 실행을 `kind: eval` 프로젝트로 함께 내보냄(`eval` 필드는 `result.json`에서, `label` `평가 · <묶음>`, `config/export.json`에 안 적어도 됨). `--no-eval`로 뺄 수 있음. `npm run eval -- … --export`는 끝난 묶음의 완료된 실행만 `--only`로 바로 내보냄. 함수 `exportWebData`는 `evalRuns`를 줄 때만 평가 실행을 읽음(테스트가 실제 `eval/runs`를 안 건드리게). V2 제작 과정의 근거 연결률 설명을 실제 계산(전체 카드 기준)에 맞춤 |
 | 2026-10-20 | Claude | #44 · `docs/44-handoff-codex` | **인계 문서 정리(이용석)**: '현재 작업'을 이용석 기준으로 교체, '도구 분담'(카드 제작·평가 실행은 Claude Code만, 화면·스크립트 구현은 Codex, PR 전 교차 검토), '이용석 인계 상세'(작업 폴더·완료 PR·미커밋·테스트·미검증), '이규동 요청·피드백'(직접 할 일·검토 요청·공동 결정·이미 끝난 일) 추가. 병합된 옛 '현재 작업'·'다음 행동' 정리. 문서만 변경 |
 | 2026-10-19 | Claude | #36 · `docs/36-web-mode-review` | **웹 모드 규칙 문구 리뷰 (#21, 이용석)**: `CLAUDE.md`·Skill·`prompts/web/`을 작업 실행기·로컬 제작 API 코드와 대조. 고친 곳 — `CLAUDE.md` 입력 자료 취급에 웹 모드 수정 요청 메모도 자료로 다룬다는 한 줄(지시문 `prompts/web/revise.md`와 같게), `cardnews-render` Skill 최종 승인 줄에 `[대화]` 표시와 웹·평가 모드는 `copy`에서 끝난다는 줄, `docs/event-log-spec.md` v0.2(누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 `job_id` 형식, 웹 모드 `revision_requested.cards` 생략), `README.md` 한 줄. 동작 변경 없음 |
-| 2026-10-19 | Claude | #30 · `feat/30-caution-expressions` | **주의 표현 목록 v1**: `config/caution-expressions.json`을 식약처 지침 원문(안내서-0086-07, 2025-08-14) 별표 1·2, 시행규칙 별표 5, KCIA 해설서 기준으로 확정 — 분류 4개 → 9개, 분류마다 `basis`(근거 항목)·`extended`(근거 문서에 글자 그대로 없는 같은 뜻 표현), 맨 위 `references`(식약처 지침·시행규칙 별표 5·KCIA 해설서 2025, 원문 PDF로 확인). 형식(`groups[].category·terms`)은 그대로라 검증·내보내기·웹 코드 수정 없음. 판단 기준 `docs/style-guide.md` '주의 표현 판단 기준', `cardnews-content` Skill 6단계 문구 변경. 테스트 `tests/caution.test.js`(표현 겹침 금지, 예시 제품 문구 0건). 규칙 버전은 그대로 v1(변경 여부 미결정) |
 
 ## 현재 작업 (이용석 · Codex, 2026-10-21)
 
-- 이슈: [#41 V2 구성안·근거](https://github.com/lgdl24/Cardnews-automation/issues/41). 구현·검증과 이용석 화면 확인 완료. 화면 커밋 `195475c` push, [PR #56](https://github.com/lgdl24/Cardnews-automation/pull/56)에서 이규동(`lgdl24`)에게 리뷰 요청 완료. 병합 전.
-- 작업 폴더: `C:\Users\LG\cardnews-v2plan`, 브랜치 `feat/41-v2-plan-evidence`, 기준 `origin/main` `54465ed`. 기존 Claude 1차 구현과 미커밋 변경을 보존해서 이어감. 작업 시작 전 사본은 Codex 채팅의 `outputs/v2-before/`에 보관.
-- 기준: Figma `68:403`의 실제 디자인 컨텍스트·스크린샷, 이슈 #41, 웹 데이터 v0.2. 공통 헤더·색·폰트는 현재 앱을 사용. Figma의 관리자/로그아웃·예시 수치·문구 칸별 근거 관계는 그대로 복제하지 않음.
-- 완료: 핵심 메시지, 카드 선택·PNG, 구성 의도, 문구와 카드 단위 원문, 주의 표현·필드 강조, 글자 수 활용률, 카드·구성안 수정 이력, 전체 표, 미사용 원문 표시.
-- 이번 보완: 원문 칩을 클릭·터치·키보드로 열고 Escape/닫기로 닫음. 닫으면 원래 버튼으로 포커스 복귀. 표에서 카드 선택 시 선택 영역으로 이동하고 다른 URL 매개변수 유지. 겹치는 주의 표현은 긴 표현부터 강조. 이미지 실패·구성안 단계·빈 이력·비교 원문 0개 안내. 글자 수 초과 시 접근성 값 범위 보정과 실제 수치 안내. 긴 원문·이력의 모바일 줄바꿈.
-- 변경 파일: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx`, `web/src/screens/project-detail/tabs/plan-evidence.css`, `tests/plan-evidence-ui.test.js`, 이 문서. 공통 데이터 규격·내보내기·카드 템플릿·제품 데이터·실제 제작 로그는 수정하지 않음.
-- 검증: Windows `npm test` 116개, `node --test tests/plan-evidence-ui.test.js` 7개 통과(건너뜀 0), `npm run web:build` 통과. 일반 테스트의 기존 Ajv strictTypes 경고는 남아 있고 실패는 없음. 템플릿 변경이 없어 `test:render`는 실행하지 않음.
-- 화면 검사: 기본 상태, Enter/Escape·원문 닫기, 카드 선택·공유 주소·새로고침, 주의 필드·인용 범위·수정 이력·누락 원문, 비교 원문 0개, PNG 실패·구성안 단계, 320px/375px의 긴 문구·인용·이력·글자 수 초과. JavaScript 오류 없음. 예시 JSON은 브라우저 응답에서만 바꾸며 실제 파일은 보존. 테스트 서버는 빈 포트를 쓰고 제작 API는 끔. junction 의존성의 실제 경로를 테스트 서버에서만 허용해 폰트 로드도 확인.
-- 확인용 화면: `http://127.0.0.1:5183/projects/toneup-sunscreen-r1/plan?card=2`. `npm --prefix web run preview -- --host 127.0.0.1 --port 5183 --strictPort`로 실행 중. 빌드 결과를 읽는 보기 전용 미리보기이며 웹/평가 제작 실행은 하지 않음. 데이터는 기존 가상 예시이고 퍼플 실제품 결과가 아님.
-- 환경 참고: 현재 `web/node_modules`가 다른 작업 폴더로 junction 연결돼 기본 dev 서버에서 폰트 요청이 Vite 허용 경로 밖이라 403이 났음. 공통 Vite 설정은 수정하지 않았고, 확인용 화면은 폰트가 포함된 빌드 미리보기로 띄움. 작업 중 띄운 5181 dev 서버와 자동 검사 서버는 종료.
-- 10/21 확인: 이용석이 미리보기 화면을 확인하고 이대로 진행하기로 함. 화면 코드 변경 없이 인계 상태만 갱신하고 `git diff --check` 확인. 앞서 통과한 테스트·빌드는 반복하지 않음.
-- 남은 것: 이규동 PR 리뷰와 필요한 수정 반영. 규칙 버전·근거 연결률 계산 정의·색 내보내기 범위는 바꾸지 않음. 노션 상태 갱신 필요.
-- 다음: PR #56 리뷰 → 승인 후 이규동이 병합. V3·V4·실제 퍼플 카드 수정은 이번 변경에 포함하지 않음.
+- 이슈: [#53 디자인 묶음 제안](https://github.com/lgdl24/Cardnews-automation/issues/53). 브랜치 feat/53-lilac-design, 기준 main c237932. [#64 무드 프리셋 제안](https://github.com/lgdl24/Cardnews-automation/pull/64)을 읽고 이용석 요청 범위만 로컬 구현. 미커밋, 이번 작업에서 이슈·PR 생성·push 없음.
+- 변경: 라일락을 프리미엄으로 교체. 색 비움은 제품 색, 명시값 우선·무채색 사진은 기본 테마로 대체. B2 기준 면 분할·Point N·How to·STEP·기울인 큰 제품·설명형 좌우 교대. 표지 제품 영역 높이 70%, 마무리 약 65%. 묶음 이름별 코드 분기 없이 설정 사용.
+- 검증: 로컬 일반 149개·출력 9개 통과. 마지막 배치 조정 후 프리미엄 출력 재검사 통과. 칸별 실측 7개·역할/이미지/좌우 45경우 넘침·겹침 0, 기본 calibrate --check 통과. 기본 설정 3종·HTML 5장 기존 HEAD와 동일. 기본 템플릿·base.css·카드 스키마·규칙 버전 무변경.
+- 통합: #59 → #62 → #63과 조합해 일반 151개·출력 9개·V2 화면 7개·입력 선택 폼 1개, 웹 빌드·check:web(오류·경고 0) 통과. 코드 패치 충돌 없음, 인계 문서만 합칠 필요. 통합 의존성은 별도 npm ci 설치.
+- 범위 밖: 실제 카드 제작·수정·승인·평가 실행·예시 데이터 재출력 없음. B2 비교는 임시 시험 문구이며 실제 퍼플 완성본이 아님. 이미지형 items·연출 사진·사용량·인증 배지 필드·다른 무드·말투·규칙 버전은 변경 없음. 사용법 주의 문구는 기존 items로 유지, 별도 필드·독립 위치 출력은 미추가.
+- 이전 라일락 교차 검토는 Claude 완료. 이번 프리미엄 변경은 Claude 재검토·실제 퍼플 검증 필요. 원본 퍼플 문구 읽기 전용 대조는 새 글자 수·수동 줄바꿈 기준 초과 0건. 실제 제품 원본·로그·출력은 보존.
+- Claude Code 교차 검토(10.21): B2 대비 보완 — 제목 굵게·둘째 줄 강조색(표지·이미지형·설명형·마무리), 표지 제목·부제를 한 묶음으로 위로, 마무리 제목 크게, 사용법 카드도 사진 표시(좌우 교대), 빈 주의 문구 선 제거. npm test 149·test:render 9·프리미엄 calibrate 45경우·기본 --check 12 통과, 표지 제목 실측 25/9로 갱신. 퍼플 문구 프리미엄 기준 초과 0건(읽기만). Codex 교차 검토 반영: 마무리 제목 3줄 칸·사진 위치, compare.js가 제품 디자인 기준 사용(테스트 추가), calibrate에 사용법 좌우·직접 줄바꿈 최대 줄 수 추가(프리미엄 64경우 통과), 사용법 사진 출력 테스트. npm test 150·test:render 9
+- 다음: 이용석 비교 그림 확인 → Claude 변경 검토·실제 제작 검증 → 사용자 승인 뒤 커밋은 Claude Code. 이규동에게 새 입력·출력 범위와 시연 반영 일정 확인. 노션 갱신 필요.
 
 ## 현재 작업 (이규동, 2026-10-21)
 

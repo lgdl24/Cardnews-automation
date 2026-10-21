@@ -168,7 +168,7 @@ function Field({ field: f, value, onChange }: { field: FormField; value: string;
       </span>
       {f.type === 'choice' ? (
         <select value={value} onChange={(e) => onChange(e.target.value)} required={f.required}>
-          {!f.required && <option value="">선택 안 함 ({f.options?.[0] ?? '기본'})</option>}
+          {!f.required && <option value="">선택 안 함</option>}
           {(f.options ?? []).map((o) => (
             <option key={o} value={o}>
               {o}

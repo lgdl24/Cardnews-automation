@@ -21,7 +21,7 @@ function buildThemeCss(theme, htmlDir) {
   return `${faces.join('\n')}\n:root { ${vars} --font-family: '${theme.font.family}'; }`;
 }
 
-function buildCardHtml({ card, total, product, tpl, theme, htmlDir, imageDir }) {
+function buildCardHtml({ card, cards = [], total, product, tpl, theme, htmlDir, imageDir, imageCrop = null }) {
   const template = fs.readFileSync(path.join(paths.root, tpl.file), 'utf8');
   const baseCss = fs.readFileSync(path.join(paths.root, 'templates', 'base.css'), 'utf8');
   const copy = card.copy || {};
@@ -31,6 +31,12 @@ function buildCardHtml({ card, total, product, tpl, theme, htmlDir, imageDir }) 
     : '';
 
   const values = {
+    sectionLabel: card.role === 'usage' ? 'How to' : `Point ${Math.max(1, cards.filter((c) => ['feature', 'detail'].includes(c.role) && c.no <= card.no).length)}`,
+    photoSide: card.no % 2 === 0 ? 'left' : 'right',
+    role: escapeHtml(card.role || (card.template === 'cover' ? 'cover' : 'feature')),
+    imageCrop: tpl.trimImage && imageCrop && Object.values(imageCrop).every(Number.isFinite)
+      && imageCrop.width > 0 && imageCrop.height > 0
+      ? `object-view-box: inset(${imageCrop.top * 100}% ${(1-imageCrop.left-imageCrop.width)*100}% ${(1-imageCrop.top-imageCrop.height)*100}% ${imageCrop.left*100}%);` : '',
     page: String(card.no),
     total: String(total),
     product: escapeHtml(product),
