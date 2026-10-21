@@ -40,6 +40,12 @@ function checkInput(productId) {
     }
   }
 
+  const colorRule = findField(form, '카드 색');
+  const colorRaw = ((input.cond && input.cond['카드 색']) || '').split('\n')[0].trim();
+  if (colorRule && colorRaw && !colorRule.options.includes(colorRaw)) {
+    report.warn('## 카드 색', `"${colorRaw}"는 고를 수 없는 값이에요. ${colorRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 색으로 만들어요)`);
+  }
+
   const imageRule = findField(form, '이미지');
   for (const img of input.images) {
     const where = `이미지 ${img.file || '(파일명 없음)'}`;

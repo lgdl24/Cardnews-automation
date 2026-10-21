@@ -17,7 +17,7 @@
 | 체크리스트 | 입력마다 미리 정한 기대 동작·핵심 정보·금지 표현. `checklist.json` |
 | 실행(run) | 입력 하나를 규칙 한 벌로 **구성안 작업 → 평가 승인 → 문구·출력 작업**까지 한 번 돌린 것. 입력 누락처럼 중간에 멈추면 거기까지 |
 | 실행 묶음(batch) | 같은 목적으로 함께 돌린 실행들. 예: `v1-base`(v1 전체 12개), `v1-repeat`(A6 반복), `v2-base` |
-| 비교판(variant) | A8에서 규칙 일부를 뺀 판. 기본 규칙이면 `null` |
+| 비교판(variant) | A8에서 규칙 일부를 뺀 판. 기본 규칙이면 `null`. 정의는 `eval/variants/<이름>/`(바꾼 `CLAUDE.md`·Skill·평가 지시문만, [eval/variants/README.md](../eval/variants/README.md)) |
 
 ## 1. 평가 입력 폴더
 
@@ -111,7 +111,7 @@ eval/runs/<실행ID>/   ← 실행 하나 = 제작 폴더 하나 (제품ID = 실
 
 ### 웹으로 내보낼 때 (웹 데이터 규격과의 경계)
 
-- **평가 결과 목록** = `eval/runs/*/result.json` 전체입니다. 따로 목록 파일을 두지 않습니다. 실행기가 `outcome.result`가 `완료`인 실행의 실행ID를 내보내기에 넘깁니다.
+- **평가 결과 목록** = `eval/runs/*/result.json` 전체입니다. 따로 목록 파일을 두지 않습니다. `outcome.result`가 `완료`인 실행은 `npm run export`가 찾아서 함께 내보내고, `npm run eval -- … --export`는 그 묶음의 완료된 실행만 바로 내보냅니다 (#42).
 - 내보낸 실행은 웹 데이터의 `projects/<실행ID>/`가 되고, `index.json`에서 `kind: "eval"`, `eval: { input_id, run_id, repeat, variant }`를 이 문서의 같은 이름 필드에서 채웁니다.
 - 중단된 실행(입력 누락 등)은 프로젝트로 내보내지 않고, 집계 표(7장)에서만 보입니다.
 

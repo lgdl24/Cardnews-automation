@@ -6,7 +6,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { ROOT } = require('./helpers');
-const { runEval, planRuns, keyInfoMetrics, judgeForbidden, overallPass } = require('../scripts/lib/eval-runner');
+const { runEval, planRuns, loadVariant, keyInfoMetrics, judgeForbidden, overallPass } = require('../scripts/lib/eval-runner');
+const { fillPrompt } = require('../scripts/lib/job-runner');
 const { parseArgs } = require('../scripts/eval');
 
 const FAKE = path.join(__dirname, 'fixtures', 'fake-claude.js');
@@ -25,8 +26,16 @@ function setup() {
   fs.cpSync(path.join(ROOT, 'eval', 'inputs', 'eval-input-missing'), path.join(inputsDir, 'eval-input-missing'), { recursive: true });
   process.env.FAKE_CLAUDE_SOURCE = path.join(ROOT, 'products', SRC, 'cards.json');
   process.env.FAKE_CLAUDE_PNG_DIR = path.join(ROOT, 'docs', 'examples', 'web-data', 'projects', SRC, 'png');
-  const opts = { inputsDir, runsDir, bin: FAKE, jobsDir: path.join(dir, 'jobs') };
-  return { dir, inputsDir, runsDir, opts, cleanup: () => fs.rmSync(dir, { recursive: true, force: true }) };
+  // 비교판(A8) 예시: 원문 인용 규칙 문단을 뺀 CLAUDE.md + 바꾼 문구 지시문
+  const variantsDir = path.join(dir, 'variants');
+  const vdir = path.join(variantsDir, 'no-quote-rule');
+  fs.mkdirSync(path.join(vdir, 'files', 'prompts', 'eval'), { recursive: true });
+  fs.writeFileSync(path.join(vdir, 'variant.json'), JSON.stringify({ description: '원문 인용 규칙을 뺀 판 (테스트)', changes: ['CLAUDE.md: 내용 규칙 둘째 줄 삭제'] }));
+  const rules = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8');
+  fs.writeFileSync(path.join(vdir, 'files', 'CLAUDE.md'), rules.replace(/^- 모든 특징·사용법 문구는 `sources`.*\n/m, '') + '\n<!-- variant: no-quote-rule -->\n');
+  fs.writeFileSync(path.join(vdir, 'files', 'prompts', 'eval', 'copy.md'), fs.readFileSync(path.join(ROOT, 'prompts', 'eval', 'copy.md'), 'utf8') + '\n(비교판 지시문)\n');
+  const opts = { inputsDir, runsDir, variantsDir, bin: FAKE, jobsDir: path.join(dir, 'jobs') };
+  return { dir, inputsDir, runsDir, variantsDir, opts, cleanup: () => fs.rmSync(dir, { recursive: true, force: true }) };
 }
 
 const readLog = (runDir) => fs.readFileSync(path.join(runDir, 'log.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
@@ -51,13 +60,66 @@ test('실행 계획: 실행ID 규칙, 묶음 이름 필수, 없는 입력·이�
       'eval-input-missing--v1--r1', 'eval-input-missing--v1--r2',
       'eval-toneup-sunscreen--v1--r1', 'eval-toneup-sunscreen--v1--r2',
     ]);
-    const v = planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-quote-rule', from: 3, inputsDir: s.inputsDir, runsDir: s.runsDir });
+    const v = planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-quote-rule', from: 3, inputsDir: s.inputsDir, runsDir: s.runsDir, variantsDir: s.variantsDir });
     assert.equal(v[0].runId, 'eval-toneup-sunscreen--v1-no-quote-rule--r3');
+    // 정의가 없는 비교판은 규칙이 그대로라 이름만 다른 결과가 되므로 시작 전에 멈춤
+    assert.throws(() => planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-such', inputsDir: s.inputsDir, runsDir: s.runsDir, variantsDir: s.variantsDir }), /비교판 정의가 없어요/);
     assert.throws(() => planRuns({ inputIds: [], batch: '', inputsDir: s.inputsDir, runsDir: s.runsDir }), /--batch/);
     assert.throws(() => planRuns({ inputIds: ['eval-nothing'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /평가 입력이 없거나/);
     assert.throws(() => planRuns({ inputIds: ['toneup'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /eval-로 시작/);
     fs.mkdirSync(path.join(s.runsDir, 'eval-toneup-sunscreen--v1--r1'), { recursive: true });
     assert.throws(() => planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /이미 있는 실행/);
+  } finally {
+    s.cleanup();
+  }
+});
+
+test('비교판 정의: description·files 필수, 규칙 문서와 평가 지시문만 바꿀 수 있음', () => {
+  const s = setup();
+  try {
+    const v = loadVariant(s.variantsDir, 'no-quote-rule');
+    assert.deepEqual(v.files.sort(), ['CLAUDE.md', 'prompts/eval/copy.md']);
+    const bad = path.join(s.variantsDir, 'bad');
+    fs.mkdirSync(path.join(bad, 'files', 'scripts'), { recursive: true });
+    fs.writeFileSync(path.join(bad, 'variant.json'), JSON.stringify({ description: '검증 스크립트를 바꾸려는 판' }));
+    fs.writeFileSync(path.join(bad, 'files', 'scripts', 'validate.js'), '');
+    assert.throws(() => loadVariant(s.variantsDir, 'bad'), /바꿀 수 없는 파일/);
+    const empty = path.join(s.variantsDir, 'empty');
+    fs.mkdirSync(empty);
+    fs.writeFileSync(path.join(empty, 'variant.json'), JSON.stringify({ description: '빈 판' }));
+    assert.throws(() => loadVariant(s.variantsDir, 'empty'), /바꿀 파일이 없어요/);
+    fs.writeFileSync(path.join(empty, 'variant.json'), JSON.stringify({}));
+    assert.throws(() => loadVariant(s.variantsDir, 'empty'), /description/);
+    // 지시문: 비교판에 있으면 그것을, 없으면 원래 지시문을 씀
+    const vars = { product_id: 'eval-x--v1--r1' };
+    assert.match(fillPrompt({ mode: 'eval', kind: 'copy', vars, overlayDir: v.filesDir }), /\(비교판 지시문\)/);
+    assert.doesNotMatch(fillPrompt({ mode: 'eval', kind: 'plan', vars, overlayDir: v.filesDir }), /비교판/);
+  } finally {
+    s.cleanup();
+  }
+});
+
+test('비교판 실행: 작업 폴더의 CLAUDE.md가 바뀌고 저장소 규칙은 그대로, result.json에 비교판 기록', async () => {
+  const s = setup();
+  try {
+    const before = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8');
+    const { results } = await runEval({ ...s.opts, inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-quote-rule', keep: true });
+    const { result: r, schemaErrors } = results[0];
+    assert.deepEqual(schemaErrors, []);
+    assert.equal(r.run_id, 'eval-toneup-sunscreen--v1-no-quote-rule--r1');
+    assert.equal(r.variant, 'no-quote-rule');
+    assert.match(r.notes, /비교판 no-quote-rule: 원문 인용 규칙을 뺀 판/);
+    assert.equal(r.outcome.result, '완료');
+    for (const job of r.jobs) {
+      const ws = path.join(s.opts.jobsDir, job.job_id);
+      const rules = fs.readFileSync(path.join(ws, 'CLAUDE.md'), 'utf8');
+      assert.match(rules, /variant: no-quote-rule/);
+      assert.doesNotMatch(rules, /모든 특징·사용법 문구는 `sources`/);
+      assert.ok(!fs.existsSync(path.join(ws, 'prompts')), '지시문 폴더는 작업 폴더에 복사하지 않음');
+      // 검증 스크립트·설정은 원래 것
+      assert.equal(fs.readFileSync(path.join(ws, 'scripts', 'validate.js'), 'utf8'), fs.readFileSync(path.join(ROOT, 'scripts', 'validate.js'), 'utf8'));
+    }
+    assert.equal(fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8'), before);
   } finally {
     s.cleanup();
   }
@@ -192,4 +254,41 @@ test('핵심 정보 포함률·금지 표현 판정 (docs/eval-spec.md 4-1·5장
   assert.equal(overallPass([{ pass: true }], f), false);
   assert.equal(overallPass([{ pass: true }], f.slice(1)), null);
   assert.equal(overallPass([{ pass: true }], [f[1]]), true);
+});
+
+test('완료된 평가 실행은 웹 데이터로 kind: eval 프로젝트가 되고, 중단된 실행은 빠진다', async () => {
+  const s = setup();
+  const { exportWebData, evalTargets } = require('../scripts/export');
+  try {
+    await runEval({ ...s.opts, inputIds: ['eval-toneup-sunscreen'], batch: 'v1-base' });
+    process.env.FAKE_CLAUDE_SCENARIO = 'stopped';
+    await runEval({ ...s.opts, inputIds: ['eval-input-missing'], batch: 'v1-base' });
+    delete process.env.FAKE_CLAUDE_SCENARIO;
+
+    const targets = evalTargets(s.runsDir);
+    assert.deepEqual(targets.map((t) => t.id), ['eval-toneup-sunscreen--v1--r1']);
+
+    const out = path.join(s.dir, 'web');
+    const config = path.join(s.dir, 'export.json');
+    fs.writeFileSync(config, JSON.stringify({ out_dir: out, projects: [] }));
+    const r = exportWebData({ config, evalRuns: s.runsDir, exportedAt: '2026-10-20T00:00:00.000Z' });
+    assert.deepEqual(r.schemaErrors, []);
+    assert.deepEqual(r.excluded, []);
+    assert.deepEqual(r.exported, ['eval-toneup-sunscreen--v1--r1']);
+    const index = JSON.parse(fs.readFileSync(path.join(out, 'index.json'), 'utf8'));
+    const p = index.projects[0];
+    assert.equal(p.kind, 'eval');
+    assert.equal(p.stage, 'copy');
+    assert.equal(p.label, '평가 · v1-base');
+    assert.deepEqual(p.eval, { input_id: 'eval-toneup-sunscreen', run_id: 'eval-toneup-sunscreen--v1--r1', repeat: 1, variant: null });
+    assert.ok(fs.existsSync(path.join(out, 'projects', p.id, 'png', 'card-01.png')));
+    // 제품 폴더 위치는 원래대로
+    assert.equal(process.env.CARDNEWS_PRODUCTS_DIR, undefined);
+    // --only로 평가 실행 하나만 다시 내보낼 수 있음
+    const again = exportWebData({ config, evalRuns: s.runsDir, only: p.id });
+    assert.deepEqual(again.exported, [p.id]);
+  } finally {
+    delete process.env.FAKE_CLAUDE_SCENARIO;
+    s.cleanup();
+  }
 });

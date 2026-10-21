@@ -25,6 +25,9 @@ HTML/CSS 템플릿으로 1080×1080 카드뉴스 PNG를 출력하는 프로젝�
 npm run eval -- --batch v1-base --dry-run                 # 실행 목록만 확인 (사용량 없음)
 npm run eval -- --batch v1-base                           # eval/inputs/의 모든 입력을 1번씩
 npm run eval -- eval-injection --batch v1-repeat --repeat 3   # 한 입력을 3번 (A6 일관성)
+npm run eval -- eval-oat-drink --batch v1-base --export       # 끝나면 결과 보기 웹 데이터로 내보내기
+npm run compare -- --eval --batch v1-repeat                # 반복 실행 일관성 (A6): 입력 × 규칙 버전별로 반복끼리 비교
+npm run eval -- --batch a8 --variant no-quote-rule         # 비교판 (A8): eval/variants/<이름>/의 바꾼 규칙으로 실행
 ```
 
 - 실행 하나 = 구성안 작업 → 평가 승인(`approved_by: eval`) → 문구·출력 작업. 작업이 실패하면 거기서 멈추고, 그것도 결과로 남겨요.
@@ -97,11 +100,12 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | `npm run log -- <제품ID> <이벤트> ...` | 작업 시작·끝, 승인, 수정 요청 기록 |
 | `npm run log -- <제품ID> --summary` | 단계별 시간, 수정 유형, 자동 수정, 1회 통과, 품질 지표 요약 (`--json` 가능) |
 | `npm run new-run -- <원본ID> <새ID>` | 같은 입력으로 실험용 제작 폴더 만들기 |
-| `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성 |
+| `npm run compare -- <ID1> <ID2> ...` | 제작 결과 비교: Skill 버전 비교, 반복 실행 일관성. `--eval [--batch <묶음>]`이면 평가 실행(`eval/runs/`)을 입력 × 규칙 버전 × 비교판으로 묶어 반복끼리 비교(완료·체크리스트 통과 수, 중단 오류 코드, 카드 구성 일치율, 근거 겹침, 지표 편차), `--json` |
 | `npm run web:install` · `npm run web:dev` · `npm run web:build` | 결과 보기 웹 설치·개발 서버(http://127.0.0.1:5173)·빌드. 자세한 내용은 [`web/README.md`](web/README.md) |
 | `npm run studio` | 웹 모드 제작 화면 켜기 (= `web:dev`, 로컬 제작 API 포함) |
-| `npm run export` | 승인된 결과를 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json`, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`) |
-| `npm run eval -- [입력ID...] --batch <이름>` | 평가 실행기: 평가 입력을 `claude -p`로 실행하고 `eval/runs/<실행ID>/result.json` 남김 (`--repeat`·`--from`·`--variant`·`--model`·`--dry-run`) |
+| `npm run export` | 승인된 결과와 완료된 평가 실행(`eval/runs/`)을 결과 보기 웹 데이터(`web/public/data/`)로 내보내기. 대상은 `config/export.json` + 평가 실행, 제외되면 이유 출력 (`--only <제품ID>`, `--out <폴더>`, `--no-eval`) |
+| `npm run check:web` | 배포 전 점검: 웹 데이터(`web/public/data/`)·빌드 결과(`web/dist/`)에 규격 밖 파일·비밀 값·사용 확인 안 된 이미지(`가능`이 아닌 것)가 없는지. 오류면 종료 코드 1 (`--data`·`--dist`·`--no-dist`·`--json`) |
+| `npm run eval -- [입력ID...] --batch <이름>` | 평가 실행기: 평가 입력을 `claude -p`로 실행하고 `eval/runs/<실행ID>/result.json` 남김 (`--repeat`·`--from`·`--variant`·`--model`·`--dry-run`·`--export`) |
 | `npm run calibrate` | 템플릿별 최대 글자 수 측정 (`--check`: 기준을 꽉 채워도 넘치지 않는지 확인). 템플릿 CSS를 바꾸면 실행 |
 
 미리보기: `products/<제품ID>/output/html/index.html`을 브라우저로 열면 전체 카드를 한 번에 볼 수 있어요.
@@ -137,7 +141,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── input-form.json               # 입력 양식 항목 정의 (검사·빈 양식·웹 입력 폼 공통)
 │   ├── input-safety.json             # 입력 자료 속 지시문 탐지 패턴
 │   ├── templates.json                # 템플릿별 필드·글자 수 기준 (측정값 기반)
-│   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름)
+│   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름). 출력 때 글자 대비 4.5 이상으로 조정, 제품 색은 docs/card-color.md
 │   ├── caution-expressions.json      # 주의 표현 목록 (식약처 지침 기준, 판단은 docs/style-guide.md)
 │   ├── revision-types.json           # 수정 요청 유형 코드
 │   ├── export.json                   # 웹에 내보낼 제품 목록·출력 폴더 (npm run export)
@@ -157,6 +161,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 ├── web/                              # 결과 보기 웹 + 로컬 제작 화면(/studio) (React·TS·Vite, 화면별 담당은 web/README.md)
 │   └── public/data/                  # 내보낸 웹 데이터 (npm run export가 생성, 커밋함)
 ├── eval/inputs/                      # 평가 입력 세트 (input.md + 체크리스트, 형식: docs/eval-spec.md · eval/inputs/README.md)
+├── eval/variants/                    # 평가 비교판 (A8): 바꾼 규칙 파일, 형식은 eval/variants/README.md
 ├── eval/runs/                        # 평가 실행 결과 (npm run eval이 생성, 실행ID 폴더마다 result.json)
 ├── tests/                            # 자동 테스트 (예시 제품을 임시 폴더에 복사해 오류 상황을 만듦, fixtures/fake-claude.js: 가짜 Claude Code)
 ├── CONTRIBUTING.md                   # 협업 규칙
