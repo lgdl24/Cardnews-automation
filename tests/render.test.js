@@ -77,7 +77,7 @@ test('카드 색: 제품 색이면 사진 대표 색으로 출력하고 render-r
   }
 });
 
-test('카드 색: 기본이면 기본 테마를 대비 조정해서 쓴다', (t) => {
+test('카드 색: 기본이면 기본 테마(대비 기준을 이미 만족)를 그대로 쓴다', (t) => {
   const ws = makeWorkspace();
   try {
     const r = ws.run('render.js', ['--html-only', '--no-log']);

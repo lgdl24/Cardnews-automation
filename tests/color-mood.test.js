@@ -26,15 +26,24 @@ test('템플릿에서 글자가 색 위에 놓이는 7곳을 검사한다', () =
   }
 });
 
-test('기본 테마: 지금 값은 3곳이 4.5 미만이고, 자동 조정하면 7곳 모두 통과한다', () => {
-  const bad = checkContrast(theme.color).filter((c) => !c.ok).map((c) => `${c.fg}/${c.bg}`);
-  assert.deepEqual(bad.sort(), ['muted/accent', 'on-primary/primary', 'primary/accent']);
+test('기본 테마: 7곳 모두 4.5 이상이라 출력할 때 조정이 없다 (theme.json = 실제 출력 색 = Figma)', () => {
+  const bad = checkContrast(theme.color).filter((c) => !c.ok).map((c) => `${c.fg}/${c.bg} ${c.ratio}`);
+  assert.deepEqual(bad, []);
   const r = adjustContrast(theme.color);
-  assert.equal(r.ok, true, JSON.stringify(r.checks));
+  assert.deepEqual(r.adjustments, []);
+  assert.deepEqual(r.color, theme.color);
+});
+
+test('대비 조정: 옛 기본 테마(10.20까지)는 3곳 미달이었고, 조정 결과가 지금 theme.json 값과 같다', () => {
+  const old = { ...theme.color, muted: '#7A6E66', primary: '#D9826B' };
+  const bad = checkContrast(old).filter((c) => !c.ok).map((c) => `${c.fg}/${c.bg}`);
+  assert.deepEqual(bad.sort(), ['muted/accent', 'on-primary/primary', 'primary/accent']);
+  const r = adjustContrast(old);
+  assert.equal(r.ok, true);
   // 배경 색은 그대로, 글자 쪽(보조 글자·주색)만 어두워짐
   assert.deepEqual(r.adjustments.map((a) => a.key).sort(), ['muted', 'primary']);
   for (const a of r.adjustments) assert.ok(a.lightness_to < a.lightness_from);
-  for (const k of ['bg', 'surface', 'accent', 'on-primary', 'text']) assert.equal(r.color[k], theme.color[k]);
+  assert.deepEqual(r.color, theme.color);
 });
 
 test('대표 색: 투명·흰색·회색은 빼고 가장 많은 색상 구간을 고른다', () => {
