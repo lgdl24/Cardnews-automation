@@ -4,86 +4,282 @@
   "title": "웹 데이터 project.json — 카드 결과·구성안·근거 (V2·V4)",
   "description": "docs/web-data-spec.md '2. project.json'. cards.json의 sources·analysis·cards를 그대로 담고, 카드마다 화면에 필요한 값(PNG 경로·글자 수·주의 표현·레이아웃·수정 요청)을 더한다",
   "type": "object",
-  "required": ["spec_version", "id", "kind", "label", "stage", "skill_version", "updated_at", "product", "images", "sources", "analysis", "cards", "plan_revisions", "quality"],
+  "required": [
+    "spec_version",
+    "id",
+    "kind",
+    "label",
+    "stage",
+    "skill_version",
+    "updated_at",
+    "product",
+    "images",
+    "sources",
+    "analysis",
+    "cards",
+    "plan_revisions",
+    "quality",
+    "colors"
+  ],
   "additionalProperties": false,
   "properties": {
-    "spec_version": { "const": "0.2" },
-    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-    "kind": { "$ref": "index.schema.json#/$defs/kind" },
-    "label": { "type": ["string", "null"] },
-    "stage": { "$ref": "../cards.schema.json#/properties/stage" },
-    "skill_version": { "type": ["string", "null"] },
-    "updated_at": { "oneOf": [{ "$ref": "index.schema.json#/$defs/datetime" }, { "type": "null" }] },
+    "spec_version": {
+      "const": "0.3"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "kind": {
+      "$ref": "index.schema.json#/$defs/kind"
+    },
+    "label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "stage": {
+      "$ref": "../cards.schema.json#/properties/stage"
+    },
+    "skill_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updated_at": {
+      "oneOf": [
+        {
+          "$ref": "index.schema.json#/$defs/datetime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "product": {
       "type": "object",
-      "required": ["name", "brand", "category", "purpose", "emphasis", "card_count"],
+      "required": [
+        "name",
+        "brand",
+        "category",
+        "purpose",
+        "emphasis",
+        "card_count"
+      ],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "brand": { "type": ["string", "null"] },
-        "category": { "type": ["string", "null"] },
-        "purpose": { "type": ["string", "null"] },
-        "emphasis": { "type": ["string", "null"] },
-        "card_count": { "type": "integer", "minimum": 1 }
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "brand": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "purpose": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "emphasis": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "card_count": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "images": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["file", "desc", "source", "usage"],
+        "required": [
+          "file",
+          "desc",
+          "source",
+          "usage"
+        ],
         "additionalProperties": false,
         "properties": {
-          "file": { "type": "string" },
-          "desc": { "type": "string" },
-          "source": { "type": "string" },
-          "usage": { "type": "string" }
+          "file": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "usage": {
+            "type": "string"
+          }
         }
       }
     },
-    "sources": { "$ref": "../cards.schema.json#/properties/sources" },
-    "analysis": { "$ref": "../cards.schema.json#/properties/analysis" },
-    "cards": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/card" } },
-    "plan_revisions": { "type": "array", "items": { "$ref": "#/$defs/revision" } },
-    "quality": { "$ref": "#/$defs/quality" }
+    "sources": {
+      "$ref": "../cards.schema.json#/properties/sources"
+    },
+    "analysis": {
+      "$ref": "../cards.schema.json#/properties/analysis"
+    },
+    "cards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/card"
+      }
+    },
+    "plan_revisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/revision"
+      }
+    },
+    "quality": {
+      "$ref": "#/$defs/quality"
+    },
+    "colors": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/colors"
+        }
+      ],
+      "description": "출력에 쓴 카드 색 (render-report.json의 colors, v0.3). #46 이전 출력이면 null"
+    }
   },
   "$defs": {
     "revision": {
       "type": "object",
-      "required": ["ts", "types", "memo"],
+      "required": [
+        "ts",
+        "types",
+        "memo"
+      ],
       "additionalProperties": false,
       "properties": {
-        "ts": { "$ref": "index.schema.json#/$defs/datetime" },
-        "types": { "type": "array", "items": { "type": "string" } },
-        "memo": { "type": "string" }
+        "ts": {
+          "$ref": "index.schema.json#/$defs/datetime"
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "memo": {
+          "type": "string"
+        }
       }
     },
     "card": {
       "type": "object",
-      "required": ["no", "role", "template", "intent", "image", "evidence", "copy", "png", "chars", "cautions", "layout", "revisions"],
+      "required": [
+        "no",
+        "role",
+        "template",
+        "intent",
+        "image",
+        "evidence",
+        "copy",
+        "png",
+        "chars",
+        "cautions",
+        "layout",
+        "revisions"
+      ],
       "additionalProperties": false,
       "properties": {
-        "no": { "type": "integer", "minimum": 1 },
-        "role": { "$ref": "../cards.schema.json#/$defs/card/properties/role" },
-        "template": { "$ref": "../cards.schema.json#/$defs/card/properties/template" },
-        "intent": { "type": "string" },
-        "image": { "type": ["string", "null"] },
-        "evidence": { "type": "array", "items": { "$ref": "../cards.schema.json#/$defs/sourceId" } },
-        "copy": { "type": ["object", "null"], "description": "cards.json의 copy 그대로. 형식은 cards.schema.json 템플릿별 규칙 (내보내기 전에 validate로 확인됨)" },
-        "png": { "type": "string", "pattern": "^png/card-\\d{2}\\.png$", "description": "project.json이 있는 폴더 기준 경로" },
+        "no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "role": {
+          "$ref": "../cards.schema.json#/$defs/card/properties/role"
+        },
+        "template": {
+          "$ref": "../cards.schema.json#/$defs/card/properties/template"
+        },
+        "intent": {
+          "type": "string"
+        },
+        "image": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "../cards.schema.json#/$defs/sourceId"
+          }
+        },
+        "copy": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "cards.json의 copy 그대로. 형식은 cards.schema.json 템플릿별 규칙 (내보내기 전에 validate로 확인됨)"
+        },
+        "png": {
+          "type": "string",
+          "pattern": "^png/card-\\d{2}\\.png$",
+          "description": "project.json이 있는 폴더 기준 경로"
+        },
         "chars": {
           "type": "array",
           "description": "문구 필드별 글자 수와 기준 (items는 항목마다 한 줄)",
           "items": {
             "type": "object",
-            "required": ["field", "index", "chars", "limit", "ratio"],
+            "required": [
+              "field",
+              "index",
+              "chars",
+              "limit",
+              "ratio"
+            ],
             "additionalProperties": false,
             "properties": {
-              "field": { "type": "string" },
-              "index": { "type": ["integer", "null"], "minimum": 0 },
-              "chars": { "type": "integer", "minimum": 0 },
-              "limit": { "type": "integer", "minimum": 1 },
-              "ratio": { "type": "number", "minimum": 0 }
+              "field": {
+                "type": "string"
+              },
+              "index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "chars": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "ratio": {
+                "type": "number",
+                "minimum": 0
+              }
             }
           }
         },
@@ -91,23 +287,46 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["term", "category", "in_source", "fields"],
+            "required": [
+              "term",
+              "category",
+              "in_source",
+              "fields"
+            ],
             "additionalProperties": false,
             "properties": {
-              "term": { "type": "string" },
-              "category": { "type": "string" },
-              "in_source": { "type": "boolean" },
+              "term": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "in_source": {
+                "type": "boolean"
+              },
               "fields": {
                 "description": "표현이 나온 문구 칸. items는 index로 몇 번째 항목인지(0부터), 그 외는 null (v0.2)",
                 "type": "array",
                 "minItems": 1,
                 "items": {
                   "type": "object",
-                  "required": ["field", "index"],
+                  "required": [
+                    "field",
+                    "index"
+                  ],
                   "additionalProperties": false,
                   "properties": {
-                    "field": { "type": "string", "pattern": "^[a-z_]+$" },
-                    "index": { "type": ["integer", "null"], "minimum": 0 }
+                    "field": {
+                      "type": "string",
+                      "pattern": "^[a-z_]+$"
+                    },
+                    "index": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0
+                    }
                   }
                 }
               }
@@ -116,62 +335,268 @@
         },
         "layout": {
           "type": "object",
-          "required": ["ok", "issues", "overlaps"],
+          "required": [
+            "ok",
+            "issues",
+            "overlaps"
+          ],
           "additionalProperties": false,
           "properties": {
-            "ok": { "type": "boolean" },
-            "issues": { "type": "array" },
-            "overlaps": { "type": "array", "description": "글자-이미지 겹침 경고 (출력은 막지 않음)" }
+            "ok": {
+              "type": "boolean"
+            },
+            "issues": {
+              "type": "array"
+            },
+            "overlaps": {
+              "type": "array",
+              "description": "글자-이미지 겹침 경고 (출력은 막지 않음)"
+            }
           }
         },
-        "revisions": { "type": "array", "items": { "$ref": "#/$defs/revision" } }
+        "revisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/revision"
+          }
+        }
       }
     },
     "quality": {
       "type": "object",
-      "required": ["stage", "card_count", "coverage", "coverage_detail", "evidence_rate", "char_usage", "char_usage_max", "caution"],
+      "required": [
+        "stage",
+        "card_count",
+        "coverage",
+        "coverage_detail",
+        "evidence_rate",
+        "char_usage",
+        "char_usage_max",
+        "caution"
+      ],
       "additionalProperties": true,
       "description": "output/quality.json 기준. 지표가 늘어나면(예: 핵심 정보 포함률) 필드가 추가될 수 있음",
       "properties": {
-        "stage": { "type": "string" },
-        "card_count": { "type": "integer" },
-        "coverage": { "$ref": "index.schema.json#/$defs/rate" },
-        "evidence_rate": { "$ref": "index.schema.json#/$defs/rate" },
-        "char_usage": { "type": ["number", "null"] },
-        "char_usage_max": { "type": ["number", "null"] },
+        "stage": {
+          "type": "string"
+        },
+        "card_count": {
+          "type": "integer"
+        },
+        "coverage": {
+          "$ref": "index.schema.json#/$defs/rate"
+        },
+        "evidence_rate": {
+          "$ref": "index.schema.json#/$defs/rate"
+        },
+        "char_usage": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "char_usage_max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
         "caution": {
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
-              "required": ["total", "in_source", "not_in_source"],
+              "required": [
+                "total",
+                "in_source",
+                "not_in_source"
+              ],
               "properties": {
-                "total": { "type": "integer" },
-                "in_source": { "type": "integer" },
-                "not_in_source": { "type": "integer" }
+                "total": {
+                  "type": "integer"
+                },
+                "in_source": {
+                  "type": "integer"
+                },
+                "not_in_source": {
+                  "type": "integer"
+                }
               }
             }
           ]
         },
         "coverage_detail": {
           "type": "object",
-          "required": ["covered", "total", "missing", "excluded_count"],
+          "required": [
+            "covered",
+            "total",
+            "missing",
+            "excluded_count"
+          ],
           "additionalProperties": false,
           "properties": {
-            "covered": { "type": "integer", "minimum": 0 },
-            "total": { "type": "integer", "minimum": 0 },
+            "covered": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
             "missing": {
               "type": "array",
               "description": "카드 근거로 쓰이지 않은 원문 항목 (V2의 [참고])",
               "items": {
                 "type": "object",
-                "required": ["section", "text"],
+                "required": [
+                  "section",
+                  "text"
+                ],
                 "additionalProperties": false,
-                "properties": { "section": { "type": "string" }, "text": { "type": "string" } }
+                "properties": {
+                  "section": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
               }
             },
-            "excluded_count": { "type": "integer", "minimum": 0, "description": "지시문 형태라 커버리지에서 뺀 원문 항목 수 (문장은 공개하지 않음)" }
+            "excluded_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "지시문 형태라 커버리지에서 뺀 원문 항목 수 (문장은 공개하지 않음)"
+            }
           }
+        }
+      }
+    },
+    "colors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "source",
+        "image",
+        "representative",
+        "color",
+        "adjustments",
+        "note"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "기본",
+            "제품 색"
+          ]
+        },
+        "source": {
+          "enum": [
+            "theme",
+            "product"
+          ]
+        },
+        "image": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "representative": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            }
+          ]
+        },
+        "color": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "bg",
+            "surface",
+            "text",
+            "muted",
+            "primary",
+            "accent",
+            "on-primary"
+          ],
+          "properties": {
+            "bg": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "surface": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "text": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "muted": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "primary": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "accent": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "on-primary": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            }
+          }
+        },
+        "adjustments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "from",
+              "to"
+            ],
+            "properties": {
+              "key": {
+                "enum": [
+                  "bg",
+                  "surface",
+                  "text",
+                  "muted",
+                  "primary",
+                  "accent",
+                  "on-primary"
+                ]
+              },
+              "from": {
+                "type": "string",
+                "pattern": "^#[0-9A-F]{6}$"
+              },
+              "to": {
+                "type": "string",
+                "pattern": "^#[0-9A-F]{6}$"
+              }
+            }
+          }
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }

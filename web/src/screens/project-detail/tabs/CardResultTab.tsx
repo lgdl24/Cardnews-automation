@@ -1,11 +1,11 @@
 // V2 카드 결과 — 담당 이규동
-// 읽는 데이터: project.json cards[].png · layout, images
+// 읽는 데이터: project.json cards[].png · layout, images, colors(v0.3)
 // 노션 '웹 화면 설계' V2 · 카드 결과: 카드 미리보기, 크게 보기, PNG 개별 다운로드, 묶음(ZIP) 다운로드, 이미지 출처
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { projectFileUrl } from '../../../data/load';
 import { label } from '../../../data/format';
-import type { Card, Labels, Project } from '../../../data/types';
+import type { Card, CardColors, ColorKey, Labels, Project } from '../../../data/types';
 import { cardFileName, downloadBlob } from '../../../lib/download';
 import { buildZip } from '../../../lib/zip';
 import { useProjectContext } from '../ProjectDetailPage';
@@ -54,6 +54,8 @@ export function CardResultTab() {
       </ul>
 
       <ImageSources project={project} labels={labels} />
+
+      {project.colors && <ColorsUsed colors={project.colors} />}
 
       {index !== null && (
         <CardViewer
@@ -157,6 +159,74 @@ function ImageSources({ project, labels }: { project: Project; labels: Labels })
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+// 카드 색 (#38): 입력에서 고른 모드, 실제로 쓴 색, 기본 색으로 바뀐 이유, 글자 대비 때문에 바꾼 색
+const COLOR_LABELS: Record<ColorKey, string> = {
+  bg: '배경',
+  surface: '상자',
+  text: '글자',
+  muted: '보조 글자',
+  primary: '강조',
+  accent: '보조 배경',
+  'on-primary': '강조 위 글자',
+};
+const COLOR_ORDER: ColorKey[] = ['bg', 'accent', 'surface', 'primary', 'text', 'muted', 'on-primary'];
+
+function Swatch({ hex }: { hex: string }) {
+  return <span className="swatch" style={{ background: hex }} aria-hidden="true" />;
+}
+
+function ColorsUsed({ colors }: { colors: CardColors }) {
+  const fellBack = colors.mode === '제품 색' && colors.source === 'theme';
+  return (
+    <section className="section" aria-labelledby="card-colors">
+      <h2 className="section-title" id="card-colors">
+        카드 색
+      </h2>
+      <p className="colors-summary">
+        {colors.source === 'product' ? (
+          <>
+            제품 색 · <code>{colors.image}</code>의 대표 색{' '}
+            {colors.representative && (
+              <span className="swatch-value">
+                <Swatch hex={colors.representative} />
+                {colors.representative}
+              </span>
+            )}
+            으로 만들었어요
+          </>
+        ) : fellBack ? (
+          <>제품 색을 골랐지만 기본 색을 썼어요</>
+        ) : (
+          <>기본 색 (config/theme.json)</>
+        )}
+      </p>
+      {colors.note && <p className="colors-note">{colors.note}</p>}
+      <ul className="swatch-list" aria-label="쓴 색">
+        {COLOR_ORDER.map((k) => (
+          <li key={k}>
+            <Swatch hex={colors.color[k]} />
+            <span className="swatch-text">
+              <span className="swatch-name">{COLOR_LABELS[k]}</span>
+              <code className="swatch-hex">{colors.color[k]}</code>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {colors.adjustments.length > 0 && (
+        <p className="colors-adjust">
+          글자 대비(4.5 이상)를 맞추려고 어둡게 한 색:{' '}
+          {colors.adjustments.map((a, i) => (
+            <span key={a.key}>
+              {i > 0 && ', '}
+              {COLOR_LABELS[a.key]} <code>{a.from}</code> → <code>{a.to}</code>
+            </span>
+          ))}
+        </p>
+      )}
     </section>
   );
 }

@@ -22,8 +22,9 @@ function setup({ projects = [{ id: ID, kind: 'example', label: exampleIndex.proj
   for (const c of exampleProject.cards) {
     fs.copyFileSync(path.join(EXAMPLE, 'projects', ID, c.png), ws.file('output', 'png', `card-${pad(c.no)}.png`));
   }
-  ws.writeReport = (name, renderedAt, results) =>
-    fs.writeFileSync(ws.file('output', name), JSON.stringify({ product_id: ID, rendered_at: renderedAt, results }, null, 2));
+  // 출력 보고서: 예시와 같은 레이아웃·카드 색(v0.3 colors)으로
+  ws.writeReport = (name, renderedAt, results, colors = exampleProject.colors) =>
+    fs.writeFileSync(ws.file('output', name), JSON.stringify({ product_id: ID, rendered_at: renderedAt, ...(colors ? { colors } : {}), results }, null, 2));
   ws.writeReport('render-report.json', '2026-10-10T08:00:00.000Z', exampleProject.cards.map((c) => ({ no: c.no, ...c.layout })));
   ws.out = path.join(ws.dir, '_web');
   ws.config = path.join(ws.dir, '_export.json');
@@ -33,6 +34,32 @@ function setup({ projects = [{ id: ID, kind: 'example', label: exampleIndex.proj
   ws.read = (rel) => readJson(path.join(ws.out, rel));
   return ws;
 }
+
+test('카드 색(v0.3): 가장 최근 출력 보고서의 colors를 내보내고, 색 기록이 없는 옛 출력이면 null', () => {
+  const ws = setup();
+  try {
+    const product = {
+      mode: '제품 색', source: 'product', image: 'main.png', representative: '#46966E',
+      color: { ...exampleProject.colors.color, primary: '#337553' },
+      adjustments: [{ key: 'primary', from: '#51AE80', to: '#337553', lightness_from: 0.5, lightness_to: 0.33 }],
+      contrast: [], ok: true, note: null,
+    };
+    // 3번 카드만 나중에 다시 출력(제품 색) → 더 최근 보고서의 색을 씀, 화면에 안 쓰는 값(대비 표·밝기)은 빼고
+    ws.writeReport('render-report-card-03.json', '2026-10-11T08:00:00.000Z', [{ no: 3, ...exampleProject.cards[2].layout }], product);
+    assert.deepEqual(ws.export().schemaErrors, []);
+    const colors = ws.read(`projects/${ID}/project.json`).colors;
+    assert.equal(colors.source, 'product');
+    assert.deepEqual(colors.adjustments, [{ key: 'primary', from: '#51AE80', to: '#337553' }]);
+    assert.ok(!('contrast' in colors));
+    // 색 기록이 없는 출력만 있으면 null (스키마 통과)
+    ws.writeReport('render-report.json', '2026-10-10T08:00:00.000Z', exampleProject.cards.map((c) => ({ no: c.no, ...c.layout })), null);
+    fs.rmSync(ws.file('output', 'render-report-card-03.json'));
+    assert.deepEqual(ws.export().schemaErrors, []);
+    assert.equal(ws.read(`projects/${ID}/project.json`).colors, null);
+  } finally {
+    ws.cleanup();
+  }
+});
 
 test('내보낸 결과는 웹 데이터 규격 예시(docs/examples/web-data)와 같다', () => {
   const ws = setup();
