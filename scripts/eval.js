@@ -1,6 +1,7 @@
 // 평가 실행기: 평가 입력을 내 컴퓨터의 Claude Code(claude -p, 평가 모드)로 반복 실행하고 실행마다 result.json을 남김
 // 사용: npm run eval -- [입력ID...] --batch <이름> [--repeat N] [--from K] [--variant <이름>] [--model <모델>] [--dry-run] [--export]
-//   입력ID를 안 쓰면 eval/inputs/의 모든 입력. 실행 폴더는 eval/runs/<입력ID>--<규칙 버전>--r<N>/
+//   입력ID를 안 쓰면 eval/inputs/의 모든 입력. 실행 폴더는 eval/runs/<입력ID>--<규칙 버전>[-<비교판>]--r<N>/
+//   --variant는 eval/variants/<이름>/의 바꾼 규칙으로 실행 (A8, eval/variants/README.md)
 // 규격: docs/eval-spec.md — 사용량이 드니 먼저 --dry-run으로 실행 목록을 확인하세요
 const path = require('path');
 const { ROOT } = require('./lib/common');
@@ -66,6 +67,8 @@ async function main() {
   }
   if (opts.dryRun) {
     console.log(`\n== 평가 실행 계획 (실행하지 않음) · 묶음 ${opts.batch} ==`);
+    const v = out.runs[0] && out.runs[0].variantInfo;
+    if (v) console.log(`비교판 ${v.name}: ${v.description} (바꾼 파일: ${v.files.join(', ')})`);
     for (const r of out.runs) console.log(`- ${r.runId}`);
     console.log(`-- ${out.runs.length}개 실행. 실행마다 claude -p 작업 1~2번 (사용량이 들어요)`);
     return;

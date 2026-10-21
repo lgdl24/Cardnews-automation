@@ -18,6 +18,35 @@ const ROOT = jobRunner.ROOT;
 const SPEC_VERSION = '0.1';
 const INPUT_ID_RE = /^eval-[a-z0-9-]+$/;
 const NAME_RE = /^[a-z0-9-]+$/;
+// 비교판(A8)이 바꿀 수 있는 파일: Claude가 따르는 규칙 문서와 평가 지시문만.
+// 검증·출력 스크립트와 config/는 바꾸지 않음 → 결과를 같은 기준으로 잴 수 있게
+const VARIANT_FILE_RE = /^(CLAUDE\.md|\.claude\/skills\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.md|prompts\/eval\/(plan|copy)\.md)$/;
+
+function listFiles(dir, base = dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    return e.isDirectory() ? listFiles(p, base) : [path.relative(base, p).split(path.sep).join('/')];
+  });
+}
+
+/**
+ * 비교판 읽기: eval/variants/<이름>/variant.json + files/(바꿀 파일, 저장소와 같은 경로)
+ * variant.json: { "description": "무엇을 뺐는지 한 줄", "changes": ["파일별 바꾼 점", ...] }
+ */
+function loadVariant(variantsDir, name) {
+  const dir = path.join(variantsDir, name);
+  const metaFile = path.join(dir, 'variant.json');
+  if (!fs.existsSync(metaFile)) throw new Error(`비교판 정의가 없어요: ${metaFile} (eval/variants/<이름>/variant.json + files/)`);
+  const meta = readJson(metaFile);
+  if (typeof meta.description !== 'string' || !meta.description.trim()) throw new Error(`비교판 ${name}: variant.json에 description(무엇을 뺐는지)이 필요해요`);
+  const filesDir = path.join(dir, 'files');
+  const files = listFiles(filesDir);
+  if (!files.length) throw new Error(`비교판 ${name}: files/에 바꿀 파일이 없어요`);
+  const bad = files.filter((f) => !VARIANT_FILE_RE.test(f));
+  if (bad.length) throw new Error(`비교판 ${name}: 바꿀 수 없는 파일이에요 (CLAUDE.md·.claude/skills/*/*.md·prompts/eval/plan|copy.md만): ${bad.join(', ')}`);
+  return { name, description: meta.description.trim(), changes: Array.isArray(meta.changes) ? meta.changes : [], filesDir, files };
+}
 
 // ── 실행ID: <입력ID>--<규칙 버전>[-<비교판>]--r<반복 번호>
 function runIdOf({ inputId, skillVersion, variant = null, repeat }) {
@@ -36,11 +65,12 @@ function listInputs(inputsDir) {
 }
 
 // 실행 계획: 입력 × 반복. 잘못된 이름·없는 입력·이미 있는 실행ID는 아무것도 하기 전에 오류
-function planRuns({ inputIds, batch, repeat = 1, from = 1, variant = null, inputsDir, runsDir, root = ROOT }) {
+function planRuns({ inputIds, batch, repeat = 1, from = 1, variant = null, inputsDir, runsDir, root = ROOT, variantsDir = path.join(root, 'eval', 'variants') }) {
   if (!NAME_RE.test(batch || '')) throw new Error('--batch에 실행 묶음 이름을 적어 주세요 (영문 소문자·숫자·하이픈. 예: v1-base)');
   if (variant !== null && !NAME_RE.test(variant)) throw new Error(`비교판 이름 형식이 아니에요: ${variant}`);
   if (!Number.isInteger(repeat) || repeat < 1) throw new Error('--repeat는 1 이상의 정수예요');
   if (!Number.isInteger(from) || from < 1) throw new Error('--from은 1 이상의 정수예요');
+  const variantInfo = variant === null ? null : loadVariant(variantsDir, variant);
   const all = listInputs(inputsDir);
   const ids = inputIds && inputIds.length ? inputIds : all;
   if (!ids.length) throw new Error(`평가 입력이 없어요: ${inputsDir}`);
@@ -53,7 +83,7 @@ function planRuns({ inputIds, batch, repeat = 1, from = 1, variant = null, input
   for (const inputId of ids) {
     for (let r = from; r < from + repeat; r++) {
       const runId = runIdOf({ inputId, skillVersion, variant, repeat: r });
-      runs.push({ inputId, runId, repeat: r, batch, variant, skillVersion, runDir: path.join(runsDir, runId) });
+      runs.push({ inputId, runId, repeat: r, batch, variant, variantInfo, skillVersion, runDir: path.join(runsDir, runId) });
     }
   }
   const exists = runs.filter((r) => fs.existsSync(r.runDir)).map((r) => r.runId);
@@ -266,6 +296,7 @@ function buildResult({ run, checklist, jobs, check, startedAt, finishedAt, model
     outcome,
     metrics,
     checks: { expected: expectedRows, forbidden: forbiddenRows, pass: overallPass(expectedRows, forbiddenRows) },
+    ...(run.variantInfo ? { notes: `비교판 ${run.variant}: ${run.variantInfo.description} (바꾼 파일: ${run.variantInfo.files.join(', ')})` } : {}),
   };
 }
 
@@ -318,6 +349,7 @@ async function runOne(run, {
     const s = await jobRunner.runJob({
       kind, productId: run.runId, productDir: run.runDir, mode: 'eval',
       bin, model, maxTurns, timeoutMs, root, jobsDir, reportsDir, keep,
+      overlayDir: run.variantInfo ? run.variantInfo.filesDir : null,
       onProgress: (p) => onProgress({ run_id: run.runId, type: 'progress', kind, progress: p }),
     });
     const init = (s.progress || []).find((p) => p.type === 'init' && p.model);
@@ -345,9 +377,9 @@ async function runOne(run, {
 async function runEval({
   inputIds = [], batch, repeat = 1, from = 1, variant = null, model, maxTurns, timeoutMs,
   root = ROOT, inputsDir = path.join(root, 'eval', 'inputs'), runsDir = path.join(root, 'eval', 'runs'),
-  bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude', jobsDir, reportsDir, keep = false, dryRun = false, onProgress,
+  variantsDir = path.join(root, 'eval', 'variants'), bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude', jobsDir, reportsDir, keep = false, dryRun = false, onProgress,
 }) {
-  const runs = planRuns({ inputIds, batch, repeat, from, variant, inputsDir, runsDir, root });
+  const runs = planRuns({ inputIds, batch, repeat, from, variant, inputsDir, runsDir, root, variantsDir });
   if (dryRun) return { runs, results: [] };
   const claudeCodeVersion = claudeVersion(bin);
   if (!claudeCodeVersion) throw new Error(`Claude Code(${bin})를 실행할 수 없어요. 설치·로그인을 확인해 주세요 (claude auth status)`);
@@ -361,6 +393,6 @@ async function runEval({
 }
 
 module.exports = {
-  SPEC_VERSION, runIdOf, listInputs, planRuns, prepareRunDir, keyInfoMetrics, judgeExpected, judgeForbidden,
+  SPEC_VERSION, VARIANT_FILE_RE, runIdOf, listInputs, loadVariant, planRuns, prepareRunDir, keyInfoMetrics, judgeExpected, judgeForbidden,
   overallPass, buildResult, jobRow, checkResultSchema, runOne, runEval,
 };

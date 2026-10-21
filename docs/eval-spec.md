@@ -17,7 +17,7 @@
 | 체크리스트 | 입력마다 미리 정한 기대 동작·핵심 정보·금지 표현. `checklist.json` |
 | 실행(run) | 입력 하나를 규칙 한 벌로 **구성안 작업 → 평가 승인 → 문구·출력 작업**까지 한 번 돌린 것. 입력 누락처럼 중간에 멈추면 거기까지 |
 | 실행 묶음(batch) | 같은 목적으로 함께 돌린 실행들. 예: `v1-base`(v1 전체 12개), `v1-repeat`(A6 반복), `v2-base` |
-| 비교판(variant) | A8에서 규칙 일부를 뺀 판. 기본 규칙이면 `null` |
+| 비교판(variant) | A8에서 규칙 일부를 뺀 판. 기본 규칙이면 `null`. 정의는 `eval/variants/<이름>/`(바꾼 `CLAUDE.md`·Skill·평가 지시문만, [eval/variants/README.md](../eval/variants/README.md)) |
 
 ## 1. 평가 입력 폴더
 
