@@ -8,7 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
-| 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 화면 확인 후 로컬 커밋, push·PR 대기 |
+| 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-19 | Claude | #36 · `docs/36-web-mode-review` | **웹 모드 규칙 문구 리뷰 (#21, 이용석)**: `CLAUDE.md`·Skill·`prompts/web/`을 작업 실행기·로컬 제작 API 코드와 대조. 고친 곳 — `CLAUDE.md` 입력 자료 취급에 웹 모드 수정 요청 메모도 자료로 다룬다는 한 줄(지시문 `prompts/web/revise.md`와 같게), `cardnews-render` Skill 최종 승인 줄에 `[대화]` 표시와 웹·평가 모드는 `copy`에서 끝난다는 줄, `docs/event-log-spec.md` v0.2(누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 `job_id` 형식, 웹 모드 `revision_requested.cards` 생략), `README.md` 한 줄. 동작 변경 없음 |
 | 2026-10-19 | Claude | #30 · `feat/30-caution-expressions` | **주의 표현 목록 v1**: `config/caution-expressions.json`을 식약처 지침 원문(안내서-0086-07, 2025-08-14) 별표 1·2, 시행규칙 별표 5, KCIA 해설서 기준으로 확정 — 분류 4개 → 9개, 분류마다 `basis`(근거 항목)·`extended`(근거 문서에 글자 그대로 없는 같은 뜻 표현), 맨 위 `references`(식약처 지침·시행규칙 별표 5·KCIA 해설서 2025, 원문 PDF로 확인). 형식(`groups[].category·terms`)은 그대로라 검증·내보내기·웹 코드 수정 없음. 판단 기준 `docs/style-guide.md` '주의 표현 판단 기준', `cardnews-content` Skill 6단계 문구 변경. 테스트 `tests/caution.test.js`(표현 겹침 금지, 예시 제품 문구 0건). 규칙 버전은 그대로 v1(변경 여부 미결정) |
@@ -21,7 +21,7 @@
 
 ## 현재 작업 (이용석 · Codex, 2026-10-21)
 
-- 이슈: [#41 V2 구성안·근거](https://github.com/lgdl24/Cardnews-automation/issues/41). 구현·검증과 이용석 화면 확인 완료. 이슈 브랜치에 로컬 커밋, push·PR 대기.
+- 이슈: [#41 V2 구성안·근거](https://github.com/lgdl24/Cardnews-automation/issues/41). 구현·검증과 이용석 화면 확인 완료. 화면 커밋 `195475c` push, [PR #56](https://github.com/lgdl24/Cardnews-automation/pull/56)에서 이규동(`lgdl24`)에게 리뷰 요청 완료. 병합 전.
 - 작업 폴더: `C:\Users\LG\cardnews-v2plan`, 브랜치 `feat/41-v2-plan-evidence`, 기준 `origin/main` `54465ed`. 기존 Claude 1차 구현과 미커밋 변경을 보존해서 이어감. 작업 시작 전 사본은 Codex 채팅의 `outputs/v2-before/`에 보관.
 - 기준: Figma `68:403`의 실제 디자인 컨텍스트·스크린샷, 이슈 #41, 웹 데이터 v0.2. 공통 헤더·색·폰트는 현재 앱을 사용. Figma의 관리자/로그아웃·예시 수치·문구 칸별 근거 관계는 그대로 복제하지 않음.
 - 완료: 핵심 메시지, 카드 선택·PNG, 구성 의도, 문구와 카드 단위 원문, 주의 표현·필드 강조, 글자 수 활용률, 카드·구성안 수정 이력, 전체 표, 미사용 원문 표시.
@@ -32,8 +32,8 @@
 - 확인용 화면: `http://127.0.0.1:5183/projects/toneup-sunscreen-r1/plan?card=2`. `npm --prefix web run preview -- --host 127.0.0.1 --port 5183 --strictPort`로 실행 중. 빌드 결과를 읽는 보기 전용 미리보기이며 웹/평가 제작 실행은 하지 않음. 데이터는 기존 가상 예시이고 퍼플 실제품 결과가 아님.
 - 환경 참고: 현재 `web/node_modules`가 다른 작업 폴더로 junction 연결돼 기본 dev 서버에서 폰트 요청이 Vite 허용 경로 밖이라 403이 났음. 공통 Vite 설정은 수정하지 않았고, 확인용 화면은 폰트가 포함된 빌드 미리보기로 띄움. 작업 중 띄운 5181 dev 서버와 자동 검사 서버는 종료.
 - 10/21 확인: 이용석이 미리보기 화면을 확인하고 이대로 진행하기로 함. 화면 코드 변경 없이 인계 상태만 갱신하고 `git diff --check` 확인. 앞서 통과한 테스트·빌드는 반복하지 않음.
-- 남은 것: push·PR 진행 승인 후 이규동에게 리뷰 요청. 규칙 버전·근거 연결률 계산 정의·색 내보내기 범위는 바꾸지 않음. 노션 상태 갱신 필요.
-- 다음: push·PR → 이규동 리뷰. V3·V4·실제 퍼플 카드 수정은 이번 변경에 포함하지 않음.
+- 남은 것: 이규동 PR 리뷰와 필요한 수정 반영. 규칙 버전·근거 연결률 계산 정의·색 내보내기 범위는 바꾸지 않음. 노션 상태 갱신 필요.
+- 다음: PR #56 리뷰 → 승인 후 이규동이 병합. V3·V4·실제 퍼플 카드 수정은 이번 변경에 포함하지 않음.
 
 ## 완료한 내용과 결정
 
