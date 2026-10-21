@@ -50,7 +50,8 @@ npm run export -- --out <폴더>         # 다른 폴더로 (확인용)
 npm run export -- --no-eval            # 평가 실행은 빼고 config/export.json의 제품만
 ```
 
-- 평가 실행: `eval/runs/*/result.json` 중 `outcome.result`가 `완료`인 실행을 `kind: "eval"` 프로젝트로 함께 내보냅니다. `eval` 필드(`input_id`·`run_id`·`repeat`·`variant`)는 `result.json`에서, `label`은 `평가 · <실행 묶음>`. `config/export.json`에 적지 않아도 됩니다. 평가가 끝난 직후 그 실행만 내보내려면 `npm run eval -- ... --export` (#42)
+- 평가 실행: `eval/runs/*/result.json` 중 `outcome.result`가 `완료`인 실행을 `kind: "eval"` 프로젝트로 함께 내보냅니다. `eval` 필드(`input_id`·`run_id`·`repeat`·`variant`)는 `result.json`에서, `label`은 `평가 · <실행 묶음> · r<반복 번호>`(비교판이면 뒤에 ` · <비교판>`)라 같은 입력의 반복이 목록에서 구분됩니다. `config/export.json`에 적지 않아도 됩니다. 평가가 끝난 직후 그 실행만 내보내려면 `npm run eval -- ... --export` (#42)
+- 평가 PNG(`eval/runs/*/output/png/`)는 git에 없어서, **평가를 돌린 컴퓨터에서만** 평가 실행이 내보내집니다. 다른 컴퓨터에서 `npm run export`를 하면 평가 실행은 `PNG_MISSING`으로 빠지고 `index.json`을 새로 써서 배포 데이터에서 사라지니, 그 컴퓨터에서는 `--no-eval` 또는 `--only <제품ID>`를 씁니다. `--only`는 평가 실행 폴더를 안 읽을 때(`--no-eval`) 이미 내보낸 평가 프로젝트를 목록에 그대로 둡니다.
 
 | 조건 | 안 될 때 이유 코드 |
 |---|---|

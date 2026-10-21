@@ -36,6 +36,9 @@ function loadExportConfig(file) {
   return cfg;
 }
 
+// 평가 실행 이름표: 같은 입력의 반복·비교판을 목록에서 구분 (예: 평가 · v1-repeat · r2 · no-quote-rule)
+const evalLabel = (r) => ['평가', r.batch, `r${r.repeat}`, r.variant].filter(Boolean).join(' · ');
+
 // 평가 실행 목록 (docs/eval-spec.md '웹으로 내보낼 때'): eval/runs/*/result.json 중 outcome.result가 '완료'인 실행
 // 실행 폴더는 제품 폴더와 모양이 같아서, 그 폴더를 제품 폴더 위치로 두고 그대로 내보냄
 function evalTargets(runsDir) {
@@ -54,7 +57,7 @@ function evalTargets(runsDir) {
     out.push({
       id,
       kind: 'eval',
-      label: `평가 · ${r.batch}`,
+      label: evalLabel(r),
       eval: { input_id: r.input_id, run_id: r.run_id, repeat: r.repeat, variant: r.variant ?? null },
       dir: runsDir,
     });
@@ -100,13 +103,15 @@ function exportWebData({ out = null, only = null, config = null, exportedAt, eva
   }
 
   // --only면 기존 index.json의 다른 프로젝트 요약을 유지하고 그 프로젝트만 바꿈
+  // 평가 실행 폴더를 안 줬으면(evalRuns 없음) 이미 내보낸 평가 프로젝트는 모르는 게 아니라 안 읽은 것 → 그대로 둠
   let summaries = built.map((b) => b.summary);
   const indexFile = path.join(outDir, 'index.json');
   if (only && fs.existsSync(indexFile)) {
     const prev = readJson(indexFile).projects || [];
     const order = all.map((p) => p.id);
-    summaries = [...prev.filter((p) => p.id !== only && order.includes(p.id)), ...summaries]
-      .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    const keep = (p) => p.id !== only && (order.includes(p.id) || (!evalRuns && p.kind === 'eval'));
+    const rank = (id) => (order.includes(id) ? order.indexOf(id) : order.length);
+    summaries = [...prev.filter(keep), ...summaries].sort((a, b) => rank(a.id) - rank(b.id));
   }
   const index = buildIndex(summaries, { exportedAt });
 
@@ -154,4 +159,4 @@ if (require.main === module) {
   process.exit(schemaErrors.length ? 1 : 0);
 }
 
-module.exports = { exportWebData, loadExportConfig, parseArgs, evalTargets };
+module.exports = { exportWebData, loadExportConfig, parseArgs, evalTargets, evalLabel };
