@@ -1,0 +1,14 @@
+/* 시안 미리보기용 글꼴. Pretendard는 저장소 node_modules, 세리프는 Windows 기본 글꼴(Noto Serif KR·Garamond)이라 다른 컴퓨터에서는 대체 글꼴로 보일 수 있음 */
+@font-face { font-family: 'Pretendard'; src: url('../../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2'); font-weight: 400; }
+@font-face { font-family: 'Pretendard'; src: url('../../../node_modules/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2'); font-weight: 600; }
+@font-face { font-family: 'Pretendard'; src: url('../../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2'); font-weight: 700; }
+@font-face { font-family: 'Pretendard'; src: url('../../../node_modules/pretendard/dist/web/static/woff2/Pretendard-ExtraBold.woff2'); font-weight: 800; }
+@font-face { font-family: 'Serif KR'; src: local('Noto Serif KR'), url('file:///C:/Windows/Fonts/NotoSerifKR-VF.ttf'); font-weight: 200 900; }
+@font-face { font-family: 'Gara'; src: local('Garamond'), url('file:///C:/Windows/Fonts/GARA.TTF'); font-style: normal; }
+@font-face { font-family: 'Gara'; src: local('Garamond Italic'), url('file:///C:/Windows/Fonts/GARAIT.TTF'); font-style: italic; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1080px; overflow: hidden; }
+body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+.card { position: relative; width: 1080px; height: 1080px; overflow: hidden; }
+[data-text] { white-space: pre-line; }

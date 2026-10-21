@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- [시안 C · 내추럴·데일리] 위쪽 제품 색 블록에 제품을 가장 크게(블록 경계를 넘게), 아래 흰 영역에 굵은 산세리프 제목과 키워드 칩. 문구는 원문(input.md)에서만 -->
+<link rel="stylesheet" href="fonts.css">
+<style>
+  .card { background: #FFFFFF; color: #241D2B; }
+  .block {
+    position: absolute; left: 0; right: 0; top: 0; height: 600px;
+    background: linear-gradient(160deg, #EFE8F4 0%, #DCCDE8 100%);
+  }
+  .sun {
+    position: absolute; left: 50%; top: 70px; width: 560px; height: 560px; transform: translateX(-50%);
+    border-radius: 50%; background: rgba(255,255,255,0.6);
+  }
+  .top {
+    position: absolute; left: 88px; right: 88px; top: 72px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 24px; font-weight: 700;
+  }
+  .badge { background: #FFFFFF; color: #5B2F82; padding: 10px 22px; border-radius: 999px; }
+  .pager { color: #4E4458; }
+  .product {
+    position: absolute; left: 50%; top: 70px; height: 690px; transform: translateX(-50%) rotate(-6deg);
+    filter: drop-shadow(0 26px 24px rgba(60,35,80,0.2));
+  }
+  .title {
+    position: absolute; left: 88px; right: 88px; top: 724px;
+    font-size: 66px; font-weight: 800; line-height: 1.22; letter-spacing: -0.04em;
+  }
+  .title b { color: #5B2F82; font-weight: 800; }
+  .chips { position: absolute; left: 88px; bottom: 64px; display: flex; gap: 12px; }
+  .chips span {
+    border: 2px solid #CDBEDB; border-radius: 999px; padding: 10px 22px;
+    font-size: 24px; font-weight: 600; color: #3C3346;
+  }
+  .name { position: absolute; right: 88px; bottom: 76px; font-size: 22px; color: #4E4458; }
+</style>
+<div class="card">
+  <div class="block"></div>
+  <div class="sun"></div>
+  <div class="top"><span class="badge">데일리 UV 케어</span><span class="pager">1 / 5</span></div>
+  <img class="product" src="../../../products/dalba-toneup-purple/images/main.png" alt="">
+  <h1 class="title" data-text>매일 부담 없이
+<b>화사한 쿨톤 보정</b></h1>
+  <div class="chips"><span>세미 매트</span><span>백탁 없이</span><span>SPF50+ PA++++</span></div>
+  <span class="name">워터풀 톤업 선크림(퍼플)</span>
+</div>

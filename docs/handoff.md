@@ -236,6 +236,7 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 - 배포처(Vercel 예정)와 공개 링크 접근 제한 여부는 미정. 배포 계정 연결은 사람이 한다(설정값은 `web/README.md` '배포').
 - 작업 실행기의 `claude -p` 옵션은 Mac의 Claude Code 2.1.123에서 **인자 해석까지 확인**(모르는 옵션은 `unknown option`으로 거부되는데, 실행기 옵션 전체는 통과. `--max-turns`는 도움말에 없지만 받아들임). `--tools`의 `Skill`과 `Bash(npm run render -- <ID> --card:*)` 규칙이 실제로 허용·차단되는지는 첫 실제 실행에서 확인하고, 다르면 `claudeArgs`·`allowedTools`를 고친다.
 - 평가 실행기: 작업 실행기(`runJob({mode:'eval'})`)를 그대로 쓰고, 평가 결과 파일 위치·형식만 `docs/eval-spec.md`를 따름. 평가 결과 파일 위치·형식과 평가 세트 형식(`input.md` + 체크리스트)은 `docs/eval-spec.md`를 따름.
+- 디자인 레퍼런스 분석·무드 방향 3개·달바 퍼플 표지 시안 3개 (이용석 제안, 결정 아님): `docs/research/design-reference-review.md`. 방향 이름·표지 비교 시점·프리셋 구현 방식·데이터 규격은 '결정 대기'에 있음
 
 ## 다음 행동
 
