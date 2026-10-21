@@ -11,10 +11,11 @@ export type JobKind = 'plan' | 'copy' | 'revise';
 export interface FormField {
   key: string;
   required: boolean;
-  type: 'text' | 'paragraph' | 'list' | 'images' | 'number';
+  type: 'text' | 'paragraph' | 'list' | 'images' | 'number' | 'choice';
   guide: string;
   example?: string[];
   usage?: string[];
+  options?: string[];
   min?: number;
   max?: number;
 }

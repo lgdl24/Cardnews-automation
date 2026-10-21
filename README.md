@@ -138,7 +138,7 @@ npm run compare -- toneup-sunscreen toneup-sunscreen-v2
 │   ├── input-form.json               # 입력 양식 항목 정의 (검사·빈 양식·웹 입력 폼 공통)
 │   ├── input-safety.json             # 입력 자료 속 지시문 탐지 패턴
 │   ├── templates.json                # 템플릿별 필드·글자 수 기준 (측정값 기반)
-│   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름)
+│   ├── theme.json                    # 색상·폰트 공통 설정 (Figma color/* 변수와 같은 이름). 출력 때 글자 대비 4.5 이상으로 조정, 제품 색은 docs/card-color.md
 │   ├── caution-expressions.json      # 주의 표현 목록 (식약처 지침 기준, 판단은 docs/style-guide.md)
 │   ├── revision-types.json           # 수정 요청 유형 코드
 │   ├── export.json                   # 웹에 내보낼 제품 목록·출력 폴더 (npm run export)

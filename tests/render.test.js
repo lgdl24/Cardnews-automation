@@ -51,6 +51,48 @@ test('예시 제품 5장을 1080×1080 PNG로 출력하고 레이아웃 점검�
   }
 });
 
+test('카드 색: 제품 색이면 사진 대표 색으로 출력하고 render-report에 색·대비를 남긴다', (t) => {
+  const ws = makeWorkspace();
+  try {
+    ws.writeInput(`${ws.readInput().trimEnd()}\n\n## 카드 색\n제품 색\n`);
+    const r = ws.run('render.js', ['--no-log']);
+    if (r.status !== 0 && NO_BROWSER.test(r.stderr)) {
+      t.skip('Chromium이 없어 건너뜀 (npx playwright install chromium)');
+      return;
+    }
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /카드 색: 제품 색/);
+    const { colors } = JSON.parse(fs.readFileSync(ws.file('output', 'render-report.json'), 'utf8'));
+    assert.equal(colors.mode, '제품 색');
+    assert.equal(colors.source, 'product');
+    assert.equal(colors.image, 'main.png');
+    assert.match(colors.representative, /^#[0-9A-F]{6}$/);
+    assert.equal(colors.ok, true);
+    assert.equal(colors.contrast.length, 7);
+    // 카드 HTML에 바뀐 색이 들어감
+    const html = fs.readFileSync(ws.file('output', 'html', 'card-01.html'), 'utf8');
+    assert.ok(html.includes(`--color-primary: ${colors.color.primary};`));
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('카드 색: 기본이면 기본 테마를 대비 조정해서 쓴다', (t) => {
+  const ws = makeWorkspace();
+  try {
+    const r = ws.run('render.js', ['--html-only', '--no-log']);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /카드 색: 기본/);
+    const html = fs.readFileSync(ws.file('output', 'html', 'card-01.html'), 'utf8');
+    const { adjustContrast } = require('../scripts/lib/color-mood');
+    const { color } = adjustContrast(require('../config/theme.json').color);
+    assert.ok(html.includes(`--color-primary: ${color.primary};`));
+    assert.ok(html.includes(`--color-muted: ${color.muted};`));
+  } finally {
+    ws.cleanup();
+  }
+});
+
 test('검증 오류가 있거나 구성안 단계면 출력하지 않는다', () => {
   const ws = makeWorkspace();
   try {

@@ -166,7 +166,16 @@ function Field({ field: f, value, onChange }: { field: FormField; value: string;
       <span className="field-label">
         {f.key} {f.required ? <em>필수</em> : <span className="muted">선택</span>}
       </span>
-      {f.type === 'paragraph' || f.type === 'list' ? (
+      {f.type === 'choice' ? (
+        <select value={value} onChange={(e) => onChange(e.target.value)} required={f.required}>
+          {!f.required && <option value="">선택 안 함 ({f.options?.[0] ?? '기본'})</option>}
+          {(f.options ?? []).map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      ) : f.type === 'paragraph' || f.type === 'list' ? (
         <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={f.type === 'list' ? 5 : 4} required={f.required} placeholder={f.type === 'list' ? '한 줄에 하나씩' : undefined} />
       ) : (
         <input
