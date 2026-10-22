@@ -1,6 +1,6 @@
 {
   "_comment": "입력 양식(input.md) 항목 정의. check-input(필수 항목 검사), new-product(빈 양식 만들기), 웹 입력 폼(W3)이 모두 이 파일을 기준으로 합니다. 항목을 바꾸면 docs/input-form.md도 함께 고치고 npm test로 확인합니다.",
-  "version": "1.1",
+  "version": "1.2",
   "groups": [
     {
       "title": "제품 정보",
@@ -31,7 +31,8 @@
         { "key": "콘텐츠 목적", "required": true, "type": "text", "guide": "예: 신제품 소개, 사용법 안내" },
         { "key": "강조 정보", "required": false, "type": "text", "guide": "꼭 들어가야 할 정보" },
         { "key": "카드 수", "required": true, "type": "number", "guide": "숫자만. 예: 5", "min": 3, "max": 8 },
-        { "key": "카드 색", "required": false, "type": "choice", "options": ["기본", "제품 색"], "guide": "기본 또는 제품 색. 제품 색이면 제품 사진의 대표 색으로 카드 색을 맞춰요 (비우면 기본)" }
+        { "key": "카드 색", "required": false, "type": "choice", "options": ["기본", "제품 색"], "guide": "기본 또는 제품 색. 비우면 디자인의 기본 색 선택을 사용해요 (기본 디자인은 기본 색, 프리미엄은 제품 색)" },
+        { "key": "디자인", "required": false, "type": "choice", "options": ["기본", "프리미엄"], "guide": "기본 또는 프리미엄. 비우면 기본. 프리미엄은 큰 제품 사진·분할 배치·가는 선을 쓰는 무드 프리셋" }
       ]
     }
   ]

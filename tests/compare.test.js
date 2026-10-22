@@ -116,3 +116,24 @@ test('반복 일관성(--eval): 입력 × 규칙 버전으로 묶고, 완료된 
 test('반복 일관성(--eval): 평가 실행 폴더가 없으면 빈 결과', () => {
   assert.deepEqual(evalConsistency(path.join(os.tmpdir(), 'no-such-runs-dir')).groups, []);
 });
+
+test('제작 폴더 비교: 제품이 고른 디자인(프리미엄) 글자 수 기준으로 계산', () => {
+  const { makeWorkspace } = require('./helpers');
+  const { loadConfig, loadInput, readJson, paths } = require('../scripts/lib/common');
+  const { computeQuality } = require('../scripts/lib/metrics');
+  const ws = makeWorkspace();
+  try {
+    ws.writeInput(`${ws.readInput()}\n## 디자인\n프리미엄\n`);
+    ws.editCards((d) => { d.cards.find((c) => c.template === 'image').copy.caption = '가'.repeat(60); });
+    ws.use((id) => {
+      const input = loadInput(id);
+      const data = readJson(paths.product(id, 'cards.json'));
+      const premium = computeQuality({ data, input, ...loadConfig(input) });
+      const base = computeQuality({ data, input, ...loadConfig() });
+      assert.notEqual(premium.char_usage, base.char_usage);
+      assert.equal(compareProducts([id, id]).runs[0].char_usage, premium.char_usage);
+    });
+  } finally {
+    ws.cleanup();
+  }
+});

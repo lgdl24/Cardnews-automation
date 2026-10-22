@@ -19,7 +19,6 @@ const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
 
 function validate(productId) {
   const report = createReport();
-  const { templates, caution } = loadConfig();
   const file = paths.product(productId, 'cards.json');
 
   if (!fs.existsSync(file)) {
@@ -36,6 +35,7 @@ function validate(productId) {
   }
 
   const input = loadInput(productId);
+  const { templates, caution } = loadConfig(input);
   if (!input) report.error('INPUT_MISSING', 'input.md', '원문 대조를 위한 input.md가 없어요');
   const sourceText = input ? normalize(input.productText) : '';
 
@@ -199,7 +199,7 @@ function validate(productId) {
 // 품질 지표: JSON을 읽을 수 있고 입력 자료가 있을 때만 계산
 function quality({ data, input }) {
   if (!data || !input || !Array.isArray(data.cards)) return null;
-  const { templates, caution } = loadConfig();
+  const { templates, caution } = loadConfig(input);
   return computeQuality({ data, input, templates, caution });
 }
 

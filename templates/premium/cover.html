@@ -1,0 +1,28 @@
+<style>
+.card.premium-cover { padding:72px; background:linear-gradient(135deg,var(--color-bg),var(--color-accent)); }
+.premium-cover .badge { border-radius:0; }
+.premium-cover__text { position:absolute; left:72px; top:170px; width:480px; display:flex; flex-direction:column; gap:28px; z-index:2; }
+.premium-cover__title { font-size:60px; font-weight:800; line-height:1.28; max-height:231px; color:var(--color-primary); }
+.premium-cover__title::first-line { color:var(--color-text); }
+.premium-cover__copy { width:440px; font-size:30px; font-weight:400; line-height:1.5; max-height:135px; color:var(--color-text); }
+.premium-cover__visual { position:absolute; right:70px; top:210px; width:340px; height:756px; transform:rotate(9deg); }
+.premium-cover__photo { display:block; width:100%; height:100%; object-fit:contain; }
+.premium-cover.no-image .premium-cover__visual { display:none; }
+.premium-cover.no-image .premium-cover__text { width:900px; }
+.premium-cover.no-image .premium-cover__copy { width:800px; }
+.premium-cover__line { position:absolute; left:72px; right:72px; bottom:72px; border-top:1px solid var(--color-primary); }
+.premium-cover.role-closing .premium-cover__text { top:130px; left:90px; width:900px; align-items:center; gap:22px; }
+.premium-cover.role-closing .premium-cover__title { font-size:58px; line-height:1.28; max-height:223px; text-align:center; }
+.premium-cover.role-closing .premium-cover__copy { width:800px; font-size:26px; line-height:1.5; max-height:78px; text-align:center; }
+.premium-cover.role-closing .premium-cover__visual { top:490px; right:400px; width:280px; height:560px; transform:rotate(-7deg); }
+.premium-cover.role-closing .premium-cover__line { display:none; }
+</style>
+<article class="card premium-cover role-{{role}} {{imageClass}}">
+  <header class="card__top"><span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span></header>
+  <div class="premium-cover__text">
+    <h1 class="premium-cover__title" data-fit>{{title}}</h1>
+    <div class="premium-cover__copy" data-fit>{{subtitle}}</div>
+  </div>
+  <div class="premium-cover__visual"><img class="premium-cover__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
+  <div class="premium-cover__line" aria-hidden="true"></div>
+</article>

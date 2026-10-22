@@ -118,7 +118,7 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
   const broken = data.cards.filter((c) => !layout.get(c.no).ok);
   if (broken.length) return { ok: false, reason: 'LAYOUT_ERROR', detail: `레이아웃 오류: ${broken.map((c) => c.no).join(', ')}번 카드` };
 
-  const { templates, caution } = loadConfig();
+  const { templates, caution } = loadConfig(input);
   const q = quality(result);
   const events = readEvents(id);
   const cautions = findCautions(data, normalize(input.productText), caution);

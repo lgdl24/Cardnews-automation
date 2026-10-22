@@ -9,7 +9,8 @@ const { readEvents } = require('./events');
 const { summarize } = require('./analysis');
 
 // 제작 폴더 하나 읽기 (지금 CARDNEWS_PRODUCTS_DIR 기준). 없으면 null
-function loadRun(id, config = loadConfig()) {
+// config를 안 주면 제품 입력의 디자인 기준(프리미엄 등)으로 계산
+function loadRun(id, config = null) {
   const file = paths.product(id, 'cards.json');
   const input = loadInput(id);
   if (!fs.existsSync(file) || !input) return null;
@@ -22,7 +23,7 @@ function loadRun(id, config = loadConfig()) {
     roles: data.cards.map((c) => c.role),
     templates: data.cards.map((c) => c.template),
     evidence,
-    quality: computeQuality({ data, input, templates: config.templates, caution: config.caution }),
+    quality: (({ templates, caution }) => computeQuality({ data, input, templates, caution }))(config || loadConfig(input)),
     process: summarize(readEvents(id), { cardCount: data.cards.length }),
   };
 }
@@ -85,7 +86,7 @@ function rowOf(r) {
 }
 
 // 제작 폴더 비교 (기존 npm run compare -- <ID1> <ID2> ...)
-function compareProducts(ids, config = loadConfig()) {
+function compareProducts(ids, config = null) {
   const runs = [];
   const missing = [];
   for (const id of ids) {
@@ -141,7 +142,7 @@ const groupKey = (r) => `${r.input_id}--${r.skill_version}${r.variant ? `-${r.va
  *   - 완료된 실행끼리 카드 구성 일치율·근거 겹침·지표 편차 (완료 2개 이상일 때)
  *   - 핵심 정보 포함률·처리 시간 평균과 편차 (result.json 값)
  */
-function evalConsistency(runsDir, { batch = null, config = loadConfig() } = {}) {
+function evalConsistency(runsDir, { batch = null, config = null } = {}) {
   const results = readEvalResults(runsDir, { batch });
   const groups = new Map();
   for (const r of results) {

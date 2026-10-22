@@ -18,9 +18,17 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function loadConfig() {
+function designOf(input, config = readJson(paths.config('templates.json'))) {
+  const value = ((input?.cond?.['디자인']) || '').split('\n')[0].trim();
+  return Object.hasOwn(config._designs || {}, value) ? value : '기본';
+}
+
+function loadConfig(input = null) {
+  const all = readJson(paths.config('templates.json'));
+  const overrides = all._designs?.[designOf(input, all)];
+  const templates = overrides ? { ...all, ...overrides } : all;
   return {
-    templates: readJson(paths.config('templates.json')),
+    templates,
     theme: readJson(paths.config('theme.json')),
     caution: readJson(paths.config('caution-expressions.json')),
   };
@@ -118,6 +126,6 @@ function requireProductId(argv) {
 }
 
 module.exports = {
-  ROOT, paths, readJson, loadConfig, normalize, countChars,
+  ROOT, paths, readJson, designOf, loadConfig, normalize, countChars,
   parseInput, loadInput, createReport, printReport, requireProductId,
 };

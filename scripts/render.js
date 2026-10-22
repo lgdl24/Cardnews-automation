@@ -92,8 +92,8 @@ async function main() {
     process.exit(1);
   }
 
-  const { templates, theme } = loadConfig();
   const input = loadInput(id);
+  const { templates, theme } = loadConfig(input);
   const product = (input.info['제품명'] || id).split('\n')[0];
   const outDir = paths.product(id, 'output');
   const htmlDir = path.join(outDir, 'html');
@@ -129,10 +129,23 @@ async function main() {
   console.log(colorSummary(colors));
   const cardTheme = { ...theme, color: colors.color };
 
+  // 새 묶음의 제품 사진만 투명 여백 계산. 원본 파일은 그대로 둠.
+  const imageCrops = new Map();
+  if (targets.some(c => templates[c.template].trimImage && c.image)) {
+    const cropPage = await (await startBrowser()).newPage();
+    try {
+      for (const card of targets) {
+        if (!templates[card.template].trimImage || !card.image || imageCrops.has(card.image)) continue;
+        const sample = await readPixels(cropPage, path.join(imageDir, card.image), { withBounds: true });
+        imageCrops.set(card.image, sample.bounds);
+      }
+    } finally { await cropPage.close(); }
+  }
+
   // HTML 생성
   for (const card of targets) {
     const html = buildCardHtml({
-      card, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir,
+      card, cards: data.cards, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image),
     });
     fs.writeFileSync(path.join(htmlDir, `card-${pad(card.no)}.html`), html);
   }

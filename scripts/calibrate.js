@@ -35,9 +35,9 @@ function makeText(pattern, n) {
 function createRenderer(page, theme, templates) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-calibrate-'));
   let seq = 0;
-  async function check(templateKey, copy, { image = true } = {}) {
+  async function check(templateKey, copy, { image = true, role = templateKey === 'cover' ? 'cover' : 'feature', no = 1 } = {}) {
     const tpl = templates[templateKey];
-    const card = { no: 1, template: templateKey, image: tpl.image !== 'none' && image ? SAMPLE_IMAGE : null, copy };
+    const card = { no, role, template: templateKey, image: tpl.image !== 'none' && image ? SAMPLE_IMAGE : null, copy };
     const html = buildCardHtml({ card, total: 5, product: SAMPLE_PRODUCT, tpl, theme, htmlDir: dir, imageDir: SAMPLE_IMAGE_DIR });
     seq += 1;
     const file = path.join(dir, `c${seq}.html`);
@@ -50,7 +50,7 @@ function createRenderer(page, theme, templates) {
       .filter((el) => el.textContent.trim())
       .map((el) => ({
         text: el.textContent.replace(/\s/g, ''),
-        lines: Math.round(el.scrollHeight / parseFloat(getComputedStyle(el).lineHeight)),
+        lines: Math.round((el.scrollHeight - parseFloat(getComputedStyle(el).paddingTop) - parseFloat(getComputedStyle(el).paddingBottom)) / parseFloat(getComputedStyle(el).lineHeight)),
       })));
     fs.rmSync(file);
     return { ok: issues.length === 0 && overlaps.length === 0, issues, overlaps, fontOk, lines };
@@ -64,6 +64,26 @@ function baseCopy(tpl) {
   for (const [field, rule] of Object.entries(tpl.fields)) {
     if (!rule.required) continue;
     copy[field] = field === 'items' ? ['짧은 항목'] : '짧은 제목';
+  }
+  return copy;
+}
+
+// 직접 줄바꿈으로 최대 줄 수까지 채운 경우 (한 줄 기준 글자씩, 전체 기준 안에서)
+function brokenText(pattern, rule, total) {
+  const per = rule.maxCharsPerLine;
+  if (!per || !(rule.maxLines > 1)) return makeText(pattern, total);
+  const lines = [];
+  for (let left = total; left > 0 && lines.length < rule.maxLines; left -= per) {
+    lines.push(makeText(pattern.slice(lines.length * 3) + pattern, Math.min(per, left)));
+  }
+  return lines.join('\n');
+}
+function brokenCopy(tpl, pattern) {
+  const copy = {};
+  for (const [field, rule] of Object.entries(tpl.fields)) {
+    copy[field] = field === 'items'
+      ? Array.from({ length: rule.maxItems }, () => brokenText(pattern, rule, rule.maxCharsPerItem))
+      : brokenText(pattern, rule, rule.maxChars);
   }
   return copy;
 }
@@ -108,8 +128,10 @@ function fullCopy(tpl, pattern) {
   return copy;
 }
 
-async function measure({ fullOnly = false } = {}) {
-  const { templates, theme } = loadConfig();
+async function measure({ fullOnly = false, design = '기본' } = {}) {
+  const all = loadConfig().templates;
+  if (design !== '기본' && !Object.hasOwn(all._designs || {}, design)) throw new Error('없는 디자인 묶음');
+  const { templates, theme } = loadConfig({cond:{'디자인':design}});
   const browser = await launchBrowser();
   const page = await browser.newPage({ viewport: theme.size, deviceScaleFactor: 1 });
   const r = createRenderer(page, theme, templates);
@@ -122,12 +144,20 @@ async function measure({ fullOnly = false } = {}) {
 
       // 1) 최악의 경우: 모든 칸을 기준까지 채움 (이미지 있음·없음)
       const imageCases = tpl.image === 'optional' ? [true, false] : [tpl.image !== 'none'];
-      for (const [pname, pattern] of Object.entries(PATTERNS)) {
+      // 새 묶음은 직접 줄바꿈으로 최대 줄 수를 채운 경우도 잼
+      const copies = Object.entries(PATTERNS).map(([pname, pattern]) => [pname, fullCopy(tpl, pattern)]);
+      if (design !== '기본') copies.push(['직접 줄바꿈', brokenCopy(tpl, PATTERNS[Object.keys(PATTERNS)[0]])]);
+      for (const [pname, copy] of copies) {
         for (const image of imageCases) {
-          const copy = fullCopy(tpl, pattern);
-          const res = await r.check(key, copy, { image });
-          fontOk = fontOk && res.fontOk;
-          full.push({ template: key, pattern: pname, image, ok: res.ok, issues: res.issues, overlaps: res.overlaps });
+          const roles = tpl.roles || [undefined];
+          for (const role of roles) {
+            const sides = design !== '기본' && key === 'description' && image ? [1, 2] : [1];
+            for (const no of sides) {
+              const res = await r.check(key, copy, { image, role, no });
+              fontOk = fontOk && res.fontOk;
+              full.push({ template: key, pattern: pname, image, role, no, ok: res.ok, issues: res.issues, overlaps: res.overlaps });
+            }
+          }
         }
       }
       if (fullOnly) continue;
@@ -191,7 +221,7 @@ function printResult({ fields, full, fontOk }) {
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const checkOnly = argv.includes('--check');
-  measure({ fullOnly: checkOnly })
+  measure({ fullOnly: checkOnly, design: argv.includes('--design') ? argv[argv.indexOf('--design')+1] : '기본' })
     .then((res) => {
       if (argv.includes('--json')) console.log(JSON.stringify(res, null, 2));
       else printResult(res);

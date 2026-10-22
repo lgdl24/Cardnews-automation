@@ -1,0 +1,36 @@
+<style>
+.card.premium-description { padding:72px; background:var(--color-surface); }
+.premium-description__plane { position:absolute; inset:0 0 0 auto; width:540px; background:linear-gradient(160deg,var(--color-bg),var(--color-accent)); }
+.premium-description__visual { position:absolute; right:76px; top:230px; width:380px; height:720px; transform:rotate(6deg); }
+.premium-description__photo { display:block; width:100%; height:100%; object-fit:contain; }
+.premium-description__label { position:absolute; left:72px; top:96px; padding:10px 18px; font-size:22px; line-height:1.4; font-weight:600; background:var(--color-primary); color:var(--color-on-primary); }
+.premium-description__title { position:absolute; left:72px; top:230px; width:400px; font-size:50px; font-weight:800; line-height:1.3; max-height:200px; color:var(--color-primary); }
+.premium-description__title::first-line { color:var(--color-text); }
+.premium-description__items { position:absolute; left:72px; top:480px; width:400px; list-style:none; counter-reset:points; }
+.premium-description .desc__item { position:relative; min-height:148px; padding:20px 0 20px 60px; border-top:1px solid var(--color-primary); counter-increment:points; }
+.premium-description .desc__item::before { content:counter(points,decimal-leading-zero); position:absolute; left:0; top:28px; font-size:22px; line-height:1.4; font-weight:600; color:var(--color-primary); }
+.premium-description .desc__text { display:block; font-size:28px; line-height:1.5; max-height:126px; color:var(--color-text); }
+.premium-description.photo-left .premium-description__plane { right:auto; left:0; }
+.premium-description.photo-left .premium-description__visual { right:auto; left:76px; transform:rotate(-6deg); }
+.premium-description.photo-left .premium-description__title,
+.premium-description.photo-left .premium-description__items { left:608px; }
+.premium-description.no-image .premium-description__plane,
+.premium-description.no-image .premium-description__visual { display:none; }
+.premium-description.no-image .premium-description__label,
+.premium-description.no-image .premium-description__title,
+.premium-description.no-image .premium-description__items { left:72px; }
+.premium-description.no-image .premium-description__title,
+.premium-description.no-image .premium-description__items { width:936px; }
+.premium-description.role-usage .premium-description__items { top:450px; }
+.premium-description.role-usage .desc__item { min-height:150px; padding:50px 0 14px; }
+.premium-description.role-usage .desc__item::before { content:'STEP ' counter(points); top:18px; font-size:20px; letter-spacing:.06em; }
+.premium-description .pager { position:absolute; right:72px; top:34px; }
+</style>
+<article class="card premium-description role-{{role}} photo-{{photoSide}} {{imageClass}}">
+  <div class="premium-description__plane" aria-hidden="true"></div>
+  <span class="pager">{{page}} / {{total}}</span>
+  <div class="premium-description__label">{{sectionLabel}}</div>
+  <div class="premium-description__visual"><img class="premium-description__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
+  <h1 class="premium-description__title" data-fit>{{title}}</h1>
+  <ol class="premium-description__items">{{items}}</ol>
+</article>
