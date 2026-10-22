@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node --test tests/check-input.test.js tests/validate.test.js tests/cli.test.js tests/spec.test.js tests/web-data.test.js tests/export.test.js tests/eval-inputs.test.js tests/job-runner.test.js tests/studio-api.test.js tests/eval-spec.test.js tests/eval-runner.test.js tests/caution.test.js tests/color-mood.test.js tests/compare.test.js tests/check-web.test.js tests/design-sets.test.js",
     "test:render": "node --test tests/render.test.js tests/calibrate.test.js tests/premium-render.test.js",
+    "test:ui": "node --test tests/plan-evidence-ui.test.js tests/premium-form-ui.test.js",
     "check": "node scripts/check-input.js",
     "validate": "node scripts/validate.js",
     "render": "node scripts/render.js",

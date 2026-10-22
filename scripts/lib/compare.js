@@ -9,7 +9,7 @@ const { readEvents } = require('./events');
 const { summarize } = require('./analysis');
 
 // 제작 폴더 하나 읽기 (지금 CARDNEWS_PRODUCTS_DIR 기준). 없으면 null
-// config를 안 주면 제품 입력의 디자인 기준(프리미엄 등)으로 계산
+// config를 안 주면 제품 입력의 무드 기준(프리미엄 등)으로 계산
 function loadRun(id, config = null) {
   const file = paths.product(id, 'cards.json');
   const input = loadInput(id);
