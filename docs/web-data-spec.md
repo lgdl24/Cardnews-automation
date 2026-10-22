@@ -50,7 +50,8 @@ npm run export -- --out <폴더>         # 다른 폴더로 (확인용)
 npm run export -- --no-eval            # 평가 실행은 빼고 config/export.json의 제품만
 ```
 
-- 평가 실행: `eval/runs/*/result.json` 중 `outcome.result`가 `완료`인 실행을 `kind: "eval"` 프로젝트로 함께 내보냅니다. `eval` 필드(`input_id`·`run_id`·`repeat`·`variant`)는 `result.json`에서, `label`은 `평가 · <실행 묶음>`. `config/export.json`에 적지 않아도 됩니다. 평가가 끝난 직후 그 실행만 내보내려면 `npm run eval -- ... --export` (#42)
+- 평가 실행: `eval/runs/*/result.json` 중 `outcome.result`가 `완료`인 실행을 `kind: "eval"` 프로젝트로 함께 내보냅니다. `eval` 필드(`input_id`·`run_id`·`repeat`·`variant`)는 `result.json`에서, `label`은 `평가 · <실행 묶음> · r<반복 번호>`(비교판이면 뒤에 ` · <비교판>`)라 같은 입력의 반복이 목록에서 구분됩니다. `config/export.json`에 적지 않아도 됩니다. 평가가 끝난 직후 그 실행만 내보내려면 `npm run eval -- ... --export` (#42)
+- 평가 PNG(`eval/runs/*/output/png/`)는 git에 없어서, **평가를 돌린 컴퓨터에서만** 평가 실행이 내보내집니다. 다른 컴퓨터에서 `npm run export`를 하면 평가 실행은 `PNG_MISSING`으로 빠지고 `index.json`을 새로 써서 배포 데이터에서 사라지니, 그 컴퓨터에서는 `--no-eval` 또는 `--only <제품ID>`를 씁니다. `--only`는 평가 실행 폴더를 안 읽을 때(`--no-eval`) 이미 내보낸 평가 프로젝트를 목록에 그대로 둡니다.
 
 | 조건 | 안 될 때 이유 코드 |
 |---|---|
@@ -125,6 +126,7 @@ npm run export -- --no-eval            # 평가 실행은 빼고 config/export.j
 | `analysis` | 핵심 메시지·근거·특징·사용법 (`cards.json` 그대로) |
 | `cards[]` | 카드. 아래 표 |
 | `plan_revisions[]` | 구성안 수정 요청: `ts` · `types`(유형 코드) · `memo` |
+| `colors` | 출력에 쓴 카드 색(v0.3, [card-color.md](card-color.md)): `mode`(입력에서 고른 `기본`·`제품 색`) · `source`(실제로 쓴 색 `theme`·`product`) · `image`·`representative`(제품 색일 때 사진·대표 색) · `color`(7개, `#RRGGBB`) · `adjustments[]`(글자 대비 때문에 어둡게 한 색 `key`·`from`·`to`) · `note`(제품 색을 골랐는데 기본 색을 쓴 이유 등). 가장 최근 출력 보고서(`render-report*.json`)의 값, 색 기록이 없는 옛 출력이면 `null`. 대비 표(`contrast`)는 내보내지 않음 |
 | `quality` | 품질 지표 (`output/quality.json`): `coverage` · `coverage_detail`(`covered` · `total` · `missing[]` · `excluded_count`) · `evidence_rate` · `char_usage` · `char_usage_max` · `caution`(`total` · `in_source` · `not_in_source`) 등. 핵심 정보 포함률처럼 지표가 늘면 필드가 추가됨 |
 
 `cards[]` — `cards.json`의 카드 필드(`no` · `role` · `template` · `intent` · `image` · `evidence` · `copy`)에 더해:
@@ -187,3 +189,4 @@ npm run export -- --no-eval            # 평가 실행은 빼고 config/export.j
 
 - v0.1 (2026-10-16): 초안. 필드를 추가하면 부 버전(0.2), 지우거나 뜻을 바꾸면 주 버전(1.0)을 올리고 두 사람이 함께 확인합니다.
 - v0.2 (2026-10-19, 이용석 리뷰): `project.json` `cards[].cautions[].fields` 추가 (V2 구성안·근거에서 [주의] 표현이 나온 칸을 강조). 다른 필드는 그대로
+- v0.3 (2026-10-21, #46 리뷰 이용석 의견): `project.json` `colors` 추가 (V2 카드 결과 '카드 색'). 다른 필드는 그대로

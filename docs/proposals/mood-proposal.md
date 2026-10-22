@@ -4,6 +4,7 @@
 - 이슈: #39 (이 문서), #38 (제품 색 + 글자 대비 검사)
 - 노션: 설계 문서 > (제안) 제품 유형 · 브랜드 무드별 글의 결 — 이용석
 - 디자인 쪽 레퍼런스 분석·방향 3개·표지 시안: [design-reference-review.md](../research/design-reference-review.md) (2026-10-20, 제안)
+- 무드 프리셋(브랜드 무드 6개·제품 유형·인증 배지): [mood-presets.md](mood-presets.md) (2026-10-21, 제안)
 
 ## 문제
 

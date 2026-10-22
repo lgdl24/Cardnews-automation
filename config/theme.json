@@ -1,5 +1,5 @@
 {
-  "_comment": "색상·폰트 공통 설정. 출력 시 CSS 변수(--color-*, --font-*)로 템플릿에 주입됩니다. 색상 이름은 Figma '디자인 토큰' 페이지의 color/* 변수와 같게 유지합니다.",
+  "_comment": "색상·폰트 공통 설정. 출력 시 CSS 변수(--color-*, --font-*)로 템플릿에 주입됩니다. 색상 이름은 Figma '디자인 토큰' 페이지의 color/* 변수와 같게 유지합니다. 글자가 색 위에 놓이는 7곳의 대비가 4.5 이상이어야 해요(docs/card-color.md, tests/color-mood.test.js). 2026-10-21 muted #7A6E66→#685F5A, primary #D9826B→#A2442A (#60)",
   "size": {
     "width": 1080,
     "height": 1080
@@ -16,8 +16,8 @@
     "bg": "#FBF6F1",
     "surface": "#FFFFFF",
     "text": "#2B2420",
-    "muted": "#7A6E66",
-    "primary": "#D9826B",
+    "muted": "#685F5A",
+    "primary": "#A2442A",
     "accent": "#F2D7CC",
     "on-primary": "#FFFFFF"
   },

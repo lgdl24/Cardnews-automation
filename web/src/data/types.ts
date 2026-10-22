@@ -1,4 +1,4 @@
-// 웹 데이터 타입 — docs/web-data-spec.md v0.2, schemas/web-data/*.schema.json과 같은 모양
+// 웹 데이터 타입 — docs/web-data-spec.md v0.3, schemas/web-data/*.schema.json과 같은 모양
 // 스키마를 바꾸면 이 파일도 함께 고치고, 두 사람이 리뷰한다 (공통 파일)
 
 export type Kind = 'production' | 'example' | 'eval';
@@ -54,7 +54,7 @@ export interface ProjectSummary {
 }
 
 export interface WebIndex {
-  spec_version: '0.2';
+  spec_version: '0.3';
   exported_at: string;
   skill_version: string;
   labels: Labels;
@@ -165,7 +165,7 @@ export interface Quality {
 }
 
 export interface Project {
-  spec_version: '0.2';
+  spec_version: '0.3';
   id: string;
   kind: Kind;
   label: string | null;
@@ -185,7 +185,25 @@ export interface Project {
   analysis: Analysis;
   cards: Card[];
   plan_revisions: Revision[];
+  /** 출력에 쓴 카드 색 (v0.3). 색 기록이 없는 옛 출력이면 null */
+  colors: CardColors | null;
   quality: Quality;
+}
+
+export type ColorKey = 'bg' | 'surface' | 'text' | 'muted' | 'primary' | 'accent' | 'on-primary';
+export interface CardColors {
+  /** 입력 양식 '카드 색'에서 고른 것 */
+  mode: '기본' | '제품 색';
+  /** 실제로 쓴 색: theme = config/theme.json, product = 제품 사진 대표 색 */
+  source: 'theme' | 'product';
+  /** 대표 색을 뽑은 사진 (product일 때) */
+  image: string | null;
+  representative: string | null;
+  color: Record<ColorKey, string>;
+  /** 글자 대비 4.5를 맞추려고 어둡게 한 색 */
+  adjustments: { key: ColorKey; from: string; to: string }[];
+  /** 제품 색을 골랐는데 기본 색을 쓴 이유 등 */
+  note: string | null;
 }
 
 // ── timeline.json (V2 제작 과정)
@@ -239,7 +257,7 @@ export interface TimelineEvent {
 }
 
 export interface Timeline {
-  spec_version: '0.2';
+  spec_version: '0.3';
   id: string;
   summary: {
     complete: boolean;

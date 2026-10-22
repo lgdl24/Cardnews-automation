@@ -279,7 +279,7 @@ test('완료된 평가 실행은 웹 데이터로 kind: eval 프로젝트가 되
     const p = index.projects[0];
     assert.equal(p.kind, 'eval');
     assert.equal(p.stage, 'copy');
-    assert.equal(p.label, '평가 · v1-base');
+    assert.equal(p.label, '평가 · v1-base · r1');
     assert.deepEqual(p.eval, { input_id: 'eval-toneup-sunscreen', run_id: 'eval-toneup-sunscreen--v1--r1', repeat: 1, variant: null });
     assert.ok(fs.existsSync(path.join(out, 'projects', p.id, 'png', 'card-01.png')));
     // 제품 폴더 위치는 원래대로
@@ -287,6 +287,27 @@ test('완료된 평가 실행은 웹 데이터로 kind: eval 프로젝트가 되
     // --only로 평가 실행 하나만 다시 내보낼 수 있음
     const again = exportWebData({ config, evalRuns: s.runsDir, only: p.id });
     assert.deepEqual(again.exported, [p.id]);
+    // 평가 실행 폴더 없이 다른 프로젝트만 --only로 내보내도 이미 내보낸 평가 프로젝트는 목록에 남음 (#43 리뷰)
+    // 예시 제품: 출력(output/)은 git에 없으니 웹 데이터 예시의 PNG·레이아웃으로 만듦 (tests/export.test.js와 같은 방식)
+    const prodDir = path.join(s.dir, 'products', SRC);
+    fs.cpSync(path.join(ROOT, 'products', SRC), prodDir, { recursive: true, filter: (f) => !f.includes(`${path.sep}output`) });
+    const example = path.join(ROOT, 'docs', 'examples', 'web-data', 'projects', SRC);
+    fs.cpSync(path.join(example, 'png'), path.join(prodDir, 'output', 'png'), { recursive: true });
+    const exampleCards = JSON.parse(fs.readFileSync(path.join(example, 'project.json'), 'utf8')).cards;
+    fs.writeFileSync(path.join(prodDir, 'output', 'render-report.json'), JSON.stringify({
+      product_id: SRC, rendered_at: '2026-10-10T08:00:00.000Z', results: exampleCards.map((c) => ({ no: c.no, ...c.layout })),
+    }));
+    fs.writeFileSync(config, JSON.stringify({ out_dir: out, projects: [{ id: SRC, kind: 'example', label: null }] }));
+    process.env.CARDNEWS_PRODUCTS_DIR = path.join(s.dir, 'products');
+    try {
+      const one = exportWebData({ config, only: SRC });
+      assert.deepEqual(one.excluded, [], JSON.stringify(one.excluded));
+    } finally {
+      delete process.env.CARDNEWS_PRODUCTS_DIR;
+    }
+    const ids = JSON.parse(fs.readFileSync(path.join(out, 'index.json'), 'utf8')).projects.map((x) => x.id);
+    assert.deepEqual(ids, [SRC, p.id]);
+    assert.ok(fs.existsSync(path.join(out, 'projects', p.id, 'project.json')));
   } finally {
     delete process.env.FAKE_CLAUDE_SCENARIO;
     s.cleanup();

@@ -8,7 +8,7 @@ const { summarize, PHASES } = require('./analysis');
 const { findCautions, round } = require('./metrics');
 const { pad } = require('./card-html');
 
-const SPEC_VERSION = '0.2';
+const SPEC_VERSION = '0.3';
 const KINDS = { production: '실제 제작', example: '예시', eval: '평가 실행' };
 const STAGE_LABELS = { plan: '구성안', copy: '문구', approved: '승인 완료' };
 const ROLE_LABELS = { cover: '표지', feature: '특징', usage: '사용법', detail: '상세', closing: '마무리' };
@@ -44,6 +44,28 @@ function latestLayout(id) {
     }
   }
   return byCard;
+}
+
+// 출력에 쓴 카드 색 (render-report.json의 colors, #38). 가장 최근 보고서의 값. 색 기록이 없는 옛 출력이면 null
+function latestColors(id) {
+  const dir = paths.product(id, 'output');
+  if (!fs.existsSync(dir)) return null;
+  const withColors = fs.readdirSync(dir)
+    .filter((f) => /^render-report(-card-\d+)?\.json$/.test(f))
+    .map((f) => readJson(path.join(dir, f)))
+    .filter((r) => r.colors && r.colors.color)
+    .sort((a, b) => String(a.rendered_at).localeCompare(String(b.rendered_at)));
+  const c = withColors.length ? withColors[withColors.length - 1].colors : null;
+  if (!c) return null;
+  return {
+    mode: c.mode,
+    source: c.source,
+    image: c.image ?? null,
+    representative: c.representative ?? null,
+    color: c.color,
+    adjustments: (c.adjustments || []).map(({ key, from, to }) => ({ key, from, to })),
+    note: c.note ?? null,
+  };
 }
 
 function charRows(card, templates) {
@@ -143,6 +165,7 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
     analysis: data.analysis,
     cards,
     plan_revisions: revisions.filter((r) => r.stage === 'plan').map(revisionOf),
+    colors: latestColors(id),
     quality: {
       ...qualityRest,
       coverage_detail: {
@@ -219,4 +242,4 @@ function buildIndex(summaries, { exportedAt = new Date().toISOString() } = {}) {
   };
 }
 
-module.exports = { SPEC_VERSION, KINDS, STAGE_LABELS, ROLE_LABELS, buildLabels, buildProject, buildIndex, latestLayout };
+module.exports = { SPEC_VERSION, KINDS, STAGE_LABELS, ROLE_LABELS, buildLabels, buildProject, buildIndex, latestLayout, latestColors };

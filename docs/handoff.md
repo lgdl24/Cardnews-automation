@@ -9,15 +9,15 @@
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
 | 2026-10-21 | Codex | #53 · `feat/53-lilac-design` | **라일락 → 프리미엄 첫 무드 프리셋**: `디자인` 기본·프리미엄, `templates/premium/` 3개. 색 비움은 제품 색, 직접 지정 우선. Point N·How to·STEP·분할 면·큰 제품·역할별 배치, 칸별 실측 7개·최대 문구 45경우 통과. 기본 템플릿·카드 스키마·규칙 버전 유지. 로컬 구현, 커밋 전 |
+| 2026-10-21 | Claude | #61 · `feat/61-colors-export` | **웹 데이터 v0.3 — 쓴 카드 색**: `project.json` `colors`(`mode`·`source`·`image`·`representative`·`color` 7개·`adjustments[]`(`key`·`from`·`to`)·`note`), 가장 최근 출력 보고서의 값, 옛 출력이면 `null`. `spec_version` 0.3(스키마 3개·`web-data.js`·`types.ts`). V2 카드 결과에 '카드 색' 섹션(이름·값 같이 표시). 예시·`web/public/data`는 `toneup-sunscreen-r1`을 다시 출력(`--no-log`)해 다시 내보냄 → PNG 강조색이 진해짐 |
+| 2026-10-21 | Claude | #60 · `feat/60-theme-contrast` | **기본 테마 = 실제 출력 색**: `config/theme.json` `muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A(대비 자동 조정 결과와 같은 값, #46 리뷰 이용석 의견). 기본 테마는 7곳 모두 4.5 이상이라 출력 때 조정 없음. Figma `color/*` 변수는 이미 같은 값. 출력 결과는 #46 이후와 같음. 결과 보기 웹 화면 색(`web/src/styles/global.css`)은 카드 색과 별개라 안 바꿈 |
+| 2026-10-21 | Claude | #58 · `fix/58-eval-export-label` | **평가 내보내기 #43 리뷰 반영**: 평가 프로젝트 `label`이 `평가 · <묶음> · r<N>`(비교판이면 ` · <이름>`) — V3 목록에서 반복 구분. `exportWebData`를 `evalRuns` 없이 `only`로 부르면 이미 내보낸 평가 프로젝트를 `index.json`에 그대로 둠(전에는 빠짐). 웹 데이터 규격에 '평가 실행은 평가를 돌린 컴퓨터에서만 내보내짐(PNG가 git에 없음), 다른 컴퓨터는 `--no-eval`·`--only`' 안내 |
 | 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
 | 2026-10-20 | Claude | #49 · `feat/49-eval-variants` | **평가 비교판(A8)이 실제로 규칙을 바꿈**: 전에는 `--variant`가 이름만 붙이고 규칙은 그대로였음. 이제 `eval/variants/<이름>/variant.json`(description·changes) + `files/`(바꾼 `CLAUDE.md`·`.claude/skills/*/*.md`·`prompts/eval/plan|copy.md`만)를 작업 실행기가 작업 폴더에 덮어씀(`runJob`·`createWorkspace`·`fillPrompt`의 `overlayDir`). 스크립트·`config/`·`schemas/`는 못 바꿈. 정의 없는 이름은 시작 전에 멈춤. `result.json` `notes`에 비교판 설명. 형식 `eval/variants/README.md`, eval-spec 비교판 줄에 위치 추가. 비교판 내용은 A8 때 정함 |
 | 2026-10-20 | Claude | #47 · `feat/47-a6-consistency` | **반복 실행 일관성(A6) 도구**: `npm run compare -- --eval [--runs eval/runs] [--batch <묶음>] [--json]`이 평가 실행을 입력 × 규칙 버전 × 비교판으로 묶어 반복끼리 비교(실행·완료·체크리스트 통과·1회 통과 수, 중단 오류 코드, 결과가 모두 같은지, 완료된 반복끼리 카드 역할·템플릿 순서 일치율·근거 겹침·커버리지·글자 수 활용률 편차, `result.json`의 핵심 정보 포함률·처리 시간 평균·편차). 계산은 `scripts/lib/compare.js`로 분리, 기존 `compare <ID...>` 출력은 그대로(같은 결과 확인). 집계 표·V3 형식은 이용석 몫이라 안 정함. 테스트 `tests/compare.test.js` |
 | 2026-10-20 | Claude | #38 · `feat/38-product-color` | **카드 색 (제품 색 + 글자 대비)**: 입력 양식 `제작 조건 > 카드 색`(`기본`|`제품 색`, 선택, 새 필드 형식 `choice`·`options`, 양식 v1.1). `render`가 색을 정해 카드 HTML의 `--color-*`만 바꿈 — 제품 색이면 카드에 쓴 첫 사진의 대표 색으로 색 7개, 어느 쪽이든 글자가 색 위에 놓이는 7곳을 대비 4.5 이상으로 조정(글자 쪽 밝기만 낮춤). **기본 테마도 3곳 미달이라 출력 색이 바뀜**(`muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A, `theme.json`은 그대로). 기록은 `render-report.json`의 `colors`, 못 맞추면 `[경고] 카드 색`. 설명 `docs/card-color.md`, 코드 `scripts/lib/color-mood.js`, 테스트 `tests/color-mood.test.js`. 규칙 버전은 그대로 |
-| 2026-10-20 | Claude | #42 · `feat/42-eval-export` | **평가 실행 내보내기**: `npm run export`가 `eval/runs/*/result.json` 중 완료된 실행을 `kind: eval` 프로젝트로 함께 내보냄(`eval` 필드는 `result.json`에서, `label` `평가 · <묶음>`, `config/export.json`에 안 적어도 됨). `--no-eval`로 뺄 수 있음. `npm run eval -- … --export`는 끝난 묶음의 완료된 실행만 `--only`로 바로 내보냄. 함수 `exportWebData`는 `evalRuns`를 줄 때만 평가 실행을 읽음(테스트가 실제 `eval/runs`를 안 건드리게). V2 제작 과정의 근거 연결률 설명을 실제 계산(전체 카드 기준)에 맞춤 |
-| 2026-10-20 | Claude | #44 · `docs/44-handoff-codex` | **인계 문서 정리(이용석)**: '현재 작업'을 이용석 기준으로 교체, '도구 분담'(카드 제작·평가 실행은 Claude Code만, 화면·스크립트 구현은 Codex, PR 전 교차 검토), '이용석 인계 상세'(작업 폴더·완료 PR·미커밋·테스트·미검증), '이규동 요청·피드백'(직접 할 일·검토 요청·공동 결정·이미 끝난 일) 추가. 병합된 옛 '현재 작업'·'다음 행동' 정리. 문서만 변경 |
-| 2026-10-19 | Claude | #36 · `docs/36-web-mode-review` | **웹 모드 규칙 문구 리뷰 (#21, 이용석)**: `CLAUDE.md`·Skill·`prompts/web/`을 작업 실행기·로컬 제작 API 코드와 대조. 고친 곳 — `CLAUDE.md` 입력 자료 취급에 웹 모드 수정 요청 메모도 자료로 다룬다는 한 줄(지시문 `prompts/web/revise.md`와 같게), `cardnews-render` Skill 최종 승인 줄에 `[대화]` 표시와 웹·평가 모드는 `copy`에서 끝난다는 줄, `docs/event-log-spec.md` v0.2(누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 `job_id` 형식, 웹 모드 `revision_requested.cards` 생략), `README.md` 한 줄. 동작 변경 없음 |
 
 ## 현재 작업 (이용석 · Codex, 2026-10-21)
 
@@ -33,9 +33,12 @@
 ## 현재 작업 (이규동, 2026-10-21)
 
 - 확인일·작성 도구: 2026-10-21 · Claude.
-- 상태: #45·#43·#46·#48·#50·#52를 `main`에 병합(10.21, 이규동). 이어서 이용석 PR #55(퍼플 v1 기록)·#56(V2 구성안·근거)·#54(디자인 시안) 리뷰·병합 정리.
-- #56은 `main`과 이 문서만 충돌 → `feat/41-v2-plan-evidence`에 `main`을 합쳐 정리함(이용석 현재 작업은 #56 쪽 최신 내용, 이규동 현재 작업은 이 항목).
-- 병합 뒤 할 일: #43 리뷰 반영(평가 카드 이름에 반복 번호 `평가 · <묶음> · r<N>`, 비교판이면 뒤에 붙임), "전체 내보내기는 평가 돌린 컴퓨터에서만" 안내. 공동 결정 대기: 기본 테마 색(`theme.json`·Figma를 출력 색에 맞추기 — 이용석 찬성), 쓴 색 내보내기(이용석 찬성, 필드는 V2 연결 때), 평가 내보내기 기본값(이용석은 `--eval`일 때만).
+- 열린 PR: #59(#58 평가 내보내기 리뷰 반영) → #60 PR(기본 테마 색) → 이 작업 순서로 쌓임.
+- 이슈·PR: [#61](https://github.com/lgdl24/Cardnews-automation/issues/61) · PR은 push 후 생성(기준 `main`, **#59 → #60 PR 다음에 병합** — 이 브랜치는 `feat/60-theme-contrast` 위에서 시작). 리뷰 이용석(연결 규격). **`main` 병합은 이규동.**
+- 상태: 구현·테스트 완료(`npm test` 145개, V2 화면 테스트 7개, `web:build`, `check:web`). 1280px·375px 화면 확인.
+- 작업 브랜치: `feat/61-colors-export` · 기준 `feat/60-theme-contrast`(`dd1b5b8`).
+- 변경 파일: `schemas/web-data/*.schema.json`, `scripts/lib/web-data.js`(`latestColors`), `web/src/data/types.ts`, `web/src/screens/project-detail/tabs/CardResultTab.tsx`·`tabs.css`, `tests/export.test.js`, `docs/examples/web-data/`, `web/public/data/`, `docs/web-data-spec.md`, `docs/card-color.md`, 이 문서.
+- 이용석 화면 영향: `Project` 타입에 `colors`가 생김(V2 구성안·근거는 안 씀), `spec_version` 타입이 '0.3'.
 - 실행 중인 작업: 없음.
 
 ## 도구 분담 (이용석 작업, Claude Code · Codex)
@@ -146,8 +149,8 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 | 사항 (원문) | 선택지 | 비고 |
 |---|---|---|
 | 근거 연결률 정의 — `main` handoff '남은 문제', #43에서 화면 설명만 계산에 맞춤 | ① 전체 카드 기준 유지 + 설명 고침 ② 지표 빼거나 바꿈 | 오래 미뤄짐. V2·V3 표시에 영향 |
-| 기본 테마 색 조정 반영 — `feat/38` handoff | `theme.json`·Figma `color/*`를 조정값(`primary` #A2442A 등)으로 맞출지, 주색은 장식에만 쓸지 | 출력 색이 바뀜 |
-| 쓴 색을 웹 데이터로 내보낼지(V2) — `feat/38` handoff | 내보냄 / 안 함 | V2 화면(이용석)에 영향 |
+| ~~기본 테마 색 조정 반영~~ | **정함(10.21)**: `theme.json`·Figma를 조정값(출력 색)으로 맞춤 → #60 | 출력 결과는 #46 이후와 같음 |
+| ~~쓴 색을 웹 데이터로 내보낼지~~ | **정함(10.21)**: 내보냄 → 웹 데이터 v0.3 `colors`, V2 카드 결과 '카드 색'(#61) | |
 | 평가 실행 기본 내보내기 — #43 리뷰 포인트 | 기본 포함 / `--eval`일 때만 | |
 | 규칙 버전 v1 유지·변경 — #9·#30 기록, 제안서 #39 | v1 유지 / v2 | 글 무드(해요체 고정 해제)는 v2 후보 |
 | 제안서 #39 '같이 정할 것' 6개 | 해요체, 무드 개수, 입력 양식 칸, `analysis` 필드, 색 적용 방식, 디자인 프리셋 | 색 적용 일부는 #38 구현으로 진행됨 |
@@ -194,6 +197,9 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 
 ## 검증
 
+- #61 웹 데이터 v0.3 (2026-10-21, 클라우드): `npm test` 145개(새 export 테스트 — 더 최근 카드별 보고서의 제품 색을 내보내고 대비 표·밝기는 뺌, 색 기록 없는 출력은 `null`·스키마 통과), `tests/plan-evidence-ui.test.js` 7개, `npm run web:build`, `npm run check:web` 통과. V2 카드 결과 '카드 색'을 1280px·375px에서 확인(가로 넘침 없음).
+- #60 기본 테마 색 (2026-10-21, 클라우드): `npm test` 144개(기본 테마 대비 7곳 통과·조정 없음, 옛 값 조정 결과 = 새 값), `npm run test:render` 5개 통과. Figma `color/muted`·`color/primary`가 이미 #685F5A·#A2442A인 것 확인.
+- #58 평가 내보내기 리뷰 반영 (2026-10-21, 클라우드): `tests/eval-runner.test.js` 9개 통과 — 이름표 `평가 · v1-base · r1`, 평가 폴더 없이 다른 프로젝트를 `--only`로 내보내도 평가 프로젝트가 목록·폴더에 남음(테스트는 git에 없는 `output/`을 쓰지 않고 웹 데이터 예시로 만듦).
 - #51 배포 전 점검 (2026-10-20, 클라우드): `npm test` 143개 통과(새 `tests/check-web.test.js` 7개 — 예시 데이터 통과, 규격 밖 파일·잔여 폴더·빠진 PNG, `확인 중` 이미지, 키 형태(테스트에서 만든 가짜 값, 오류 메시지에 값 미포함), 빌드 결과 `.env`·`log.jsonl`·소스 맵, CLI 종료 코드). 현재 `web/public/data`·`web/dist` 통과.
 - #49 평가 비교판 (2026-10-20, 클라우드): `npm test` 136개 통과(새 2개 — 정의 검사(description·files 필수, 스크립트 파일 거부), 지시문 덮어쓰기, 가짜 Claude 비교판 실행 시 작업 폴더 `CLAUDE.md`만 바뀌고 `scripts/validate.js`·저장소 `CLAUDE.md`는 그대로, `result.json` 스키마 통과·`notes`). 정의 없는 이름은 `npm run eval -- --variant nope --dry-run`에서 멈춤 확인.
 - #47 반복 일관성 (2026-10-20, 클라우드): `npm test` 134개 통과(새 `tests/compare.test.js` 5개 — 인자, 계산, 제품 비교, 가짜 Claude로 정상 입력 2회·입력 누락 2회+다른 묶음 1회 실행 후 묶음·완료·중단 오류 코드·일치율·CLI·`--json` 확인). 리팩터링 전후 `compare toneup-sunscreen toneup-sunscreen-r1 --json` 출력이 같음.
@@ -232,12 +238,13 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 - 작업 실행기의 `claude -p` 옵션은 Mac의 Claude Code 2.1.123에서 **인자 해석까지 확인**(모르는 옵션은 `unknown option`으로 거부되는데, 실행기 옵션 전체는 통과. `--max-turns`는 도움말에 없지만 받아들임). `--tools`의 `Skill`과 `Bash(npm run render -- <ID> --card:*)` 규칙이 실제로 허용·차단되는지는 첫 실제 실행에서 확인하고, 다르면 `claudeArgs`·`allowedTools`를 고친다.
 - 평가 실행기: 작업 실행기(`runJob({mode:'eval'})`)를 그대로 쓰고, 평가 결과 파일 위치·형식만 `docs/eval-spec.md`를 따름. 평가 결과 파일 위치·형식과 평가 세트 형식(`input.md` + 체크리스트)은 `docs/eval-spec.md`를 따름.
 - 디자인 레퍼런스 분석·무드 방향 3개·달바 퍼플 표지 시안 3개 (이용석 제안, 결정 아님): `docs/research/design-reference-review.md`. 방향 이름·표지 비교 시점·프리셋 구현 방식·데이터 규격은 '결정 대기'에 있음
+- 무드 프리셋 (이용석 제안, 결정 아님): `docs/proposals/mood-presets.md`. 브랜드 무드 6개 · 제품 유형 6개 · 인증 배지를 따로 고름. '라일락' 구현(#53)은 `프리미엄` 무드의 첫 사례로 이름을 바꿀 예정
 
 ## 다음 행동
 
 2026-10-20 기준. 자세한 근거는 위 '이규동 요청·피드백'.
 
-1. 이규동: PR #45 → #43 → #46 → #48(A6 도구) → #50(비교판) → #51 PR(배포 전 점검) 순서로 `main` 병합 → `theme.json`·Figma 색 변수 결정 → 근거 연결률 정의(이용석과) → 시연 준비·배포(10.28).
-2. 이용석: PR #43 리뷰 → #38 리뷰(PR #46) → 퍼플 첫 제작 최종 승인·기록 → V2 구성안·근거 화면 PR(`cardnews-v2plan`, `main` 위로 옮긴 뒤) → 핵심 정보 포함률 범위 결정 → v1 평가 분석·v2 규칙(글 무드), 평가 집계·V3.
+1. 이규동: ~~기본 테마 색 맞추기~~(#60) → ~~쓴 색 내보내기~~(#61) → 근거 연결률 정의(이용석과) → 시연 준비. 배포는 맨 뒤.
+2. 이용석: #58 리뷰 → V2 화면 테스트 `test:render` 등록·`CHROMIUM_PATH`(#56 리뷰) → 디자인 묶음(#53, 시연 뒤 구현 범위) → 핵심 정보 포함률 범위 → v1 평가 분석·v2 규칙(글 무드), 평가 집계·V3.
 3. 공동: 근거 연결률, 기본 테마 색, 쓴 색 내보내기, 평가 기본 내보내기, 규칙 버전, 제안서 #39 결정 사항, 멘토 확인.
 4. 작업을 시작할 때 새 이슈를 만들고 이 문서의 '현재 작업'을 교체한다. 노션 작업 트래커의 해당 행 상태도 바꾼다.
