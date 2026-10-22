@@ -19,7 +19,8 @@ test('웹 입력에서 프리미엄 선택, 색 비움·직접 지정과 안내'
   let browser;
   try {
     await server.listen();
-    browser = await chromium.launch();
+    // CHROMIUM_PATH가 있으면 그 브라우저 (scripts/lib/card-html.js launchBrowser와 같음)
+    browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
     const page = await browser.newPage({viewport:{width:390,height:900}});
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.route('**/api/studio/**',route=>{

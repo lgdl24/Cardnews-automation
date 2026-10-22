@@ -31,7 +31,8 @@ test.before(async () => {
   });
   await server.listen();
   origin = `http://127.0.0.1:${server.httpServer.address().port}`;
-  browser = await chromium.launch({ headless: true });
+  // CHROMIUM_PATH가 있으면 그 브라우저 (scripts/lib/card-html.js launchBrowser와 같음)
+  browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) });
 });
 
 test.after(async () => {

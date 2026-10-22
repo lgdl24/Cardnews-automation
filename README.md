@@ -62,6 +62,7 @@ npm install
 npx playwright install chromium   # PNG 출력용 브라우저 (최초 1회)
 npm test                          # 검사·규격 테스트 (입력 누락, 형식·근거·글자 수 오류, 지시문 탐지, 규격 일치)
 npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드 1장 재출력, 글자 수 기준을 꽉 채워도 넘치지 않는지)
+npm run test:web                  # 웹 화면 테스트 (V2 구성안·근거, 입력 폼 디자인 선택). npm run web:install 먼저
 ```
 
 브랜치·커밋·PR 규칙과 테스트 추가 방법은 [`CONTRIBUTING.md`](CONTRIBUTING.md)를 봐 주세요.
@@ -93,7 +94,7 @@ Claude Code는 `CLAUDE.md`의 작업 단위(구성안 → 문구·출력 → 수
 | 명령 | 하는 일 |
 |---|---|
 | `npm run new-product -- <제품ID>` | 새 제품 폴더와 빈 입력 양식 만들기 |
-| `npm run check -- <제품ID>` | 입력 양식 필수 항목, 이미지 파일·사용 가능 여부, 지시문 형태 문장 확인 |
+| `npm run check -- <제품ID>` | 입력 양식 필수 항목, 이미지 파일·사용 가능 여부, 지시문 형태 문장 확인. 끝에 이 제품의 디자인(기본·프리미엄)에 맞는 카드 글자 수 기준과 카드 색을 출력 |
 | `npm run validate -- <제품ID>` | JSON 형식, 필수 필드, 카드 수, 원문 근거 일치, 글자 수(전체·한 줄·줄 수), 주의 표현 검사 + 품질 지표 |
 | `npm run render -- <제품ID>` | HTML·PNG 출력 + 글자 넘침·이미지 로드 점검 |
 | `npm run render -- <제품ID> --card 3` | 3번 카드만 재출력 |

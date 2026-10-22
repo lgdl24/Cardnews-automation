@@ -1,10 +1,11 @@
-// 입력 확인: 필수 항목, 이미지 파일 존재·사용 가능 여부, 카드 수, 지시문 형태 문장
+// 입력 확인: 필수 항목, 이미지 파일 존재·사용 가능 여부, 카드 수, 지시문 형태 문장. 끝에 디자인별 카드 글자 수 기준 출력
 // 사용법: node scripts/check-input.js <제품ID>
 // 항목 정의는 config/input-form.json, 지시문 패턴은 config/input-safety.json
 const fs = require('fs');
 const path = require('path');
 const { paths, loadInput, createReport, printReport, requireProductId } = require('./lib/common');
 const { loadForm, requiredFields, findField, findInstructionLike } = require('./lib/input-form');
+const { limitLines } = require('./lib/limits');
 
 function checkInput(productId) {
   const report = createReport();
@@ -84,6 +85,12 @@ if (require.main === module) {
   const id = requireProductId(process.argv.slice(2));
   const report = checkInput(id);
   printReport(`입력 확인: ${id}`, report);
+  // 문구를 쓸 때 쓸 글자 수 기준 (디자인에 따라 다름, #67)
+  const input = loadInput(id);
+  if (input) {
+    const { lines } = limitLines(input);
+    console.log(`\n== 카드 글자 수 기준 ==\n${lines.join('\n')}`);
+  }
   process.exit(report.errors.length ? 1 : 0);
 }
 
