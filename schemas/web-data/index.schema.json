@@ -7,7 +7,7 @@
   "required": ["spec_version", "exported_at", "skill_version", "labels", "projects"],
   "additionalProperties": false,
   "properties": {
-    "spec_version": { "const": "0.2" },
+    "spec_version": { "const": "0.3" },
     "exported_at": { "$ref": "#/$defs/datetime" },
     "skill_version": { "type": "string", "description": "내보낼 때 config/skill-version.json의 현재 규칙 버전" },
     "labels": {
