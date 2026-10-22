@@ -19,7 +19,7 @@ function readJson(file) {
 }
 
 function designOf(input, config = readJson(paths.config('templates.json'))) {
-  const value = ((input?.cond?.['디자인']) || '').split('\n')[0].trim();
+  const value = ((input?.cond?.['무드']) || '').split('\n')[0].trim();
   return Object.hasOwn(config._designs || {}, value) ? value : '기본';
 }
 

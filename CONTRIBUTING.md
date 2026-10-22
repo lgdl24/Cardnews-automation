@@ -56,7 +56,7 @@ feat: 설명형 템플릿 항목 4개까지 허용 (#12)
 
 ## PR 전에 확인
 
-- [ ] `npm test` 통과 (템플릿·출력을 고쳤다면 `npm run test:render`도)
+- [ ] `npm test` 통과 (템플릿·출력을 고쳤다면 `npm run test:render`, 웹 화면을 고쳤다면 `npm run test:ui`도)
 - [ ] 템플릿 CSS를 고쳤다면 `npm run calibrate`로 다시 재고, 필요하면 `config/templates.json` 기준과 `docs/card-data-spec.md` 표를 함께 고침
 - [ ] 규격(입력 양식·카드 데이터)을 고쳤다면 `config/input-form.json`·`schemas/cards.schema.json`·문서를 함께 고침 (`tests/spec.test.js`가 확인)
 - [ ] 노션 작업 트래커의 해당 하위 작업을 PR에 적음

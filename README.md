@@ -62,6 +62,7 @@ npm install
 npx playwright install chromium   # PNG 출력용 브라우저 (최초 1회)
 npm test                          # 검사·규격 테스트 (입력 누락, 형식·근거·글자 수 오류, 지시문 탐지, 규격 일치)
 npm run test:render               # 출력 테스트 (PNG 크기·장수, 카드 1장 재출력, 글자 수 기준을 꽉 채워도 넘치지 않는지)
+npm run test:ui                   # 웹 화면 테스트 (V2 구성안·근거, 입력 폼 무드·색 선택. 웹 의존성·브라우저 필요)
 ```
 
 브랜치·커밋·PR 규칙과 테스트 추가 방법은 [`CONTRIBUTING.md`](CONTRIBUTING.md)를 봐 주세요.
