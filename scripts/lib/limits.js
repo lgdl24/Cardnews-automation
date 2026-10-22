@@ -28,6 +28,8 @@ function limitLines(input) {
     ? '디자인: 기본 — config/templates.json의 템플릿별 기준을 써요'
     : `디자인: ${design} — config/templates.json의 _designs.${design} 기준을 써요 (기본 템플릿 기준과 달라요. 아래 숫자로 문구를 쓰세요)`);
   lines.push(`카드 색: ${colorMode}${colorRaw ? '' : ' (비어 있어서 디자인 기본값)'}`);
+  // 디자인 묶음이 자동으로 붙이는 머리말 등 문구를 쓸 때 알아야 할 것 (_designs.<이름>._notes)
+  for (const note of Array.isArray(templates._notes) ? templates._notes : []) lines.push(`※ ${note}`);
   for (const [key, tpl] of Object.entries(templates)) {
     if (key.startsWith('_') || !tpl || !tpl.fields) continue;
     const roles = tpl.roles ? ` · 역할 ${tpl.roles.map((r) => ROLE_LABELS[r] || r).join('·')}` : '';

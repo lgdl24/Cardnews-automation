@@ -174,7 +174,7 @@ test('글자 수 기준: 기본 디자인은 기본 템플릿 기준, 카드 색
     assert.equal(colorMode, '기본');
     const text = lines.join('\n');
     assert.match(text, /items: 항목 1~3개 · 항목당 30자 · 줄바꿈하면 한 줄 21자 · 최대 2줄 · 필수/);
-    assert.doesNotMatch(text, /_designs/);
+    assert.doesNotMatch(text, /_designs|※/);
   } finally {
     ws.cleanup();
   }
@@ -191,6 +191,9 @@ test('글자 수 기준: 프리미엄이면 _designs 기준을 쓰라고 알리�
     assert.match(r.stdout, /카드 색: 제품 색 \(비어 있어서 디자인 기본값\)/);
     assert.match(r.stdout, /items: 항목 1~3개 · 항목당 28자 · 줄바꿈하면 한 줄 12자 · 최대 3줄 · 필수/);
     assert.match(r.stdout, /description\(설명형\) · 사진 선택/);
+    // 템플릿이 붙이는 머리말을 문구에 다시 쓰지 않게 (실제 제작에서 'Point 1'·'STEP 1'이 겹쳐 나옴)
+    assert.match(r.stdout, /※ 특징·상세 카드 머리말 'Point N'과 사용법 카드 'How to'는 템플릿이 붙여요/);
+    assert.match(r.stdout, /※ 사용법 카드 항목 앞의 'STEP N'도 템플릿이 붙여요/);
     // 카드 색을 직접 적으면 그 값
     ws.editInput((t) => `${t.trimEnd()}\n\n## 카드 색\n기본\n`);
     assert.match(ws.run('check-input.js').stdout, /카드 색: 기본\n/);
