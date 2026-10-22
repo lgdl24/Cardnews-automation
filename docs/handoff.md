@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-22 | Claude | #67 · `fix/67-design-limits` | **디자인별 글자 수 기준 안내**: `npm run check` 끝에 이 제품의 디자인(기본·프리미엄)·카드 색과 템플릿별 글자 수 기준을 출력(`scripts/lib/limits.js`). 프리미엄이면 '_designs.프리미엄 기준을 쓰라'고 명시 → Claude가 1단계에서 보고 그 숫자로 문구를 씀. 규칙 문서·규칙 버전은 그대로. 웹 화면 테스트 2개(`plan-evidence-ui`·`premium-form-ui`)를 `npm run test:web`으로 등록, `CHROMIUM_PATH` 지원 |
 | 2026-10-21 | Codex | #53 · `feat/53-lilac-design` | **라일락 → 프리미엄 첫 무드 프리셋**: `디자인` 기본·프리미엄, `templates/premium/` 3개. 색 비움은 제품 색, 직접 지정 우선. Point N·How to·STEP·분할 면·큰 제품·역할별 배치, 칸별 실측 7개·최대 문구 45경우 통과. 기본 템플릿·카드 스키마·규칙 버전 유지. 로컬 구현, 커밋 전 |
 | 2026-10-21 | Claude | #61 · `feat/61-colors-export` | **웹 데이터 v0.3 — 쓴 카드 색**: `project.json` `colors`(`mode`·`source`·`image`·`representative`·`color` 7개·`adjustments[]`(`key`·`from`·`to`)·`note`), 가장 최근 출력 보고서의 값, 옛 출력이면 `null`. `spec_version` 0.3(스키마 3개·`web-data.js`·`types.ts`). V2 카드 결과에 '카드 색' 섹션(이름·값 같이 표시). 예시·`web/public/data`는 `toneup-sunscreen-r1`을 다시 출력(`--no-log`)해 다시 내보냄 → PNG 강조색이 진해짐 |
 | 2026-10-21 | Claude | #60 · `feat/60-theme-contrast` | **기본 테마 = 실제 출력 색**: `config/theme.json` `muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A(대비 자동 조정 결과와 같은 값, #46 리뷰 이용석 의견). 기본 테마는 7곳 모두 4.5 이상이라 출력 때 조정 없음. Figma `color/*` 변수는 이미 같은 값. 출력 결과는 #46 이후와 같음. 결과 보기 웹 화면 색(`web/src/styles/global.css`)은 카드 색과 별개라 안 바꿈 |
@@ -17,7 +18,6 @@
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
 | 2026-10-20 | Claude | #49 · `feat/49-eval-variants` | **평가 비교판(A8)이 실제로 규칙을 바꿈**: 전에는 `--variant`가 이름만 붙이고 규칙은 그대로였음. 이제 `eval/variants/<이름>/variant.json`(description·changes) + `files/`(바꾼 `CLAUDE.md`·`.claude/skills/*/*.md`·`prompts/eval/plan|copy.md`만)를 작업 실행기가 작업 폴더에 덮어씀(`runJob`·`createWorkspace`·`fillPrompt`의 `overlayDir`). 스크립트·`config/`·`schemas/`는 못 바꿈. 정의 없는 이름은 시작 전에 멈춤. `result.json` `notes`에 비교판 설명. 형식 `eval/variants/README.md`, eval-spec 비교판 줄에 위치 추가. 비교판 내용은 A8 때 정함 |
 | 2026-10-20 | Claude | #47 · `feat/47-a6-consistency` | **반복 실행 일관성(A6) 도구**: `npm run compare -- --eval [--runs eval/runs] [--batch <묶음>] [--json]`이 평가 실행을 입력 × 규칙 버전 × 비교판으로 묶어 반복끼리 비교(실행·완료·체크리스트 통과·1회 통과 수, 중단 오류 코드, 결과가 모두 같은지, 완료된 반복끼리 카드 역할·템플릿 순서 일치율·근거 겹침·커버리지·글자 수 활용률 편차, `result.json`의 핵심 정보 포함률·처리 시간 평균·편차). 계산은 `scripts/lib/compare.js`로 분리, 기존 `compare <ID...>` 출력은 그대로(같은 결과 확인). 집계 표·V3 형식은 이용석 몫이라 안 정함. 테스트 `tests/compare.test.js` |
-| 2026-10-20 | Claude | #38 · `feat/38-product-color` | **카드 색 (제품 색 + 글자 대비)**: 입력 양식 `제작 조건 > 카드 색`(`기본`|`제품 색`, 선택, 새 필드 형식 `choice`·`options`, 양식 v1.1). `render`가 색을 정해 카드 HTML의 `--color-*`만 바꿈 — 제품 색이면 카드에 쓴 첫 사진의 대표 색으로 색 7개, 어느 쪽이든 글자가 색 위에 놓이는 7곳을 대비 4.5 이상으로 조정(글자 쪽 밝기만 낮춤). **기본 테마도 3곳 미달이라 출력 색이 바뀜**(`muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A, `theme.json`은 그대로). 기록은 `render-report.json`의 `colors`, 못 맞추면 `[경고] 카드 색`. 설명 `docs/card-color.md`, 코드 `scripts/lib/color-mood.js`, 테스트 `tests/color-mood.test.js`. 규칙 버전은 그대로 |
 
 ## 현재 작업 (이용석 · Codex, 2026-10-21)
 
@@ -30,15 +30,14 @@
 - Claude Code 교차 검토(10.21): B2 대비 보완 — 제목 굵게·둘째 줄 강조색(표지·이미지형·설명형·마무리), 표지 제목·부제를 한 묶음으로 위로, 마무리 제목 크게, 사용법 카드도 사진 표시(좌우 교대), 빈 주의 문구 선 제거. npm test 149·test:render 9·프리미엄 calibrate 45경우·기본 --check 12 통과, 표지 제목 실측 25/9로 갱신. 퍼플 문구 프리미엄 기준 초과 0건(읽기만). Codex 교차 검토 반영: 마무리 제목 3줄 칸·사진 위치, compare.js가 제품 디자인 기준 사용(테스트 추가), calibrate에 사용법 좌우·직접 줄바꿈 최대 줄 수 추가(프리미엄 64경우 통과), 사용법 사진 출력 테스트. npm test 150·test:render 9
 - 다음: 이용석 비교 그림 확인 → Claude 변경 검토·실제 제작 검증 → 사용자 승인 뒤 커밋은 Claude Code. 이규동에게 새 입력·출력 범위와 시연 반영 일정 확인. 노션 갱신 필요.
 
-## 현재 작업 (이규동, 2026-10-21)
+## 현재 작업 (이규동, 2026-10-22)
 
-- 확인일·작성 도구: 2026-10-21 · Claude.
-- 열린 PR: #59(#58 평가 내보내기 리뷰 반영) → #60 PR(기본 테마 색) → 이 작업 순서로 쌓임.
-- 이슈·PR: [#61](https://github.com/lgdl24/Cardnews-automation/issues/61) · PR은 push 후 생성(기준 `main`, **#59 → #60 PR 다음에 병합** — 이 브랜치는 `feat/60-theme-contrast` 위에서 시작). 리뷰 이용석(연결 규격). **`main` 병합은 이규동.**
-- 상태: 구현·테스트 완료(`npm test` 145개, V2 화면 테스트 7개, `web:build`, `check:web`). 1280px·375px 화면 확인.
-- 작업 브랜치: `feat/61-colors-export` · 기준 `feat/60-theme-contrast`(`dd1b5b8`).
-- 변경 파일: `schemas/web-data/*.schema.json`, `scripts/lib/web-data.js`(`latestColors`), `web/src/data/types.ts`, `web/src/screens/project-detail/tabs/CardResultTab.tsx`·`tabs.css`, `tests/export.test.js`, `docs/examples/web-data/`, `web/public/data/`, `docs/web-data-spec.md`, `docs/card-color.md`, 이 문서.
-- 이용석 화면 영향: `Project` 타입에 `colors`가 생김(V2 구성안·근거는 안 씀), `spec_version` 타입이 '0.3'.
+- 확인일·작성 도구: 2026-10-22 · Claude.
+- 10.22 `main` 병합: #59·#62·#63(이규동), #64·#65(이용석, #65는 이규동 결정으로 병합). 열린 PR은 이 작업만.
+- 이슈·PR: [#67](https://github.com/lgdl24/Cardnews-automation/issues/67) · PR은 push 후 생성(기준 `main`). 리뷰 이용석. **`main` 병합은 이규동.**
+- 상태: 구현·테스트 완료(`npm test` 154개, `test:render` 9개, `test:web` 8개). 실제 Claude로 프리미엄 제작은 아직 안 함(웹 제작 화면에서 확인 필요).
+- 작업 브랜치: `fix/67-design-limits` · 기준 `main`(`c47dcc2`).
+- 변경 파일: `scripts/lib/limits.js`(새로), `scripts/check-input.js`, `tests/check-input.test.js`, `tests/plan-evidence-ui.test.js`·`tests/premium-form-ui.test.js`(Chromium 경로), `package.json`(`test:web`), `README.md`, `docs/card-data-spec.md`, 이 문서.
 - 실행 중인 작업: 없음.
 
 ## 도구 분담 (이용석 작업, Claude Code · Codex)
@@ -197,6 +196,7 @@ Codex에서 시작할 때: 이 문서의 '현재 작업'·'이규동 요청·피
 
 ## 검증
 
+- #67 디자인별 글자 수 기준 (2026-10-22, 클라우드): `npm test` 154개(기본·프리미엄 기준 출력, 카드 색 비움/직접 지정), `npm run test:render` 9개, `npm run test:web` 8개 통과.
 - #61 웹 데이터 v0.3 (2026-10-21, 클라우드): `npm test` 145개(새 export 테스트 — 더 최근 카드별 보고서의 제품 색을 내보내고 대비 표·밝기는 뺌, 색 기록 없는 출력은 `null`·스키마 통과), `tests/plan-evidence-ui.test.js` 7개, `npm run web:build`, `npm run check:web` 통과. V2 카드 결과 '카드 색'을 1280px·375px에서 확인(가로 넘침 없음).
 - #60 기본 테마 색 (2026-10-21, 클라우드): `npm test` 144개(기본 테마 대비 7곳 통과·조정 없음, 옛 값 조정 결과 = 새 값), `npm run test:render` 5개 통과. Figma `color/muted`·`color/primary`가 이미 #685F5A·#A2442A인 것 확인.
 - #58 평가 내보내기 리뷰 반영 (2026-10-21, 클라우드): `tests/eval-runner.test.js` 9개 통과 — 이름표 `평가 · v1-base · r1`, 평가 폴더 없이 다른 프로젝트를 `--only`로 내보내도 평가 프로젝트가 목록·폴더에 남음(테스트는 git에 없는 `output/`을 쓰지 않고 웹 데이터 예시로 만듦).
