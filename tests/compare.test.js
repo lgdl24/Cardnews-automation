@@ -117,13 +117,13 @@ test('반복 일관성(--eval): 평가 실행 폴더가 없으면 빈 결과', (
   assert.deepEqual(evalConsistency(path.join(os.tmpdir(), 'no-such-runs-dir')).groups, []);
 });
 
-test('제작 폴더 비교: 제품이 고른 디자인(프리미엄) 글자 수 기준으로 계산', () => {
+test('제작 폴더 비교: 제품이 고른 무드(프리미엄) 글자 수 기준으로 계산', () => {
   const { makeWorkspace } = require('./helpers');
   const { loadConfig, loadInput, readJson, paths } = require('../scripts/lib/common');
   const { computeQuality } = require('../scripts/lib/metrics');
   const ws = makeWorkspace();
   try {
-    ws.writeInput(`${ws.readInput()}\n## 디자인\n프리미엄\n`);
+    ws.writeInput(`${ws.readInput()}\n## 무드\n프리미엄\n`);
     ws.editCards((d) => { d.cards.find((c) => c.template === 'image').copy.caption = '가'.repeat(60); });
     ws.use((id) => {
       const input = loadInput(id);

@@ -3,6 +3,7 @@
 //   node scripts/calibrate.js           칸별 최대 글자 수 측정 (현재 기준과 비교)
 //   node scripts/calibrate.js --check   모든 칸을 기준 글자 수까지 채워도 넘치거나 이미지와 겹치지 않는지 확인 (실패 시 종료 코드 1)
 //   node scripts/calibrate.js --json    결과를 JSON으로 출력
+//   node scripts/calibrate.js --mood 프리미엄   무드(config/templates.json _designs)의 템플릿·기준으로 측정 (--design도 같음)
 // 템플릿 CSS나 config/templates.json을 고쳤으면 --check로 확인합니다. (npm run test:render에 포함)
 const fs = require('fs');
 const os = require('os');
@@ -130,8 +131,8 @@ function fullCopy(tpl, pattern) {
 
 async function measure({ fullOnly = false, design = '기본' } = {}) {
   const all = loadConfig().templates;
-  if (design !== '기본' && !Object.hasOwn(all._designs || {}, design)) throw new Error('없는 디자인 묶음');
-  const { templates, theme } = loadConfig({cond:{'디자인':design}});
+  if (design !== '기본' && !Object.hasOwn(all._designs || {}, design)) throw new Error('없는 무드');
+  const { templates, theme } = loadConfig({ cond: { '무드': design } });
   const browser = await launchBrowser();
   const page = await browser.newPage({ viewport: theme.size, deviceScaleFactor: 1 });
   const r = createRenderer(page, theme, templates);
@@ -221,7 +222,8 @@ function printResult({ fields, full, fontOk }) {
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const checkOnly = argv.includes('--check');
-  measure({ fullOnly: checkOnly, design: argv.includes('--design') ? argv[argv.indexOf('--design')+1] : '기본' })
+  const flag = ['--mood', '--design'].find((f) => argv.includes(f));
+  measure({ fullOnly: checkOnly, design: flag ? argv[argv.indexOf(flag) + 1] : '기본' })
     .then((res) => {
       if (argv.includes('--json')) console.log(JSON.stringify(res, null, 2));
       else printResult(res);

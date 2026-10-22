@@ -8,7 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
-| 2026-10-21 | Codex | #53 · `feat/53-lilac-design` | **라일락 → 프리미엄 첫 무드 프리셋**: `디자인` 기본·프리미엄, `templates/premium/` 3개. 색 비움은 제품 색, 직접 지정 우선. Point N·How to·STEP·분할 면·큰 제품·역할별 배치, 칸별 실측 7개·최대 문구 45경우 통과. 기본 템플릿·카드 스키마·규칙 버전 유지. 로컬 구현, 커밋 전 |
+| 2026-10-22 | Codex·Claude | #53 · `feat/53-premium-preset` → `fix/53-premium-review` | **무드 프리셋 첫 번째 '프리미엄' (#65 병합 + 리뷰 반영 후속 PR)**: 입력 `제작 조건 > 무드`(기본·프리미엄, 비우면 기본). `templates/premium/` 3개 + `config/templates.json` `_designs.프리미엄`(파일·글자 수·역할·`_defaults.colorMode`). 프리미엄은 카드 색 비우면 제품 색. `npm run check`가 기본이 아닌 무드의 템플릿별 글자 수 기준을 같이 출력(문구 작성 때 기준, 규칙 문서 변경 없음). validate·품질·웹 글자 수·render·compare·calibrate(`--mood`)가 같은 무드 기준. 기본 템플릿·카드 스키마·규칙 버전 그대로. 웹 화면 테스트는 `npm run test:ui`(CHROMIUM_PATH 따름) |
 | 2026-10-21 | Claude | #61 · `feat/61-colors-export` | **웹 데이터 v0.3 — 쓴 카드 색**: `project.json` `colors`(`mode`·`source`·`image`·`representative`·`color` 7개·`adjustments[]`(`key`·`from`·`to`)·`note`), 가장 최근 출력 보고서의 값, 옛 출력이면 `null`. `spec_version` 0.3(스키마 3개·`web-data.js`·`types.ts`). V2 카드 결과에 '카드 색' 섹션(이름·값 같이 표시). 예시·`web/public/data`는 `toneup-sunscreen-r1`을 다시 출력(`--no-log`)해 다시 내보냄 → PNG 강조색이 진해짐 |
 | 2026-10-21 | Claude | #60 · `feat/60-theme-contrast` | **기본 테마 = 실제 출력 색**: `config/theme.json` `muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A(대비 자동 조정 결과와 같은 값, #46 리뷰 이용석 의견). 기본 테마는 7곳 모두 4.5 이상이라 출력 때 조정 없음. Figma `color/*` 변수는 이미 같은 값. 출력 결과는 #46 이후와 같음. 결과 보기 웹 화면 색(`web/src/styles/global.css`)은 카드 색과 별개라 안 바꿈 |
 | 2026-10-21 | Claude | #58 · `fix/58-eval-export-label` | **평가 내보내기 #43 리뷰 반영**: 평가 프로젝트 `label`이 `평가 · <묶음> · r<N>`(비교판이면 ` · <이름>`) — V3 목록에서 반복 구분. `exportWebData`를 `evalRuns` 없이 `only`로 부르면 이미 내보낸 평가 프로젝트를 `index.json`에 그대로 둠(전에는 빠짐). 웹 데이터 규격에 '평가 실행은 평가를 돌린 컴퓨터에서만 내보내짐(PNG가 git에 없음), 다른 컴퓨터는 `--no-eval`·`--only`' 안내 |
@@ -19,16 +19,12 @@
 | 2026-10-20 | Claude | #47 · `feat/47-a6-consistency` | **반복 실행 일관성(A6) 도구**: `npm run compare -- --eval [--runs eval/runs] [--batch <묶음>] [--json]`이 평가 실행을 입력 × 규칙 버전 × 비교판으로 묶어 반복끼리 비교(실행·완료·체크리스트 통과·1회 통과 수, 중단 오류 코드, 결과가 모두 같은지, 완료된 반복끼리 카드 역할·템플릿 순서 일치율·근거 겹침·커버리지·글자 수 활용률 편차, `result.json`의 핵심 정보 포함률·처리 시간 평균·편차). 계산은 `scripts/lib/compare.js`로 분리, 기존 `compare <ID...>` 출력은 그대로(같은 결과 확인). 집계 표·V3 형식은 이용석 몫이라 안 정함. 테스트 `tests/compare.test.js` |
 | 2026-10-20 | Claude | #38 · `feat/38-product-color` | **카드 색 (제품 색 + 글자 대비)**: 입력 양식 `제작 조건 > 카드 색`(`기본`|`제품 색`, 선택, 새 필드 형식 `choice`·`options`, 양식 v1.1). `render`가 색을 정해 카드 HTML의 `--color-*`만 바꿈 — 제품 색이면 카드에 쓴 첫 사진의 대표 색으로 색 7개, 어느 쪽이든 글자가 색 위에 놓이는 7곳을 대비 4.5 이상으로 조정(글자 쪽 밝기만 낮춤). **기본 테마도 3곳 미달이라 출력 색이 바뀜**(`muted` #7A6E66→#685F5A, `primary` #D9826B→#A2442A, `theme.json`은 그대로). 기록은 `render-report.json`의 `colors`, 못 맞추면 `[경고] 카드 색`. 설명 `docs/card-color.md`, 코드 `scripts/lib/color-mood.js`, 테스트 `tests/color-mood.test.js`. 규칙 버전은 그대로 |
 
-## 현재 작업 (이용석 · Codex, 2026-10-21)
+## 현재 작업 (이용석 · Codex·Claude, 2026-10-22)
 
-- 이슈: [#53 디자인 묶음 제안](https://github.com/lgdl24/Cardnews-automation/issues/53). 브랜치 feat/53-lilac-design, 기준 main c237932. [#64 무드 프리셋 제안](https://github.com/lgdl24/Cardnews-automation/pull/64)을 읽고 이용석 요청 범위만 로컬 구현. 미커밋, 이번 작업에서 이슈·PR 생성·push 없음.
-- 변경: 라일락을 프리미엄으로 교체. 색 비움은 제품 색, 명시값 우선·무채색 사진은 기본 테마로 대체. B2 기준 면 분할·Point N·How to·STEP·기울인 큰 제품·설명형 좌우 교대. 표지 제품 영역 높이 70%, 마무리 약 65%. 묶음 이름별 코드 분기 없이 설정 사용.
-- 검증: 로컬 일반 149개·출력 9개 통과. 마지막 배치 조정 후 프리미엄 출력 재검사 통과. 칸별 실측 7개·역할/이미지/좌우 45경우 넘침·겹침 0, 기본 calibrate --check 통과. 기본 설정 3종·HTML 5장 기존 HEAD와 동일. 기본 템플릿·base.css·카드 스키마·규칙 버전 무변경.
-- 통합: #59 → #62 → #63과 조합해 일반 151개·출력 9개·V2 화면 7개·입력 선택 폼 1개, 웹 빌드·check:web(오류·경고 0) 통과. 코드 패치 충돌 없음, 인계 문서만 합칠 필요. 통합 의존성은 별도 npm ci 설치.
-- 범위 밖: 실제 카드 제작·수정·승인·평가 실행·예시 데이터 재출력 없음. B2 비교는 임시 시험 문구이며 실제 퍼플 완성본이 아님. 이미지형 items·연출 사진·사용량·인증 배지 필드·다른 무드·말투·규칙 버전은 변경 없음. 사용법 주의 문구는 기존 items로 유지, 별도 필드·독립 위치 출력은 미추가.
-- 이전 라일락 교차 검토는 Claude 완료. 이번 프리미엄 변경은 Claude 재검토·실제 퍼플 검증 필요. 원본 퍼플 문구 읽기 전용 대조는 새 글자 수·수동 줄바꿈 기준 초과 0건. 실제 제품 원본·로그·출력은 보존.
-- Claude Code 교차 검토(10.21): B2 대비 보완 — 제목 굵게·둘째 줄 강조색(표지·이미지형·설명형·마무리), 표지 제목·부제를 한 묶음으로 위로, 마무리 제목 크게, 사용법 카드도 사진 표시(좌우 교대), 빈 주의 문구 선 제거. npm test 149·test:render 9·프리미엄 calibrate 45경우·기본 --check 12 통과, 표지 제목 실측 25/9로 갱신. 퍼플 문구 프리미엄 기준 초과 0건(읽기만). Codex 교차 검토 반영: 마무리 제목 3줄 칸·사진 위치, compare.js가 제품 디자인 기준 사용(테스트 추가), calibrate에 사용법 좌우·직접 줄바꿈 최대 줄 수 추가(프리미엄 64경우 통과), 사용법 사진 출력 테스트. npm test 150·test:render 9
-- 다음: 이용석 비교 그림 확인 → Claude 변경 검토·실제 제작 검증 → 사용자 승인 뒤 커밋은 Claude Code. 이규동에게 새 입력·출력 범위와 시연 반영 일정 확인. 노션 갱신 필요.
+- PR [#65](https://github.com/lgdl24/Cardnews-automation/pull/65) 10.22 병합(이규동). 리뷰 반영 커밋은 병합 직후 push돼 main에 빠져서 `fix/53-premium-review` 후속 PR로 올림. #64 결정: 칸 이름 '무드', 시연(10.28)은 기본 + 프리미엄 하나, 말투(해요체 풀기)는 v2 후보, 카드 데이터 칸 추가(이미지형 목록·사용량·배지)는 시연 뒤.
+- #65 리뷰 반영(10.22, 후속 PR): `npm run check`에 무드별 글자 수 기준 출력, 입력 칸 '디자인'→'무드'(`calibrate --mood`, `--design`도 받음), UI 테스트 2개를 `npm run test:ui`로 등록하고 `launchBrowser`(CHROMIUM_PATH)로 실행(#56 리뷰 같이 해결), 투명 여백 계산 코드 풀어 쓰기·순환 참조 주석.
+- 검증은 이 커밋 기준으로 PR 본문·리뷰 답글에 적음. 실제 퍼플 제작·출력·승인은 안 함(퍼플 v1은 최종본 아님, 차후 이미지 툴로 보완).
+- 다음: 이규동 승인·병합 → 퍼플을 무드 프리미엄으로 수정 작업(3·4번 사진 추가 포함, Claude Code) → 시연 준비. 다른 무드는 시연 뒤 하나씩.
 
 ## 현재 작업 (이규동, 2026-10-21)
 
