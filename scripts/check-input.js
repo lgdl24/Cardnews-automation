@@ -1,10 +1,11 @@
-// 입력 확인: 필수 항목, 이미지 파일 존재·사용 가능 여부, 카드 수, 지시문 형태 문장
+// 입력 확인: 필수 항목, 이미지 파일 존재·사용 가능 여부, 카드 수, 지시문 형태 문장. 끝에 무드별 카드 글자 수 기준 출력
 // 사용법: node scripts/check-input.js <제품ID>
 // 항목 정의는 config/input-form.json, 지시문 패턴은 config/input-safety.json
 const fs = require('fs');
 const path = require('path');
-const { paths, loadInput, createReport, printReport, requireProductId, designOf, loadConfig } = require('./lib/common');
+const { paths, loadInput, moodInputOf, createReport, printReport, requireProductId } = require('./lib/common');
 const { loadForm, requiredFields, findField, findInstructionLike } = require('./lib/input-form');
+const { limitLines } = require('./lib/limits');
 
 function checkInput(productId) {
   const report = createReport();
@@ -47,10 +48,8 @@ function checkInput(productId) {
   }
 
   const moodRule = findField(form, '무드');
-  const moodRaw = ((input.cond && input.cond['무드']) || '').split('\n')[0].trim();
-  if (moodRule && moodRaw && !moodRule.options.includes(moodRaw)) {
-    report.warn('## 무드', `"${moodRaw}"는 고를 수 없는 값이에요. ${moodRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본으로 만들어요)`);
-  }
+  const { key: moodKey, value: moodRaw } = moodInputOf(input);
+  if (moodRule && moodRaw && !moodRule.options.includes(moodRaw)) report.warn(`## ${moodKey}`, `${moodRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 묶음으로 만들어요)`);
 
   const imageRule = findField(form, '이미지');
   for (const img of input.images) {
@@ -82,38 +81,17 @@ function checkInput(productId) {
   return report;
 }
 
-// 기본이 아닌 무드면 글자 수 기준이 config/templates.json _designs.<무드>로 바뀜.
-// 문구를 쓰기 전(1단계)에 보는 출력이라 여기서 템플릿별 기준을 같이 보여줌
-function moodLimitLines(input) {
-  const mood = designOf(input);
-  if (mood === '기본') return [];
-  const { templates } = loadConfig(input);
-  const lines = [`무드: ${mood} — 글자 수 기준은 config/templates.json _designs.${mood} (기본 템플릿 기준과 다름)`];
-  for (const [key, tpl] of Object.entries(templates)) {
-    if (key.startsWith('_')) continue;
-    const fields = Object.entries(tpl.fields).map(([field, r]) => {
-      const parts = field === 'items'
-        ? [`최대 ${r.maxItems}개`, `항목당 ${r.maxCharsPerItem}자`]
-        : [`${r.maxChars}자`];
-      if (r.maxCharsPerLine) parts.push(`한 줄 ${r.maxCharsPerLine}자`);
-      if (r.maxLines) parts.push(`${r.maxLines}줄`);
-      return `${field} ${parts.join('·')}`;
-    });
-    lines.push(`  ${key}(${tpl.label}): ${fields.join(' / ')}`);
-  }
-  return lines;
-}
-
 if (require.main === module) {
   const id = requireProductId(process.argv.slice(2));
   const report = checkInput(id);
   printReport(`입력 확인: ${id}`, report);
+  // 문구를 쓸 때 쓸 글자 수 기준 (무드에 따라 다름, #67)
   const input = loadInput(id);
   if (input) {
-    const lines = moodLimitLines(input);
-    if (lines.length) console.log(`\n${lines.join('\n')}`);
+    const { lines } = limitLines(input);
+    console.log(`\n== 카드 글자 수 기준 ==\n${lines.join('\n')}`);
   }
   process.exit(report.errors.length ? 1 : 0);
 }
 
-module.exports = { checkInput, moodLimitLines };
+module.exports = { checkInput };

@@ -20,6 +20,24 @@ test('기본 정의 보존, 프리미엄만 파일·사진·글자 수 변경',(
  assert.equal(d.description.image,'none'); assert.equal(l.description.image,'optional');
  assert.deepEqual(Object.keys(l).filter(k=>!k.startsWith('_')),['cover','image','description']);
 });
+
+test('예전 디자인 입력도 프리미엄 유지, 두 칸이 있으면 빈 값까지 무드 우선', () => {
+ const cases = [
+  [{디자인:'프리미엄'}, '프리미엄'],
+  [{디자인:'없는 묶음'}, '기본'],
+  [{디자인:''}, '기본'],
+  [{디자인:'프리미엄', 무드:'기본'}, '기본'],
+  [{디자인:'프리미엄', 무드:''}, '기본'],
+  [{디자인:'프리미엄', 무드:'없는 묶음'}, '기본'],
+  [{디자인:'기본', 무드:'프리미엄'}, '프리미엄'],
+ ];
+ for (const [cond, expected] of cases) {
+  const input = {cond};
+  assert.equal(designOf(input), expected, JSON.stringify(cond));
+  assert.equal(loadConfig(input).templates.cover.file, expected === '프리미엄' ? 'templates/premium/cover.html' : 'templates/cover.html');
+  assert.equal(colorModeOf(input), expected === '프리미엄' ? '제품 색' : '기본');
+ }
+});
 test('프리미엄 설명형 사진과 글자 수 검증·품질 지표가 같은 묶음 사용',()=>{
  const ws=makeWorkspace();try{
  ws.writeInput(ws.readInput()+'\n## 무드\n프리미엄\n');
@@ -64,23 +82,4 @@ test('프리미엄 머리말은 특징 순서·사용법 역할에서 만들고 
   assert.ok(!/PRODUCT NOTES|PRODUCT DETAIL|PRODUCT GUIDE/.test(html));
  }
  const ws=makeWorkspace();try{ws.editCards(d=>{d.cards.find(c=>c.template==='image').copy.items=['허용 안 됨'];});assert.ok(ws.use(validate).report.errors.some(x=>x.code==='SCHEMA_ERROR'));}finally{ws.cleanup();}
-});
-
-test('check: 기본이 아닌 무드면 그 무드의 템플릿별 글자 수 기준을 같이 보여준다', () => {
-  const { moodLimitLines } = require('../scripts/check-input');
-  assert.deepEqual(moodLimitLines({ cond: {} }), []);
-  const lines = moodLimitLines({ cond: { 무드: '프리미엄' } });
-  assert.match(lines[0], /_designs\.프리미엄/);
-  const tpl = loadConfig({ cond: { 무드: '프리미엄' } }).templates;
-  const items = tpl.description.fields.items;
-  assert.ok(lines.some((l) => l.includes(`items 최대 ${items.maxItems}개·항목당 ${items.maxCharsPerItem}자·한 줄 ${items.maxCharsPerLine}자·${items.maxLines}줄`)));
-  const ws = makeWorkspace();
-  try {
-    ws.writeInput(`${ws.readInput()}\n## 무드\n프리미엄\n`);
-    const r = ws.run('check-input.js');
-    assert.equal(r.status, 0, r.stdout + r.stderr);
-    assert.match(r.stdout, /무드: 프리미엄 — 글자 수 기준은 config\/templates\.json _designs\.프리미엄/);
-  } finally {
-    ws.cleanup();
-  }
 });

@@ -49,6 +49,37 @@ test('프리미엄은 흰 사진이면 기본 색으로 대체, 직접 지정한
   assert.equal(report.colors.mode,'기본');assert.equal(report.colors.note,null);
  }finally{await browser.close();ws.cleanup();}
 });
+test('예전 디자인 입력과 새 무드 입력으로 출력한 표지 HTML·카드 색이 같음', async () => {
+ const ws = makeWorkspace();
+ const original = ws.readInput();
+ try {
+  ws.editCards((d) => {
+   for (const c of d.cards) {
+    c.copy.title = '짧은 제목';
+    if (c.copy.subtitle) c.copy.subtitle = '설명';
+    if (c.copy.caption) c.copy.caption = '설명';
+    if (c.copy.items) c.copy.items = ['주요 특징'];
+   }
+  });
+  const results = [];
+  for (const key of ['디자인', '무드']) {
+   ws.writeInput(`${original.trimEnd()}\n\n## ${key}\n프리미엄\n`);
+   const run = ws.run('render.js', ['--no-log', '--card', '1']);
+   assert.equal(run.status, 0, run.stdout + run.stderr);
+   const html = fs.readFileSync(ws.file('output/html/card-01.html'), 'utf8');
+   const report = JSON.parse(fs.readFileSync(ws.file('output/render-report-card-01.json'), 'utf8'));
+   assert.match(html, /role-cover/);
+   assert.equal(report.colors.mode, '제품 색');
+   assert.ok(report.results.every((r) => r.fontOk && !r.issues.length && !r.overlaps.length));
+   results.push({html, colors: report.colors});
+  }
+  assert.deepEqual(results[0], results[1]);
+  assert.ok(!fs.existsSync(ws.file('log.jsonl')));
+ } finally {
+  ws.cleanup();
+ }
+});
+
 test('투명 여백은 alpha 경계 사용, 빈 투명 사진은 자르지 않음',async()=>{
  const browser=await launchBrowser();const page=await browser.newPage();const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cardnews-crop-'));
  try{

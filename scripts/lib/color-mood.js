@@ -196,7 +196,7 @@ const COLOR_MODES = ['기본', '제품 색'];
 function colorModeOf(input) {
   const v = ((input && input.cond && input.cond['카드 색']) || '').split('\n')[0].trim();
   if (v) return COLOR_MODES.includes(v) ? v : '기본';
-  // 비우면 무드의 기본 색(_designs.<무드>._defaults.colorMode). common.js를 위에서 불러오면 순환 참조가 생길 수 있어 여기서 불러옴
+  // 비우면 무드의 기본 색(_designs.<무드>._defaults.colorMode). 무드 설정이 필요할 때 loadConfig를 불러옴
   const { loadConfig } = require('./common');
   return loadConfig(input).templates._defaults?.colorMode || '기본';
 }

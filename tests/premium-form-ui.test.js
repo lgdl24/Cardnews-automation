@@ -6,28 +6,21 @@ const path = require('node:path');
 const os = require('node:os');
 const net = require('node:net');
 const { pathToFileURL } = require('node:url');
-const { launchBrowser } = require('../scripts/lib/card-html');
+const { chromium } = require('playwright');
 const ROOT = path.resolve(__dirname, '..');
 
 test('웹 입력에서 프리미엄 선택, 색 비움·직접 지정과 안내', async () => {
   const { createServer } = await import(pathToFileURL(path.join(ROOT, 'web/node_modules/vite/dist/node/index.js')).href);
   const before = process.env.CARDNEWS_STUDIO;
   process.env.CARDNEWS_STUDIO = '0';
-  const probe = net.createServer();
-  await new Promise((resolve) => probe.listen(0, '127.0.0.1', resolve));
-  const port = probe.address().port;
-  await new Promise((resolve) => probe.close(resolve));
-  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-premium-form-cache-'));
-  const server = await createServer({
-    root: path.join(ROOT, 'web'),
-    cacheDir,
-    logLevel: 'error',
-    server: { host: '127.0.0.1', port, strictPort: true, fs: { allow: [ROOT, fs.realpathSync(path.join(ROOT, 'web/node_modules'))] } },
-  });
+  const probe=net.createServer();await new Promise(resolve=>probe.listen(0,'127.0.0.1',resolve));const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
+  const cacheDir=fs.mkdtempSync(path.join(os.tmpdir(),'cardnews-premium-form-cache-'));
+  const server = await createServer({root:path.join(ROOT,'web'),cacheDir,logLevel:'error',server:{host:'127.0.0.1',port,strictPort:true,fs:{allow:[ROOT,fs.realpathSync(path.join(ROOT,'web/node_modules'))]}}});
   let browser;
   try {
     await server.listen();
-    browser = await launchBrowser();
+    // CHROMIUM_PATH가 있으면 그 브라우저 (scripts/lib/card-html.js launchBrowser와 같음)
+    browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
     const page = await browser.newPage({viewport:{width:390,height:900}});
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.route('**/api/studio/**',route=>{

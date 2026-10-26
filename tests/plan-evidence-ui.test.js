@@ -1,12 +1,12 @@
 // V2 구성안·근거의 브라우저 회귀 검사. 내보낸 예시를 응답에서만 바꿔 실제 제품·로그는 건드리지 않음.
-// 실행: npm run test:ui (웹 의존성·Playwright Chromium 필요, CHROMIUM_PATH가 있으면 그 브라우저)
+// 실행: node --test tests/plan-evidence-ui.test.js (웹 의존성·Playwright Chromium 필요)
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const net = require('node:net');
 const { pathToFileURL } = require('node:url');
-const { launchBrowser } = require('../scripts/lib/card-html');
+const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
 const ID = 'toneup-sunscreen-r1';
@@ -31,7 +31,8 @@ test.before(async () => {
   });
   await server.listen();
   origin = `http://127.0.0.1:${server.httpServer.address().port}`;
-  browser = await launchBrowser();
+  // CHROMIUM_PATH가 있으면 그 브라우저 (scripts/lib/card-html.js launchBrowser와 같음)
+  browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) });
 });
 
 test.after(async () => {
