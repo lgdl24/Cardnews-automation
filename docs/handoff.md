@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-26 | Claude | #74 · `feat/74-design-resolve` | **디자인 묶음 1단계 — 묶음 정하기 한 곳으로 + 목록 설명(출력 변화 없음)**: `resolveDesign({ input, data })`(`common.js`)가 입력 무드(직접 지정) → `cards.json` `design.id` → 기본 순서로 정함. `designOf(input, config, data)`·`loadConfig(input, data)`·`colorModeOf(input, data)`·`limitLines(input, data)`에 `data`(cards.json) 추가, validate·render·compare·web-data·check가 넘김. `config/templates.json` `_catalog`(기본·프리미엄: name·summary·fits·avoid·needs·version·preview), `designCatalog()`. 지금 `cards.json`에는 `design`이 없어 결과 같음(기존 제품 HTML 비교 동일). 규격 추가·자동 추천 규칙은 3단계 |
 | 2026-10-26 | Claude · Codex | #53 · `fix/53-premium-review` (#69) | **#68 위로 #69 정리**: 글자 수 안내·`test:web`은 #68 것 사용, #69의 중복 안내·`test:ui` 제외. 입력 칸 이름 '디자인'→'무드'(#64), calibrate `--mood`(`--design`도 됨). 예전 입력은 '무드' 칸이 없을 때만 '디자인' 값을 읽음(`moodInputOf`), 두 칸이 있으면 빈 값이라도 무드 우선, 잘못된 값은 읽은 칸에 경고. 내부 `_designs`·`designOf`·결과 규격은 그대로 |
 | 2026-10-22 | Claude | #67 · `fix/67-design-limits` | **디자인별 글자 수 기준 안내**: `npm run check` 끝에 이 제품의 디자인(기본·프리미엄)·카드 색과 템플릿별 글자 수 기준을 출력(`scripts/lib/limits.js`). 프리미엄이면 '_designs.프리미엄 기준을 쓰라'고 명시 → Claude가 1단계에서 보고 그 숫자로 문구를 씀. 규칙 문서·규칙 버전은 그대로. 웹 화면 테스트 2개(`plan-evidence-ui`·`premium-form-ui`)를 `npm run test:web`으로 등록, `CHROMIUM_PATH` 지원 |
 | 2026-10-21 | Codex | #53 · `feat/53-lilac-design` | **라일락 → 프리미엄 첫 무드 프리셋**: `디자인` 기본·프리미엄, `templates/premium/` 3개. 색 비움은 제품 색, 직접 지정 우선. Point N·How to·STEP·분할 면·큰 제품·역할별 배치, 칸별 실측 7개·최대 문구 45경우 통과. 기본 템플릿·카드 스키마·규칙 버전 유지. 로컬 구현, 커밋 전 |
@@ -17,7 +18,6 @@
 | 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
-| 2026-10-20 | Claude | #49 · `feat/49-eval-variants` | **평가 비교판(A8)이 실제로 규칙을 바꿈**: 전에는 `--variant`가 이름만 붙이고 규칙은 그대로였음. 이제 `eval/variants/<이름>/variant.json`(description·changes) + `files/`(바꾼 `CLAUDE.md`·`.claude/skills/*/*.md`·`prompts/eval/plan|copy.md`만)를 작업 실행기가 작업 폴더에 덮어씀(`runJob`·`createWorkspace`·`fillPrompt`의 `overlayDir`). 스크립트·`config/`·`schemas/`는 못 바꿈. 정의 없는 이름은 시작 전에 멈춤. `result.json` `notes`에 비교판 설명. 형식 `eval/variants/README.md`, eval-spec 비교판 줄에 위치 추가. 비교판 내용은 A8 때 정함 |
 
 ## 현재 작업 (이용석, 2026-10-26)
 

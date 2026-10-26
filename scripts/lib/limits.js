@@ -18,11 +18,12 @@ function ruleText(rule) {
 }
 
 /** @returns {{ design: string, colorMode: string, lines: string[] }} */
-function limitLines(input) {
-  const design = designOf(input);
-  const { templates } = loadConfig(input);
+// data(cards.json)가 있으면 구성안에서 고른 묶음 기준 (#74)
+function limitLines(input, data = null) {
+  const design = designOf(input, undefined, data);
+  const { templates } = loadConfig(input, data);
   const colorRaw = ((input && input.cond && input.cond['카드 색']) || '').split('\n')[0].trim();
-  const colorMode = colorModeOf(input);
+  const colorMode = colorModeOf(input, data);
   const lines = [];
   lines.push(design === '기본'
     ? '무드: 기본 — config/templates.json의 템플릿별 기준을 써요'

@@ -29,6 +29,27 @@
     },
     "image": "none"
   },
+  "_catalog": {
+    "_설명": "디자인 묶음 목록 (#74). 사람이 무드를 고를 때, 구성안 작업에서 묶음을 추천할 때 보는 설명. _designs에 새 묶음을 넣으면 여기에도 같은 이름으로 추가하고 version을 적어요. version은 묶음 HTML·CSS·글자 수 기준을 바꿀 때 올리고 출력 기록에 남겨 평가 조건을 구분해요. needs: 제품 사진(product)·배경 장면(background)이 required | optional | none",
+    "기본": {
+      "name": "기본",
+      "summary": "따뜻한 아이보리 배경에 테라코타 강조, 둥근 흰 상자로 정보를 정리하는 단정한 카드. 설명형 카드는 사진 없이 글만",
+      "fits": ["특징·수치 정보가 많은 제품", "사진이 한 장뿐이거나 배경 제거가 안 된 사진", "선케어·데일리 스킨케어처럼 정보 전달이 중심인 소개"],
+      "avoid": ["제품 사진으로 분위기를 강하게 보여주고 싶을 때"],
+      "needs": { "product": "optional", "background": "none" },
+      "version": "1",
+      "preview": "web/public/data/projects/toneup-sunscreen-r1/png/card-01.png"
+    },
+    "프리미엄": {
+      "name": "프리미엄",
+      "summary": "큰 제품 사진을 반반 분할·기울여 배치하고 가는 선과 Point·How to·STEP 머리말로 정돈한 카드. 제목 둘째 줄 강조색, 카드 색은 제품 사진 색",
+      "fits": ["배경을 지운(투명) 제품 사진이 있는 스킨케어·클렌징", "용기 디자인과 색이 분명한 제품", "브랜드 분위기를 살리는 신제품 소개"],
+      "avoid": ["제품 사진이 없거나 배경이 복잡한 사진", "항목이 많아 글이 긴 카드 (한 줄 12자 기준)"],
+      "needs": { "product": "required", "background": "none" },
+      "version": "1",
+      "preview": null
+    }
+  },
   "_designs": {
     "프리미엄": {
       "_defaults": { "colorMode": "제품 색" },

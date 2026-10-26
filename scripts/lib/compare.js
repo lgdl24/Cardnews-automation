@@ -23,7 +23,7 @@ function loadRun(id, config = null) {
     roles: data.cards.map((c) => c.role),
     templates: data.cards.map((c) => c.template),
     evidence,
-    quality: (({ templates, caution }) => computeQuality({ data, input, templates, caution }))(config || loadConfig(input)),
+    quality: (({ templates, caution }) => computeQuality({ data, input, templates, caution }))(config || loadConfig(input, data)),
     process: summarize(readEvents(id), { cardCount: data.cards.length }),
   };
 }

@@ -25,14 +25,36 @@ function moodInputOf(input) {
   return { key, value: (cond[key] || '').split('\n')[0].trim() };
 }
 
-function designOf(input, config = readJson(paths.config('templates.json'))) {
+// 디자인 묶음 정하기 (#74). 앞에서부터 처음 맞는 것을 씀
+//   ① 입력 '무드'(예전 '디자인')에 목록에 있는 묶음을 직접 적음 → 사람이 고른 것
+//   ② cards.json의 design.id → 구성안 작업에서 고른 묶음 (자동 추천, #74 3단계)
+//   ③ 기본
+// 목록에 없는 값·빈 값은 건너뜀. 반환 source: 'input' | 'cards' | 'default'
+function resolveDesign({ input = null, data = null, config = readJson(paths.config('templates.json')) } = {}) {
+  const known = (v) => typeof v === 'string' && (v === '기본' || Object.hasOwn(config._designs || {}, v));
   const { value } = moodInputOf(input);
-  return Object.hasOwn(config._designs || {}, value) ? value : '기본';
+  if (value && known(value)) return { id: value, source: 'input' };
+  const picked = data && data.design && data.design.id;
+  if (known(picked)) return { id: picked, source: 'cards' };
+  return { id: '기본', source: 'default' };
 }
 
-function loadConfig(input = null) {
+function designOf(input, config = readJson(paths.config('templates.json')), data = null) {
+  return resolveDesign({ input, data, config }).id;
+}
+
+// 디자인 묶음 목록 (config/templates.json _catalog): 이름·설명·어울리는 제품·필요한 사진·버전
+function designCatalog(config = readJson(paths.config('templates.json'))) {
+  const catalog = config._catalog || {};
+  return Object.entries(catalog)
+    .filter(([id]) => !id.startsWith('_'))
+    .map(([id, meta]) => ({ id, ...meta, colorMode: (id === '기본' ? null : config._designs?.[id]?._defaults?.colorMode) || '기본' }));
+}
+
+// data(cards.json)를 넘기면 구성안에서 고른 묶음도 봄
+function loadConfig(input = null, data = null) {
   const all = readJson(paths.config('templates.json'));
-  const overrides = all._designs?.[designOf(input, all)];
+  const overrides = all._designs?.[designOf(input, all, data)];
   const templates = overrides ? { ...all, ...overrides } : all;
   return {
     templates,
@@ -133,6 +155,6 @@ function requireProductId(argv) {
 }
 
 module.exports = {
-  ROOT, paths, readJson, moodInputOf, designOf, loadConfig, normalize, countChars,
+  ROOT, paths, readJson, moodInputOf, resolveDesign, designOf, designCatalog, loadConfig, normalize, countChars,
   parseInput, loadInput, createReport, printReport, requireProductId,
 };

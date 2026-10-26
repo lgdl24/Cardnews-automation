@@ -193,12 +193,13 @@ function decideColors({ mode = '기본', baseColor, pixels = null, image = null,
 
 // 카드 색 설정값 읽기 (입력 양식 '제작 조건 > 카드 색')
 const COLOR_MODES = ['기본', '제품 색'];
-function colorModeOf(input) {
+// data(cards.json)를 주면 구성안에서 고른 묶음의 기본 색도 봄 (#74)
+function colorModeOf(input, data = null) {
   const v = ((input && input.cond && input.cond['카드 색']) || '').split('\n')[0].trim();
   if (v) return COLOR_MODES.includes(v) ? v : '기본';
   // 비우면 무드의 기본 색(_designs.<무드>._defaults.colorMode). 무드 설정이 필요할 때 loadConfig를 불러옴
   const { loadConfig } = require('./common');
-  return loadConfig(input).templates._defaults?.colorMode || '기본';
+  return loadConfig(input, data).templates._defaults?.colorMode || '기본';
 }
 
 // 대표 색을 읽을 사진: 카드에 쓰인 첫 이미지 → 없으면 입력의 첫 이미지 (사용 가능 여부 '불가'는 제외)

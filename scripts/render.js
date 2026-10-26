@@ -16,7 +16,7 @@ const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./l
 // 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
 // 제품 색이면 사진 픽셀을 읽으려고 브라우저를 먼저 띄움 (HTML만 만들 때도)
 async function colorsFor({ data, input, imageDir, baseColor, browser }) {
-  const mode = colorModeOf(input);
+  const mode = colorModeOf(input, data);
   let pixels = null;
   let image = null;
   let readError = null;
@@ -93,7 +93,7 @@ async function main() {
   }
 
   const input = loadInput(id);
-  const { templates, theme } = loadConfig(input);
+  const { templates, theme } = loadConfig(input, data);
   const product = (input.info['제품명'] || id).split('\n')[0];
   const outDir = paths.product(id, 'output');
   const htmlDir = path.join(outDir, 'html');
@@ -121,7 +121,7 @@ async function main() {
   };
 
   // 카드 색
-  const colorMode = colorModeOf(input);
+  const colorMode = colorModeOf(input, data);
   const colors = await colorsFor({
     data, input, imageDir, baseColor: theme.color, browser: colorMode === '제품 색' ? await startBrowser() : null,
   });
