@@ -239,6 +239,13 @@ function describe(e: TimelineEvent, labels: Labels): { title: string; badge?: st
       return { title: '구성안 승인', tone: 'human', badge: e.approved_by === 'eval' ? '평가 자동 승인' : '사람 승인' };
     case 'final_approved':
       return { title: '최종 승인', tone: 'human', badge: e.approved_by === 'eval' ? '평가 자동 승인' : '사람 승인' };
+    case 'design_selected':
+      return {
+        title: '디자인 묶음 변경',
+        tone: 'human',
+        badge: '사람',
+        detail: <p className="event-detail">{e.from ? `${e.from} → ` : ''}{e.design}</p>,
+      };
     case 'revision_requested':
       return {
         title: e.stage === 'plan' ? '구성안 수정 요청' : '카드 수정 요청',

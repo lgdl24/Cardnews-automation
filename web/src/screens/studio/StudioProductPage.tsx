@@ -35,11 +35,11 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   const p = data;
   const a = p.actions;
 
-  const act = async (path: string, body?: unknown) => {
+  const act = async (path: string, body?: unknown, method: 'POST' | 'PUT' = 'POST') => {
     setBusy(true);
     setActionError(null);
     try {
-      const r = await studioFetch<Partial<ProductDetail> & { job?: StudioJob; product?: ProductDetail }>(path, { method: 'POST', body });
+      const r = await studioFetch<Partial<ProductDetail> & { job?: StudioJob; product?: ProductDetail }>(path, { method, body });
       if (r.product) setData(r.product);
       else if (r.id) setData(r as ProductDetail);
       refresh();
@@ -99,6 +99,12 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
           <h2 className="section-title" id="plan-title">
             구성안 확인
           </h2>
+          <DesignPanel
+            detail={p}
+            busy={busy}
+            canChange={Boolean(a.can_select_design) && p.design?.source !== 'input'}
+            onChange={(designId) => act(`/products/${id}/design`, { id: designId }, 'PUT')}
+          />
           <PlanReview detail={p} labels={labels} />
           <ValidationPanel validation={p.validation} />
           {!a.running && (
@@ -125,6 +131,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
           <h2 className="section-title" id="cards-title">
             {p.stage === 'approved' ? '최종 카드' : '카드 확인'}
           </h2>
+          <DesignPanel detail={p} busy={busy} canChange={false} onChange={() => undefined} />
           <CardReview detail={p} labels={labels} />
           <ValidationPanel validation={p.validation} />
           {p.stage === 'copy' && !a.running && (
@@ -273,6 +280,51 @@ function IssueList({ items, tone, prefix }: { items: { code?: string; where: str
         </li>
       ))}
     </ul>
+  );
+}
+
+// ── 디자인 묶음 (#74): 지금 쓰는 묶음·정한 곳·이유, 구성안 승인 전에는 다른 묶음으로 바꾸기
+const DESIGN_SOURCE: Record<string, string> = { input: '입력에서 직접 고름', default: '기본값' };
+const NEEDS_TEXT: Record<string, string> = { required: '필수', optional: '있으면 좋음', none: '안 씀' };
+function DesignPanel({ detail, busy, canChange, onChange }: { detail: ProductDetail; busy: boolean; canChange: boolean; onChange: (id: string) => void }) {
+  const d = detail.design;
+  const [pick, setPick] = useState(d?.id ?? '');
+  if (!d) return null;
+  const current = d.catalog.find((x) => x.id === d.id);
+  const by = d.source === 'cards' ? (d.selected?.selected_by === 'human' ? '작업실에서 사람이 고름' : 'Claude 추천') : DESIGN_SOURCE[d.source];
+  const picked = d.catalog.find((x) => x.id === pick);
+  return (
+    <div className="panel design-panel">
+      <p className="muted">디자인 묶음{d.auto ? ' · 무드 자동 추천' : ''}</p>
+      <p className="design-name">
+        <strong>{current?.name ?? d.id}</strong> <span className="chip">{by}</span>
+        {current ? <span className="muted"> v{current.version}</span> : null}
+      </p>
+      {current && <p className="muted">{current.summary}</p>}
+      {d.source === 'cards' && d.selected && <p className="design-reason">이유: “{d.selected.reason}”</p>}
+      {canChange && (
+        <div className="design-change">
+          <label>
+            다른 묶음으로{' '}
+            <select value={pick} disabled={busy} onChange={(e) => setPick(e.target.value)}>
+              {d.catalog.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="btn" disabled={busy || pick === d.id} onClick={() => onChange(pick)}>
+            바꾸기
+          </button>
+          {picked && pick !== d.id && (
+            <p className="muted">
+              {picked.summary} · 어울림: {picked.fits.join(' / ')} · 제품 사진 {NEEDS_TEXT[picked.needs.product] ?? picked.needs.product}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -487,6 +539,7 @@ const EVENT_TEXT: Record<string, string> = {
   plan_approved: '구성안 승인',
   final_approved: '최종 승인',
   revision_requested: '수정 요청',
+  design_selected: '디자인 묶음 변경',
 };
 function EventLog({ events, labels }: { events: ProductDetail['events']; labels?: Labels }) {
   if (!events.length) return null;

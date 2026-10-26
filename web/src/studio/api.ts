@@ -110,6 +110,8 @@ export interface Actions {
   can_plan: boolean;
   can_approve_plan: boolean;
   can_revise_plan: boolean;
+  /** 구성안 승인 전 디자인 묶음 바꾸기 (#74) */
+  can_select_design?: boolean;
   can_copy: boolean;
   can_approve_final: boolean;
   can_revise_final: boolean;
@@ -130,6 +132,26 @@ export interface StudioEvent {
   types?: string[];
   memo?: string;
   approved_by?: 'human' | 'eval';
+  design?: string;
+  from?: string | null;
+}
+/** 디자인 묶음 (#74): 지금 쓰는 묶음, 정한 곳, 구성안에서 고른 것, 목록 */
+export interface DesignCatalogItem {
+  id: string;
+  name: string;
+  summary: string;
+  fits: string[];
+  avoid?: string[];
+  needs: { product: string; background: string };
+  version: string;
+  color_mode: string;
+}
+export interface DesignInfo {
+  id: string;
+  source: 'input' | 'cards' | 'default';
+  auto: boolean;
+  selected: { id: string; selected_by: 'claude' | 'human'; reason: string } | null;
+  catalog: DesignCatalogItem[];
 }
 export interface ProductDetail extends ProductSummary {
   input: {
@@ -145,6 +167,7 @@ export interface ProductDetail extends ProductSummary {
   job: StudioJob | null;
   export: { listed: boolean; exported_at: string | null };
   actions: Actions;
+  design?: DesignInfo;
 }
 
 export class StudioError extends Error {

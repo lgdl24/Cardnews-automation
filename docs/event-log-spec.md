@@ -24,6 +24,7 @@
 | `validate_result` | `check`: `data` · `layout`, `ok`, `error_codes`, `error_count`, `cards_with_errors`, `caution_count`, `stage`, `metrics`(data만), `rendered_cards`(layout만) | `validate`·`render` 스크립트 (세 모드 같음) |
 | `plan_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 웹 제작 화면(`human`) / 평가 실행기(`eval`) |
 | `final_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 웹 제작 화면(`human`) / (평가 모드는 남기지 않음) |
+| `design_selected` | `design`(고른 묶음), `from`(바꾸기 전 묶음, 없으면 `null`), `by`: `human` | (대화 모드는 cards.json을 직접 고침) / 웹 제작 화면 / (평가 모드에는 없음) — 구성안 확인 때 사람이 디자인 묶음을 바꿈 (#74) |
 | `revision_requested` | `stage`: `plan` · `final`, `cards`(카드 번호 배열, 전체면 빈 배열 — 웹 모드는 전체면 `cards`를 남기지 않음), `types`(유형 코드 배열), `memo` | Claude / 웹 제작 화면 / (평가 모드에는 없음) |
 
 - 웹 모드·평가 모드(`CARDNEWS_MODE=web|eval`)에서는 `log.js`가 기록하지 않습니다. 작업 시작·끝은 작업 실행기(`scripts/lib/job-runner.js`)가, 입력·승인·수정 요청은 웹 모드는 웹 제작 화면(로컬 제작 API `scripts/lib/studio-api.js`)이, 평가 모드는 평가 실행기가 남깁니다. `validate_result`는 세 모드 모두 스크립트가 남깁니다.

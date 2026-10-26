@@ -64,7 +64,7 @@
         "additionalProperties": false,
         "properties": {
           "ts": { "$ref": "index.schema.json#/$defs/datetime" },
-          "event": { "enum": ["input_submitted", "job_started", "job_finished", "validate_result", "plan_approved", "final_approved", "revision_requested"] },
+          "event": { "enum": ["input_submitted", "job_started", "job_finished", "validate_result", "plan_approved", "final_approved", "revision_requested", "design_selected"] },
           "job_id": { "type": ["string", "null"] },
           "kind": { "enum": ["plan", "copy", "revise"] },
           "ok": { "type": "boolean" },
@@ -77,7 +77,10 @@
           "cards": { "type": "array", "items": { "type": "integer" } },
           "types": { "type": "array", "items": { "type": "string" } },
           "memo": { "type": "string" },
-          "approved_by": { "enum": ["human", "eval"], "description": "plan_approved·final_approved만. 기록에 없으면 human" }
+          "approved_by": { "enum": ["human", "eval"], "description": "plan_approved·final_approved만. 기록에 없으면 human" },
+          "design": { "type": "string", "description": "design_selected만. 고른 디자인 묶음 (#74)" },
+          "from": { "type": ["string", "null"], "description": "design_selected만. 바꾸기 전 묶음" },
+          "by": { "enum": ["human"], "description": "design_selected만" }
         }
       }
     }

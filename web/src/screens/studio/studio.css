@@ -499,3 +499,31 @@
   flex-direction: column;
   gap: 4px;
 }
+
+/* 디자인 묶음 (#74) */
+.design-panel {
+  margin-bottom: 16px;
+}
+.design-panel .design-name {
+  margin: 4px 0;
+  font-size: 1.05rem;
+}
+.design-panel .design-reason {
+  margin: 6px 0 0;
+}
+.design-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.design-change select {
+  margin-left: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.design-change p {
+  flex-basis: 100%;
+  margin: 0;
+}

@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   paths, loadConfig, loadInput, normalize, countChars,
-  createReport, printReport, requireProductId,
+  createReport, printReport, requireProductId, moodInputOf, resolveDesign, designCatalog,
 } = require('./lib/common');
 const { computeQuality, formatQuality, findCautions } = require('./lib/metrics');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
@@ -15,6 +15,8 @@ const STAGES = ['plan', 'copy', 'approved'];
 const ROLES = ['cover', 'feature', 'usage', 'detail', 'closing'];
 const EVIDENCE_REQUIRED_ROLES = ['feature', 'usage', 'detail'];
 
+const AUTO_DESIGN = '자동 추천';
+const DESIGN_SELECTORS = ['claude', 'human'];
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
 
 function validate(productId) {
@@ -47,6 +49,26 @@ function validate(productId) {
     report.error('SCHEMA_ERROR', 'stage', `${STAGES.join(' / ')} 중 하나여야 해요`);
   }
   const needCopy = data.stage === 'copy' || data.stage === 'approved';
+
+  // ── design: 구성안에서 고른 디자인 묶음 (#74, 선택. 입력 무드가 '자동 추천'이면 필수)
+  const autoDesign = input && moodInputOf(input).value === AUTO_DESIGN;
+  if (data.design !== undefined) {
+    const d = data.design;
+    const ids = designCatalog().map((x) => x.id);
+    if (!d || typeof d !== 'object' || Array.isArray(d)) {
+      report.error('SCHEMA_ERROR', 'design', 'design은 { id, selected_by, reason } 객체여야 해요');
+    } else {
+      if (!ids.includes(d.id)) report.error('SCHEMA_ERROR', 'design.id', `묶음 목록에 없는 이름이에요: ${d.id} (${ids.join(' / ')})`);
+      if (!DESIGN_SELECTORS.includes(d.selected_by)) report.error('SCHEMA_ERROR', 'design.selected_by', `${DESIGN_SELECTORS.join(' / ')} 중 하나여야 해요`);
+      if (!isNonEmptyString(d.reason)) report.error('SCHEMA_ERROR', 'design.reason', '묶음을 고른 이유가 필요해요');
+      const used = resolveDesign({ input, data });
+      if (used.source === 'input' && used.id !== d.id) {
+        report.warn('design', `입력 무드에 '${used.id}'를 직접 적어서 구성안에서 고른 '${d.id}' 대신 '${used.id}'로 만들어요`);
+      }
+    }
+  } else if (autoDesign) {
+    report.error('SCHEMA_ERROR', 'design', `입력 무드가 '${AUTO_DESIGN}'이면 구성안에서 묶음을 골라 design에 적어야 해요 (npm run check 끝의 '디자인 묶음 목록')`);
+  }
 
   // ── sources: 원문 근거
   const sourceIds = new Set();
@@ -227,4 +249,4 @@ if (require.main === module) {
   process.exit(report.errors.length ? 1 : 0);
 }
 
-module.exports = { validate, quality, STAGES, ROLES, EVIDENCE_REQUIRED_ROLES };
+module.exports = { validate, quality, STAGES, ROLES, EVIDENCE_REQUIRED_ROLES, AUTO_DESIGN };

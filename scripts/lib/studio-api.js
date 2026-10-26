@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { ROOT, readJson, parseInput } = require('./common');
+const { ROOT, readJson, parseInput, resolveDesign, designCatalog, moodInputOf } = require('./common');
 const { loadForm, renderInputMd } = require('./input-form');
 const { summarize } = require('./analysis');
 const jobRunner = require('./job-runner');
@@ -195,6 +195,20 @@ function createStudio({
     };
   }
 
+  // 디자인 묶음 (#74): 지금 쓰는 묶음과 정한 곳, 구성안에서 고른 것, 목록
+  const templatesConfig = () => readJson(path.join(root, 'config', 'templates.json'));
+  function designInfo(input, cards) {
+    const config = templatesConfig();
+    const used = resolveDesign({ input, data: cards, config });
+    return {
+      id: used.id,
+      source: used.source,
+      auto: moodInputOf(input).value === '자동 추천',
+      selected: (cards && cards.design) || null,
+      catalog: designCatalog(config).map(({ id, name, summary, fits, avoid, needs, version, colorMode }) => ({ id, name, summary, fits, avoid, needs, version, color_mode: colorMode })),
+    };
+  }
+
   // 지금 할 수 있는 다음 행동 (화면 버튼과 API 검사가 같은 기준을 씀)
   function nextActions(id, { cards, events, check }) {
     const running = Boolean(current && current.status === 'running');
@@ -212,6 +226,7 @@ function createStudio({
       can_plan: !running && !cards && check.errors.length === 0,
       can_approve_plan: !running && stage === 'plan' && !approvedCurrentPlan,
       can_revise_plan: !running && stage === 'plan' && !approvedCurrentPlan,
+      can_select_design: !running && stage === 'plan' && !approvedCurrentPlan,
       can_copy: !running && stage === 'plan' && Boolean(approvedCurrentPlan),
       can_approve_final: !running && stage === 'copy',
       can_revise_final: !running && stage === 'copy',
@@ -242,9 +257,10 @@ function createStudio({
       validation,
       pngs,
       timeline: summarize(events, { cardCount: cards && cards.cards ? cards.cards.length : null }),
-      events: events.map(({ ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards }) => ({
-        ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards,
+      events: events.map(({ ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards, design, from }) => ({
+        ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards, design, from,
       })),
+      design: designInfo(input, cards),
       job,
       export: {
         listed: Boolean(exportCfg && exportCfg.projects.some((p) => p.id === id)),
@@ -421,6 +437,29 @@ function createStudio({
         if (!detail().actions.can_edit_input) throw new HttpError(409, '구성안을 만든 뒤에는 입력을 고칠 수 없어요');
         const body = await readBody(req);
         writeInput(id, body, { create: false });
+        return send(res, 200, detail());
+      }
+      // 구성안 확인 때 사람이 디자인 묶음을 바꿈 (#74). 입력에 무드를 직접 적었으면 입력이 우선이라 막음
+      if (method === 'PUT' && parts[2] === 'design' && parts.length === 3) {
+        if (!detail().actions.can_select_design) throw new HttpError(409, '구성안을 승인하기 전에만 디자인 묶음을 바꿀 수 있어요');
+        const body = await readBody(req);
+        const config = templatesConfig();
+        const ids = designCatalog(config).map((d) => d.id);
+        const to = String(body.id || '').trim();
+        if (!ids.includes(to)) throw new HttpError(400, `묶음 목록에 없는 이름이에요: ${to}`);
+        const input = parseInput(fs.readFileSync(path.join(productDir(id), 'input.md'), 'utf8'));
+        if (resolveDesign({ input, data: null, config }).source === 'input') {
+          throw new HttpError(409, '입력에 무드를 직접 적었어요. 입력의 무드가 우선이라 여기서는 바꿀 수 없어요');
+        }
+        const file = path.join(productDir(id), 'cards.json');
+        const data = readJson(file);
+        const from = data.design ? data.design.id : null;
+        if (from === to) return send(res, 200, detail());
+        const reason = String(body.reason || '').trim().slice(0, 200);
+        data.design = { id: to, selected_by: 'human', reason: reason || `작업실에서 사람이 고름${from ? ` (구성안 추천: ${from})` : ''}` };
+        fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+        appendEvent(id, 'design_selected', { design: to, from, by: 'human' });
+        validateReport(id, { log: true });
         return send(res, 200, detail());
       }
       if (method === 'POST' && parts[2] === 'jobs' && parts.length === 3) {

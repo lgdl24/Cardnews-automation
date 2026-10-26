@@ -33,6 +33,7 @@
 | `spec_version` | O | 규격 버전 |
 | `product_id` | O | 폴더 이름과 같아야 함 |
 | `stage` | O | `plan`(구성안) → `copy`(문구 생성 완료) → `approved`(최종 검토 완료). `approved`는 사람이 승인한 뒤에만 바꿈 (평가 모드는 `copy`로 끝남) |
+| `design` | 조건부 | 구성안에서 고른 디자인 묶음 `{ "id", "selected_by": "claude"\|"human", "reason" }` (#74). 입력 `무드`가 `자동 추천`이면 필수. `id`는 `config/templates.json` `_catalog`에 있는 이름. 아래 '무드 묶음 선택' |
 | `sources` | O | 원문 근거 목록 |
 | `analysis` | O | 자료 분석 결과 |
 | `cards` | O | 카드 목록. 개수는 입력 양식의 카드 수와 같아야 함 |
@@ -112,8 +113,10 @@
 
 특징·상세 머리말은 카드 순서의 `Point N`, 사용법은 `How to`. 설명형 사진은 카드 번호에 따라 좌우 교대(사용법 포함, 사진 없으면 글만 넓게). 사용법은 항목마다 STEP N. 주의 문구는 기존 항목 그대로, 별도 칸 없음. 제목은 굵게, 둘째 줄부터 강조색. 이미지형 `items`, 사용량·인증 배지 필드는 이번 변경에 없음.
 
-**묶음 정하는 순서 (#74).** `scripts/lib/common.js`의 `resolveDesign({ input, data })` 한 곳에서 정하고 검증·품질 지표·출력·카드 색·글자 수 안내·비교·웹 데이터가 모두 이것을 씀: ① 입력 `무드`(예전 `디자인`)에 목록에 있는 묶음을 직접 적으면 그 묶음 ② 아니면 `cards.json`의 `design.id`(구성안 작업에서 고른 묶음 — 3단계에서 규격에 추가 예정, 지금은 없음) ③ 기본. 목록에 없는 값·빈 값은 건너뜀. `npm run check`는 `cards.json`이 있으면 그 묶음 기준으로 글자 수를 안내.
+**묶음 정하는 순서 (#74).** `scripts/lib/common.js`의 `resolveDesign({ input, data })` 한 곳에서 정하고 검증·품질 지표·출력·카드 색·글자 수 안내·비교·웹 데이터가 모두 이것을 씀: ① 입력 `무드`(예전 `디자인`)에 목록에 있는 묶음을 직접 적으면 그 묶음 ② 아니면 `cards.json`의 `design.id`(구성안 작업에서 고른 묶음) ③ 기본. 목록에 없는 값·빈 값은 건너뜀. `npm run check`는 `cards.json`이 있으면 그 묶음 기준으로 글자 수를 안내.
 
 **묶음 목록 `_catalog`.** `config/templates.json`의 `_catalog.<묶음>`에 사람이 고를 때·Claude가 추천할 때 보는 설명: `name`, `summary`, `fits`(어울리는 제품), `avoid`(안 어울리는 경우), `needs`(`product`·`background`: `required`|`optional`|`none`), `version`(HTML·CSS·글자 수 기준을 바꾸면 올림), `preview`(미리보기 PNG 경로 또는 `null`). `_designs`에 묶음을 넣으면 `_catalog`에도 같은 이름으로 추가(`tests/designs.test.js`가 확인).
+
+**무드 자동 추천 (#74).** 입력 `무드`가 `자동 추천`이면 `npm run check`가 글자 수 대신 묶음 목록을 보여주고, 구성안 작업에서 Claude가 하나를 골라 `design`에 적음(`selected_by: claude`, `reason`은 '어울림'과 맞는 원문 특징·사진 조건). '필요한 사진'이 필수인 묶음은 입력 사진이 조건을 못 채우면 고르지 않음. 작업실 구성안 확인에서 사람이 바꾸면 `selected_by: human`과 기록 `design_selected`(`design`·`from`·`by`). 구성안 승인 뒤에는 못 바꿈. 문구 작업은 `npm run check`를 다시 실행해 고른 묶음의 글자 수 기준을 봄. validate: 자동 추천인데 `design`이 없거나, 목록에 없는 이름·`selected_by` 값·빈 이유면 `SCHEMA_ERROR`. 입력에 무드를 직접 적었는데 `design`이 다르면 경고(입력 우선).
 
 추가 프리셋은 `_designs`의 템플릿·`roles`·`_defaults.colorMode`와 입력 양식 선택지를 등록. 묶음 이름별 실행 코드 분기는 없음. 프리미엄에서 카드 색이 비어 있으면 제품 색, 직접 정하면 그 값 우선.

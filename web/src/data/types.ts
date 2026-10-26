@@ -216,7 +216,8 @@ export type EventName =
   | 'validate_result'
   | 'plan_approved'
   | 'final_approved'
-  | 'revision_requested';
+  | 'revision_requested'
+  | 'design_selected';
 
 export interface Phases {
   input: number;
@@ -254,6 +255,10 @@ export interface TimelineEvent {
   memo?: string;
   /** plan_approved·final_approved만 */
   approved_by?: 'human' | 'eval';
+  /** design_selected만: 고른 디자인 묶음·바꾸기 전 묶음 (#74) */
+  design?: string;
+  from?: string | null;
+  by?: 'human';
 }
 
 export interface Timeline {

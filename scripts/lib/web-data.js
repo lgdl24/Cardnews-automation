@@ -13,7 +13,7 @@ const KINDS = { production: '실제 제작', example: '예시', eval: '평가 �
 const STAGE_LABELS = { plan: '구성안', copy: '문구', approved: '승인 완료' };
 const ROLE_LABELS = { cover: '표지', feature: '특징', usage: '사용법', detail: '상세', closing: '마무리' };
 // timeline.json에 옮기는 이벤트 필드 (나머지는 공개하지 않음)
-const EVENT_FIELDS = ['ts', 'event', 'job_id', 'kind', 'ok', 'error_code', 'check', 'error_codes', 'cards_with_errors', 'stage', 'cards', 'types', 'memo', 'rendered_cards'];
+const EVENT_FIELDS = ['ts', 'event', 'job_id', 'kind', 'ok', 'error_code', 'check', 'error_codes', 'cards_with_errors', 'stage', 'cards', 'types', 'memo', 'rendered_cards', 'design', 'from', 'by'];
 
 // 화면 공통 이름표: 원본은 config/와 검증 코드
 function buildLabels() {
