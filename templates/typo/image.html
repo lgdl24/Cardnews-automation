@@ -1,0 +1,20 @@
+<style>
+/* 큰 타이포 · 이미지 강조형: 강조색 면 전체에 흰 제목을 아주 크게, 사진은 오른쪽 아래 */
+.card.typo-image { padding:64px 72px; background:var(--color-primary); }
+.typo-image .pager { position:absolute; right:72px; top:64px; color:var(--color-on-primary); }
+.typo-image__label { position:absolute; left:72px; top:64px; font-size:30px; font-weight:800; line-height:1.4; color:var(--color-on-primary); }
+.typo-image__title { position:absolute; left:72px; top:160px; width:936px; font-size:128px; font-weight:800; line-height:1.2; letter-spacing:-0.02em; max-height:462px; color:var(--color-on-primary); }
+.typo-image__copy { position:absolute; left:72px; top:690px; width:480px; font-size:36px; font-weight:600; line-height:1.5; max-height:270px; color:var(--color-on-primary); }
+
+.typo-image__visual { position:absolute; right:56px; bottom:48px; width:400px; height:360px; }
+.typo-image__photo { display:block; width:100%; height:100%; object-fit:contain; object-position:center bottom; }
+.typo-image.no-image .typo-image__visual { display:none; }
+.typo-image.no-image .typo-image__copy { width:936px; }
+</style>
+<article class="card typo-image role-{{role}} {{imageClass}}">
+  <span class="pager">{{page}} / {{total}}</span>
+  <div class="typo-image__label">{{sectionLabel}}</div>
+  <h1 class="typo-image__title" data-fit>{{title}}</h1>
+  <div class="typo-image__copy" data-fit>{{caption}}</div>
+  <div class="typo-image__visual"><img class="typo-image__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
+</article>

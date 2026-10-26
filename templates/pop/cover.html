@@ -1,0 +1,27 @@
+<style>
+/* 팝 컬러블록 (시안 06 '듀 팝'): 색면 2~3개와 큰 원, 제품을 크게. 글자는 단색 면 위에만 */
+.card.pop-cover { padding:64px 72px; background:var(--color-accent); }
+.pop-cover__block { position:absolute; left:0; right:0; bottom:0; height:420px; background:var(--color-primary); }
+.pop-cover__circle { position:absolute; right:-80px; top:150px; width:640px; height:640px; border-radius:50%; background:var(--color-surface); }
+.pop-cover__dot { position:absolute; right:90px; bottom:330px; width:150px; height:150px; border-radius:50%; background:hsl(from var(--color-primary) calc(h + 150) 70% 72%); }
+.pop-cover .card__top { position:relative; z-index:3; }
+.pop-cover__title { position:absolute; left:72px; top:170px; width:470px; font-size:76px; font-weight:800; line-height:1.24; max-height:283px; color:var(--color-text); z-index:2; }
+.pop-cover__title::first-line { color:var(--color-primary); }
+.pop-cover__copy { position:absolute; left:72px; bottom:150px; width:460px; font-size:32px; font-weight:600; line-height:1.45; max-height:93px; color:var(--color-on-primary); z-index:2; }
+.pop-cover__visual { position:absolute; right:100px; top:170px; width:340px; height:720px; transform:rotate(10deg); z-index:2; }
+.pop-cover__photo { display:block; width:100%; height:100%; object-fit:contain; }
+.pop-cover__footer { position:absolute; left:72px; bottom:64px; font-size:28px; font-weight:800; color:var(--color-on-primary); z-index:2; }
+.pop-cover.no-image .pop-cover__visual, .pop-cover.no-image .pop-cover__circle { display:none; }
+.pop-cover.no-image .pop-cover__title { width:936px; }
+.pop-cover.role-closing .pop-cover__title { top:200px; }
+</style>
+<article class="card pop-cover role-{{role}} {{imageClass}}">
+  <div class="pop-cover__circle" aria-hidden="true"></div>
+  <div class="pop-cover__block" aria-hidden="true"></div>
+  <div class="pop-cover__dot" aria-hidden="true"></div>
+  <header class="card__top"><span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span></header>
+  <h1 class="pop-cover__title" data-fit>{{title}}</h1>
+  <div class="pop-cover__copy" data-fit>{{subtitle}}</div>
+  <div class="pop-cover__visual"><img class="pop-cover__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
+  <div class="pop-cover__footer">{{product}}</div>
+</article>

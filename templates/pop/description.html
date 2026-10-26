@@ -1,0 +1,29 @@
+<style>
+/* 팝 · 설명형: 위쪽 강조색 띠에 제목(흰 글자), 아래는 원 번호 3단 (사용법은 STEP N). 사진이 있으면 오른쪽에 작게 */
+.card.pop-description { padding:64px 72px; background:var(--color-bg); }
+.pop-description__head { position:absolute; left:0; right:0; top:0; height:420px; background:var(--color-primary); }
+.pop-description .pager { position:absolute; right:72px; top:64px; color:var(--color-on-primary); }
+.pop-description__label { position:absolute; left:72px; top:64px; height:52px; padding:0 26px; border-radius:26px; font-size:26px; font-weight:800; line-height:52px; background:var(--color-surface); color:var(--color-text); }
+.pop-description__title { position:absolute; left:72px; top:160px; width:936px; font-size:70px; font-weight:800; line-height:1.26; max-height:177px; color:var(--color-on-primary); }
+.pop-description__items { position:absolute; left:48px; right:48px; top:480px; display:flex; list-style:none; counter-reset:points; }
+.pop-description .desc__item { position:relative; flex:1 1 0; min-width:0; padding:200px 18px 0; text-align:center; counter-increment:points; }
+.pop-description .desc__item + .desc__item { border-left:2px solid var(--color-accent); }
+.pop-description .desc__item::before { content:counter(points); position:absolute; left:50%; top:0; width:150px; height:150px; margin-left:-75px; border-radius:50%; font-size:78px; font-weight:800; line-height:150px; color:var(--color-text); background:var(--color-accent); }
+.pop-description .desc__item:nth-child(2)::before { background:hsl(from var(--color-primary) calc(h + 150) 65% 74%); }
+.pop-description .desc__item:nth-child(3)::before { background:var(--color-primary); color:var(--color-on-primary); }
+.pop-description .desc__text { display:block; font-size:34px; font-weight:600; line-height:1.45; max-height:198px; color:var(--color-text); }
+.pop-description.role-usage .desc__item { padding-top:236px; }
+.pop-description.role-usage .desc__item::after { content:'STEP ' counter(points); position:absolute; left:0; right:0; top:172px; font-size:24px; font-weight:800; letter-spacing:.04em; color:var(--color-text); }
+.pop-description__visual { position:absolute; right:56px; top:470px; width:200px; height:560px; display:none; }
+.pop-description__photo { display:block; width:100%; height:100%; object-fit:contain; }
+.pop-description.has-image .pop-description__visual { display:block; }
+.pop-description.has-image .pop-description__items { right:280px; }
+</style>
+<article class="card pop-description role-{{role}} {{imageClass}}">
+  <div class="pop-description__head" aria-hidden="true"></div>
+  <span class="pager">{{page}} / {{total}}</span>
+  <div class="pop-description__label">{{sectionLabel}}</div>
+  <h1 class="pop-description__title" data-fit>{{title}}</h1>
+  <ol class="pop-description__items">{{items}}</ol>
+  <div class="pop-description__visual"><img class="pop-description__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
+</article>

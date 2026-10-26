@@ -1,0 +1,25 @@
+<style>
+/* 큰 타이포 (시안 10 '블루 타이프'): 흰 바탕에 제목을 아주 크게, 제품은 오른쪽 아래에 작게 */
+.card.typo-cover { padding:64px 72px; background:var(--color-surface); }
+.typo-cover .badge { background:transparent; color:var(--color-primary); border:3px solid var(--color-primary); line-height:46px; }
+.typo-cover__title { position:absolute; left:72px; top:150px; width:936px; font-size:116px; font-weight:800; line-height:1.2; letter-spacing:-0.02em; max-height:420px; color:var(--color-primary); }
+.typo-cover__copy { position:absolute; left:72px; top:604px; width:560px; font-size:34px; font-weight:600; line-height:1.45; max-height:150px; color:var(--color-text); }
+.typo-cover__visual { position:absolute; right:72px; bottom:60px; width:300px; height:400px; }
+.typo-cover__photo { display:block; width:100%; height:100%; object-fit:contain; object-position:center bottom; }
+.typo-cover__footer { position:absolute; left:72px; bottom:64px; font-size:26px; font-weight:600; color:var(--color-primary); }
+.typo-cover.no-image .typo-cover__visual { display:none; }
+.typo-cover.no-image .typo-cover__copy { width:936px; }
+.typo-cover.role-closing { background:var(--color-primary); }
+.typo-cover.role-closing .typo-cover__title { color:var(--color-on-primary); }
+.typo-cover.role-closing .typo-cover__copy { color:var(--color-on-primary); }
+.typo-cover.role-closing .typo-cover__footer { color:var(--color-on-primary); }
+.typo-cover.role-closing .pager { color:var(--color-on-primary); }
+.typo-cover.role-closing .badge { color:var(--color-on-primary); border-color:var(--color-on-primary); }
+</style>
+<article class="card typo-cover role-{{role}} {{imageClass}}">
+  <header class="card__top"><span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span></header>
+  <h1 class="typo-cover__title" data-fit>{{title}}</h1>
+  <div class="typo-cover__copy" data-fit>{{subtitle}}</div>
+  <div class="typo-cover__visual"><img class="typo-cover__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
+  <div class="typo-cover__footer">{{product}}</div>
+</article>

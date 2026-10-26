@@ -1,0 +1,33 @@
+<style>
+/* 위쪽 연출 띠 (시안 02 '블루 나이트'): 위는 제품을 담은 연출 띠, 아래는 단색 면에 정보.
+   배경 장면 사진이 아직 입력에 없어서(#74 6·7번) 띠는 제품 색 그라데이션과 빛 번짐으로 만든다 */
+.card.band-cover { padding:64px 72px; background:var(--color-surface); }
+.band__scene { position:absolute; left:0; right:0; top:0; overflow:hidden;
+  background:
+    radial-gradient(42% 38% at 50% 46%, rgb(255 255 255 / .28), transparent 72%),
+    radial-gradient(70% 50% at 18% 8%, hsl(from var(--color-primary) h s 62% / .55), transparent 70%),
+    linear-gradient(170deg, hsl(from var(--color-primary) h s 26%), hsl(from var(--color-primary) h s 46%)); }
+.band__scene::after { content:''; position:absolute; left:0; right:0; bottom:0; height:180px; background:linear-gradient(to bottom, transparent, var(--color-surface)); }
+.band__photo { position:absolute; display:block; object-fit:contain; z-index:1; filter:drop-shadow(0 24px 30px rgb(0 0 0 / .35)); }
+.band-cover .band__scene { height:600px; }
+.band-cover .band__photo { left:330px; top:140px; width:420px; height:430px; }
+.band-cover .card__top { position:relative; z-index:2; }
+.band-cover .badge { background:var(--color-surface); color:var(--color-text); }
+.band-cover .pager { color:var(--color-on-primary); }
+.band-cover__title { position:absolute; left:72px; top:620px; width:936px; font-size:66px; font-weight:800; line-height:1.24; max-height:246px; color:var(--color-text); z-index:2; }
+.band-cover__copy { position:absolute; left:72px; top:880px; width:936px; font-size:30px; font-weight:600; line-height:1.45; max-height:87px; color:var(--color-primary); z-index:2; }
+.band-cover__footer { position:absolute; left:72px; bottom:56px; font-size:24px; font-weight:600; color:var(--color-muted); z-index:2; }
+.band-cover.no-image .band__photo { display:none; }
+.band-cover.role-closing .band__scene { height:520px; }
+.band-cover.role-closing .band__photo { top:130px; height:360px; }
+.band-cover.role-closing .band-cover__title { top:560px; text-align:center; }
+.band-cover.role-closing .band-cover__copy { top:820px; text-align:center; }
+</style>
+<article class="card band-cover role-{{role}} {{imageClass}}">
+  <div class="band__scene" aria-hidden="true"></div>
+  <img class="band__photo" style="{{imageCrop}}" src="{{image}}" alt="">
+  <header class="card__top"><span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span></header>
+  <h1 class="band-cover__title" data-fit>{{title}}</h1>
+  <div class="band-cover__copy" data-fit>{{subtitle}}</div>
+  <div class="band-cover__footer">{{product}}</div>
+</article>
