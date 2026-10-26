@@ -1,6 +1,6 @@
-// 카드 글자 수 기준 안내: 입력의 '디자인'(기본·프리미엄 등)에 맞는 기준을 사람이 읽는 줄로 만든다
+// 카드 글자 수 기준 안내: 입력의 '무드'(기본·프리미엄 등)에 맞는 기준을 사람이 읽는 줄로 만든다
 // npm run check가 출력 → Claude가 1단계(입력 확인)에서 바로 보고 문구를 그 기준으로 씀 (#67)
-// 기준 원본은 config/templates.json (디자인 묶음은 _designs.<이름>이 기본 정의를 덮어씀)
+// 기준 원본은 config/templates.json (무드 묶음은 _designs.<이름>이 기본 정의를 덮어씀)
 const { loadConfig, designOf } = require('./common');
 const { colorModeOf } = require('./color-mood');
 
@@ -25,10 +25,10 @@ function limitLines(input) {
   const colorMode = colorModeOf(input);
   const lines = [];
   lines.push(design === '기본'
-    ? '디자인: 기본 — config/templates.json의 템플릿별 기준을 써요'
-    : `디자인: ${design} — config/templates.json의 _designs.${design} 기준을 써요 (기본 템플릿 기준과 달라요. 아래 숫자로 문구를 쓰세요)`);
-  lines.push(`카드 색: ${colorMode}${colorRaw ? '' : ' (비어 있어서 디자인 기본값)'}`);
-  // 디자인 묶음이 자동으로 붙이는 머리말 등 문구를 쓸 때 알아야 할 것 (_designs.<이름>._notes)
+    ? '무드: 기본 — config/templates.json의 템플릿별 기준을 써요'
+    : `무드: ${design} — config/templates.json의 _designs.${design} 기준을 써요 (기본 템플릿 기준과 달라요. 아래 숫자로 문구를 쓰세요)`);
+  lines.push(`카드 색: ${colorMode}${colorRaw ? '' : ' (비어 있어서 무드 기본값)'}`);
+  // 무드 묶음이 자동으로 붙이는 머리말 등 문구를 쓸 때 알아야 할 것 (_designs.<이름>._notes)
   for (const note of Array.isArray(templates._notes) ? templates._notes : []) lines.push(`※ ${note}`);
   for (const [key, tpl] of Object.entries(templates)) {
     if (key.startsWith('_') || !tpl || !tpl.fields) continue;

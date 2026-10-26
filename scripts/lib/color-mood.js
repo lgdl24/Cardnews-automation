@@ -196,6 +196,7 @@ const COLOR_MODES = ['기본', '제품 색'];
 function colorModeOf(input) {
   const v = ((input && input.cond && input.cond['카드 색']) || '').split('\n')[0].trim();
   if (v) return COLOR_MODES.includes(v) ? v : '기본';
+  // 비우면 무드의 기본 색(_designs.<무드>._defaults.colorMode). 무드 설정이 필요할 때 loadConfig를 불러옴
   const { loadConfig } = require('./common');
   return loadConfig(input).templates._defaults?.colorMode || '기본';
 }
@@ -229,11 +230,23 @@ async function readPixels(page, file, { withBounds = false } = {}) {
     ctx.drawImage(img, 0, 0, w, h);
     const pixels = Array.from(ctx.getImageData(0, 0, w, h).data);
     if (!withBounds) return pixels;
-    let left=w,top=h,right=-1,bottom=-1;
-    for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(pixels[(y*w+x)*4+3]>8){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
-    const bounds = right<left ? null : {left:left/w,top:top/h,width:(right-left+1)/w,height:(bottom-top+1)/h};
-    return {pixels,bounds};
-  }, {src,withBounds});
+    // 투명하지 않은(알파 8 초과) 픽셀이 있는 범위. 전부 투명하면 null (자르지 않음)
+    let left = w;
+    let top = h;
+    let right = -1;
+    let bottom = -1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (pixels[(y * w + x) * 4 + 3] <= 8) continue;
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+        top = Math.min(top, y);
+        bottom = Math.max(bottom, y);
+      }
+    }
+    const bounds = right < left ? null : { left: left / w, top: top / h, width: (right - left + 1) / w, height: (bottom - top + 1) / h };
+    return { pixels, bounds };
+  }, { src, withBounds });
 }
 
 module.exports = {

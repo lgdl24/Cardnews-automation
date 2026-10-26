@@ -18,8 +18,15 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+// 새 칸이 있으면 빈 값도 그대로 사용. '무드'가 없는 예전 입력만 '디자인'으로 읽음.
+function moodInputOf(input) {
+  const cond = input?.cond || {};
+  const key = Object.hasOwn(cond, '무드') ? '무드' : '디자인';
+  return { key, value: (cond[key] || '').split('\n')[0].trim() };
+}
+
 function designOf(input, config = readJson(paths.config('templates.json'))) {
-  const value = ((input?.cond?.['디자인']) || '').split('\n')[0].trim();
+  const { value } = moodInputOf(input);
   return Object.hasOwn(config._designs || {}, value) ? value : '기본';
 }
 
@@ -126,6 +133,6 @@ function requireProductId(argv) {
 }
 
 module.exports = {
-  ROOT, paths, readJson, designOf, loadConfig, normalize, countChars,
+  ROOT, paths, readJson, moodInputOf, designOf, loadConfig, normalize, countChars,
   parseInput, loadInput, createReport, printReport, requireProductId,
 };

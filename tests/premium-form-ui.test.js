@@ -28,12 +28,12 @@ test('웹 입력에서 프리미엄 선택, 색 비움·직접 지정과 안내'
       return route.fulfill({json:{ok:true,mode:'web',claude:{installed:true,version:null,logged_in:true},job:null,form:require('../config/input-form.json'),revision_types:[]}});
     });
     await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/studio/new`,{waitUntil:'domcontentloaded'});
-    const design=page.getByRole('combobox',{name:/^디자인/});
+    const design=page.getByRole('combobox',{name:/^무드/});
     await design.selectOption('프리미엄');
     const color=page.getByRole('combobox',{name:/^카드 색/});
     assert.equal(await color.inputValue(),'');
     assert.equal(await color.locator('option:checked').innerText(),'선택 안 함');
-    assert.ok(await page.getByText('기본 또는 제품 색. 비우면 디자인의 기본 색 선택을 사용해요',{exact:false}).isVisible());
+    assert.ok(await page.getByText('기본 또는 제품 색. 비우면 무드의 기본 색을 써요',{exact:false}).isVisible());
     await color.selectOption('기본');assert.equal(await color.inputValue(),'기본');
     await color.selectOption('제품 색');assert.equal(await color.inputValue(),'제품 색');
     assert.equal(await design.locator('option',{hasText:'라일락'}).count(),0);

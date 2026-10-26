@@ -1,9 +1,9 @@
-// 입력 확인: 필수 항목, 이미지 파일 존재·사용 가능 여부, 카드 수, 지시문 형태 문장. 끝에 디자인별 카드 글자 수 기준 출력
+// 입력 확인: 필수 항목, 이미지 파일 존재·사용 가능 여부, 카드 수, 지시문 형태 문장. 끝에 무드별 카드 글자 수 기준 출력
 // 사용법: node scripts/check-input.js <제품ID>
 // 항목 정의는 config/input-form.json, 지시문 패턴은 config/input-safety.json
 const fs = require('fs');
 const path = require('path');
-const { paths, loadInput, createReport, printReport, requireProductId } = require('./lib/common');
+const { paths, loadInput, moodInputOf, createReport, printReport, requireProductId } = require('./lib/common');
 const { loadForm, requiredFields, findField, findInstructionLike } = require('./lib/input-form');
 const { limitLines } = require('./lib/limits');
 
@@ -47,9 +47,9 @@ function checkInput(productId) {
     report.warn('## 카드 색', `"${colorRaw}"는 고를 수 없는 값이에요. ${colorRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 색으로 만들어요)`);
   }
 
-  const designRule = findField(form, '디자인');
-  const designRaw = (input.cond['디자인'] || '').split('\n')[0].trim();
-  if (designRule && designRaw && !designRule.options.includes(designRaw)) report.warn('## 디자인', `${designRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 묶음으로 만들어요)`);
+  const moodRule = findField(form, '무드');
+  const { key: moodKey, value: moodRaw } = moodInputOf(input);
+  if (moodRule && moodRaw && !moodRule.options.includes(moodRaw)) report.warn(`## ${moodKey}`, `${moodRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 묶음으로 만들어요)`);
 
   const imageRule = findField(form, '이미지');
   for (const img of input.images) {
@@ -85,7 +85,7 @@ if (require.main === module) {
   const id = requireProductId(process.argv.slice(2));
   const report = checkInput(id);
   printReport(`입력 확인: ${id}`, report);
-  // 문구를 쓸 때 쓸 글자 수 기준 (디자인에 따라 다름, #67)
+  // 문구를 쓸 때 쓸 글자 수 기준 (무드에 따라 다름, #67)
   const input = loadInput(id);
   if (input) {
     const { lines } = limitLines(input);
