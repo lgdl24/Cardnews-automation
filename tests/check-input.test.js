@@ -3,6 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const { checkInput } = require('../scripts/check-input');
+const { limitLines } = require('../scripts/lib/limits');
 const { makeWorkspace, removeSection, replaceSection, codes } = require('./helpers');
 
 // 각 경우: 예시 제품을 복사해 edit로 고친 뒤 checkInput 결과를 확인
@@ -162,4 +163,41 @@ test('products/test-injection은 오류 없이 지시문 경고만 낸다', () =
   assert.deepEqual(codes(report), []);
   const warned = report.warnings.filter((w) => w.message.includes('지시문')).map((w) => w.where);
   assert.deepEqual(warned, ['# 제품 정보 > ## 제품 설명', '# 제품 정보 > ## 주요 특징', '# 제품 정보 > ## 이미지', '# 제작 조건 > ## 강조 정보']);
+});
+
+// ── 카드 글자 수 기준 안내 (#67): 디자인에 맞는 기준을 check가 출력 → Claude가 그 숫자로 문구를 씀
+test('글자 수 기준: 기본 디자인은 기본 템플릿 기준, 카드 색 비움은 기본', () => {
+  const ws = makeWorkspace();
+  try {
+    const { design, colorMode, lines } = limitLines(ws.use(() => require('../scripts/lib/common').loadInput(ws.id)));
+    assert.equal(design, '기본');
+    assert.equal(colorMode, '기본');
+    const text = lines.join('\n');
+    assert.match(text, /items: 항목 1~3개 · 항목당 30자 · 줄바꿈하면 한 줄 21자 · 최대 2줄 · 필수/);
+    assert.doesNotMatch(text, /_designs|※/);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test('글자 수 기준: 프리미엄이면 _designs 기준을 쓰라고 알리고, 카드 색 비움은 제품 색', () => {
+  const ws = makeWorkspace();
+  try {
+    ws.editInput((t) => `${t.trimEnd()}\n\n## 디자인\n프리미엄\n`);
+    const r = ws.run('check-input.js');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /== 카드 글자 수 기준 ==/);
+    assert.match(r.stdout, /디자인: 프리미엄 — config\/templates\.json의 _designs\.프리미엄 기준/);
+    assert.match(r.stdout, /카드 색: 제품 색 \(비어 있어서 디자인 기본값\)/);
+    assert.match(r.stdout, /items: 항목 1~3개 · 항목당 28자 · 줄바꿈하면 한 줄 12자 · 최대 3줄 · 필수/);
+    assert.match(r.stdout, /description\(설명형\) · 사진 선택/);
+    // 템플릿이 붙이는 머리말을 문구에 다시 쓰지 않게 (실제 제작에서 'Point 1'·'STEP 1'이 겹쳐 나옴)
+    assert.match(r.stdout, /※ 특징·상세 카드 머리말 'Point N'과 사용법 카드 'How to'는 템플릿이 붙여요/);
+    assert.match(r.stdout, /※ 사용법 카드 항목 앞의 'STEP N'도 템플릿이 붙여요/);
+    // 카드 색을 직접 적으면 그 값
+    ws.editInput((t) => `${t.trimEnd()}\n\n## 카드 색\n기본\n`);
+    assert.match(ws.run('check-input.js').stdout, /카드 색: 기본\n/);
+  } finally {
+    ws.cleanup();
+  }
 });
