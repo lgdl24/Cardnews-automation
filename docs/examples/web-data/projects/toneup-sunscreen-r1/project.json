@@ -384,6 +384,14 @@
     "adjustments": [],
     "note": null
   },
+  "design": {
+    "id": "기본",
+    "name": "기본",
+    "version": "1",
+    "source": "default",
+    "selected_by": null,
+    "reason": null
+  },
   "quality": {
     "stage": "approved",
     "card_count": 5,

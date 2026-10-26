@@ -164,6 +164,16 @@ export interface Quality {
   [metric: string]: unknown;
 }
 
+/** 디자인 묶음 기록 (#74): 정한 곳 input(입력 무드) · cards(구성안에서 고름) · default */
+export interface CardDesign {
+  id: string;
+  name: string;
+  version: string | null;
+  source: 'input' | 'cards' | 'default';
+  selected_by: 'claude' | 'human' | null;
+  reason: string | null;
+}
+
 export interface Project {
   spec_version: '0.3';
   id: string;
@@ -187,6 +197,8 @@ export interface Project {
   plan_revisions: Revision[];
   /** 출력에 쓴 카드 색 (v0.3). 색 기록이 없는 옛 출력이면 null */
   colors: CardColors | null;
+  /** 쓴 디자인 묶음 (#74). 옛 데이터면 없음 */
+  design?: CardDesign;
   quality: Quality;
 }
 

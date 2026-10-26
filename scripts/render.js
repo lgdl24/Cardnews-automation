@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
-const { paths, loadConfig, loadInput, createReport, printReport, requireProductId } = require('./lib/common');
+const { paths, loadConfig, loadInput, createReport, printReport, requireProductId, designRecord } = require('./lib/common');
 const { validate } = require('./validate');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, launchBrowser } = require('./lib/card-html');
@@ -126,6 +126,9 @@ async function main() {
     data, input, imageDir, baseColor: theme.color, browser: colorMode === '제품 색' ? await startBrowser() : null,
   });
   reportColors(report, colors);
+  const design = designRecord({ input, data });
+  const DESIGN_FROM = { input: '입력에서 고름', cards: data.design && data.design.selected_by === 'human' ? '구성안에서 사람이 고름' : '구성안에서 Claude가 고름', default: '기본값' };
+  console.log(`디자인 묶음: ${design.name} v${design.version ?? '-'} (${DESIGN_FROM[design.source]})`);
   console.log(colorSummary(colors));
   const cardTheme = { ...theme, color: colors.color };
 
@@ -184,7 +187,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(outDir, onlyCard === null ? 'render-report.json' : `render-report-card-${pad(onlyCard)}.json`),
-    JSON.stringify({ product_id: id, rendered_at: new Date().toISOString(), colors: colorRecord(colors), results }, null, 2),
+    JSON.stringify({ product_id: id, rendered_at: new Date().toISOString(), design, colors: colorRecord(colors), results }, null, 2),
   );
   console.log(`PNG ${targets.length}장 저장: ${path.relative(paths.root, pngDir)}`);
   printReport(`레이아웃 점검: ${id}`, report);

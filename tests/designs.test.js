@@ -197,3 +197,13 @@ test('작업실: 구성안 승인 전 디자인 묶음 바꾸기 (입력에 직�
     s.close();
   }
 });
+
+// ── 4단계: 출력·웹 데이터·평가 결과에 남기는 묶음 기록
+test('designRecord: 이름·버전·정한 곳, 구성안에서 골랐을 때만 고른 사람·이유', () => {
+  const { designRecord } = require('../scripts/lib/common');
+  assert.deepEqual(designRecord({ input: { cond: {} }, data: {}, config }), { id: '기본', name: '기본', version: '1', source: 'default', selected_by: null, reason: null });
+  assert.deepEqual(designRecord({ input: { cond: { 무드: '프리미엄' } }, data: { design: { id: '기본', selected_by: 'claude', reason: 'x' } }, config }),
+    { id: '프리미엄', name: '프리미엄', version: '1', source: 'input', selected_by: null, reason: null });
+  assert.deepEqual(designRecord({ input: { cond: { 무드: '자동 추천' } }, data: { design: { id: '프리미엄', selected_by: 'human', reason: '사람이 고름' } }, config }),
+    { id: '프리미엄', name: '프리미엄', version: '1', source: 'cards', selected_by: 'human', reason: '사람이 고름' });
+});

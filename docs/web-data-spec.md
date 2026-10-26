@@ -127,6 +127,7 @@ npm run export -- --no-eval            # 평가 실행은 빼고 config/export.j
 | `cards[]` | 카드. 아래 표 |
 | `plan_revisions[]` | 구성안 수정 요청: `ts` · `types`(유형 코드) · `memo` |
 | `colors` | 출력에 쓴 카드 색(v0.3, [card-color.md](card-color.md)): `mode`(입력에서 고른 `기본`·`제품 색`) · `source`(실제로 쓴 색 `theme`·`product`) · `image`·`representative`(제품 색일 때 사진·대표 색) · `color`(7개, `#RRGGBB`) · `adjustments[]`(글자 대비 때문에 어둡게 한 색 `key`·`from`·`to`) · `note`(제품 색을 골랐는데 기본 색을 쓴 이유 등). 가장 최근 출력 보고서(`render-report*.json`)의 값, 색 기록이 없는 옛 출력이면 `null`. 대비 표(`contrast`)는 내보내지 않음 |
+| `design` | 쓴 디자인 묶음(#74, v0.3에 선택 칸으로 추가): `id`·`name`·`version`(`config/templates.json` `_catalog`) · `source`(`input` 입력 무드에서 직접 · `cards` 구성안에서 고름 · `default` 기본값) · `selected_by`·`reason`(구성안에서 골랐을 때만, 아니면 `null`). 없으면 묶음 기록 전 데이터. V2 카드 결과 '디자인 묶음' |
 | `quality` | 품질 지표 (`output/quality.json`): `coverage` · `coverage_detail`(`covered` · `total` · `missing[]` · `excluded_count`) · `evidence_rate` · `char_usage` · `char_usage_max` · `caution`(`total` · `in_source` · `not_in_source`) 등. 핵심 정보 포함률처럼 지표가 늘면 필드가 추가됨 |
 
 `cards[]` — `cards.json`의 카드 필드(`no` · `role` · `template` · `intent` · `image` · `evidence` · `copy`)에 더해:
@@ -190,3 +191,4 @@ npm run export -- --no-eval            # 평가 실행은 빼고 config/export.j
 - v0.1 (2026-10-16): 초안. 필드를 추가하면 부 버전(0.2), 지우거나 뜻을 바꾸면 주 버전(1.0)을 올리고 두 사람이 함께 확인합니다.
 - v0.2 (2026-10-19, 이용석 리뷰): `project.json` `cards[].cautions[].fields` 추가 (V2 구성안·근거에서 [주의] 표현이 나온 칸을 강조). 다른 필드는 그대로
 - v0.3 (2026-10-21, #46 리뷰 이용석 의견): `project.json` `colors` 추가 (V2 카드 결과 '카드 색'). 다른 필드는 그대로
+- v0.3 선택 칸 (2026-10-26, #74): `project.json` `design`(쓴 디자인 묶음), `timeline.json` 이벤트 `design_selected`(`design`·`from`·`by`). 없어도 되는 칸이라 버전은 그대로

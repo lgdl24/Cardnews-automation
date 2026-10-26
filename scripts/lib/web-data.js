@@ -2,7 +2,7 @@
 // 웹에 공개해도 되는 값만 옮긴다: input.md 전체·입력 이미지 원본·토큰·비용·지시문 형태 원문 문장은 넣지 않음
 const fs = require('fs');
 const path = require('path');
-const { paths, readJson, loadConfig, loadInput, normalize, countChars } = require('./common');
+const { paths, readJson, loadConfig, loadInput, normalize, countChars, designRecord } = require('./common');
 const { readEvents } = require('./events');
 const { summarize, PHASES } = require('./analysis');
 const { findCautions, round } = require('./metrics');
@@ -166,6 +166,7 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
     cards,
     plan_revisions: revisions.filter((r) => r.stage === 'plan').map(revisionOf),
     colors: latestColors(id),
+    design: designRecord({ input, data }),
     quality: {
       ...qualityRest,
       coverage_detail: {

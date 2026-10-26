@@ -51,6 +51,21 @@ function designCatalog(config = readJson(paths.config('templates.json'))) {
     .map(([id, meta]) => ({ id, ...meta, colorMode: (id === '기본' ? null : config._designs?.[id]?._defaults?.colorMode) || '기본' }));
 }
 
+// 출력·웹 데이터·평가 결과에 남기는 묶음 기록 (#74 4단계): 이름·버전·정한 곳, 구성안에서 골랐으면 고른 사람·이유
+function designRecord({ input = null, data = null, config = readJson(paths.config('templates.json')) } = {}) {
+  const used = resolveDesign({ input, data, config });
+  const meta = (config._catalog || {})[used.id] || {};
+  const picked = used.source === 'cards' ? data.design : null;
+  return {
+    id: used.id,
+    name: meta.name || used.id,
+    version: meta.version != null ? String(meta.version) : null,
+    source: used.source,
+    selected_by: picked ? picked.selected_by : null,
+    reason: picked ? picked.reason : null,
+  };
+}
+
 // data(cards.json)를 넘기면 구성안에서 고른 묶음도 봄
 function loadConfig(input = null, data = null) {
   const all = readJson(paths.config('templates.json'));
@@ -155,6 +170,6 @@ function requireProductId(argv) {
 }
 
 module.exports = {
-  ROOT, paths, readJson, moodInputOf, resolveDesign, designOf, designCatalog, loadConfig, normalize, countChars,
+  ROOT, paths, readJson, moodInputOf, resolveDesign, designOf, designCatalog, designRecord, loadConfig, normalize, countChars,
   parseInput, loadInput, createReport, printReport, requireProductId,
 };
