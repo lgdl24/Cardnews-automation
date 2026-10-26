@@ -1,0 +1,238 @@
+{
+  "spec_version": "0.3",
+  "id": "demo-cleansing-oil",
+  "summary": {
+    "complete": true,
+    "total_minutes": 84.7,
+    "ai_minutes": 18.2,
+    "human_minutes": 66.3,
+    "phases": {
+      "input": 0,
+      "plan_job": 2.7,
+      "plan_review": 4.6,
+      "copy_job": 13.1,
+      "final_review": 61.8,
+      "revise_job": 2.4
+    },
+    "plan_revisions": 0,
+    "revision_rounds": 1,
+    "revised_card_ratio": 0.4,
+    "revision_types": {
+      "DESIGN": 1
+    },
+    "first_pass": false,
+    "auto_fix_total": 1
+  },
+  "jobs": [
+    {
+      "job_id": "job-20261026-002416-t0h",
+      "kind": "plan",
+      "ok": true,
+      "minutes": 2.7,
+      "error_code": null,
+      "first_pass": true,
+      "auto_fix_count": 0
+    },
+    {
+      "job_id": "job-20261026-003135-7iy",
+      "kind": "copy",
+      "ok": true,
+      "minutes": 13.1,
+      "error_code": null,
+      "first_pass": false,
+      "auto_fix_count": 1
+    },
+    {
+      "job_id": "job-20261026-014537-4nk",
+      "kind": "revise",
+      "ok": true,
+      "minutes": 2.4,
+      "error_code": null,
+      "first_pass": true,
+      "auto_fix_count": 0
+    }
+  ],
+  "events": [
+    {
+      "ts": "2026-10-26T00:24:09.718Z",
+      "event": "input_submitted",
+      "job_id": null
+    },
+    {
+      "ts": "2026-10-26T00:24:16.874Z",
+      "event": "job_started",
+      "job_id": "job-20261026-002416-t0h",
+      "kind": "plan"
+    },
+    {
+      "ts": "2026-10-26T00:26:49.401Z",
+      "event": "validate_result",
+      "job_id": "job-20261026-002416-t0h",
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "plan"
+    },
+    {
+      "ts": "2026-10-26T00:27:01.440Z",
+      "event": "job_finished",
+      "job_id": "job-20261026-002416-t0h",
+      "kind": "plan",
+      "ok": true,
+      "error_code": null
+    },
+    {
+      "ts": "2026-10-26T00:27:36.078Z",
+      "event": "validate_result",
+      "job_id": null,
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "plan"
+    },
+    {
+      "ts": "2026-10-26T00:31:35.111Z",
+      "event": "plan_approved",
+      "job_id": null,
+      "approved_by": "human"
+    },
+    {
+      "ts": "2026-10-26T00:31:35.157Z",
+      "event": "job_started",
+      "job_id": "job-20261026-003135-7iy",
+      "kind": "copy"
+    },
+    {
+      "ts": "2026-10-26T00:44:04.722Z",
+      "event": "validate_result",
+      "job_id": "job-20261026-003135-7iy",
+      "ok": false,
+      "check": "data",
+      "error_codes": [
+        "CHAR_LIMIT"
+      ],
+      "cards_with_errors": [
+        2,
+        4
+      ],
+      "stage": "copy"
+    },
+    {
+      "ts": "2026-10-26T00:44:27.544Z",
+      "event": "validate_result",
+      "job_id": "job-20261026-003135-7iy",
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy"
+    },
+    {
+      "ts": "2026-10-26T00:44:35.487Z",
+      "event": "validate_result",
+      "job_id": "job-20261026-003135-7iy",
+      "ok": true,
+      "check": "layout",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy",
+      "rendered_cards": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "ts": "2026-10-26T00:44:38.365Z",
+      "event": "job_finished",
+      "job_id": "job-20261026-003135-7iy",
+      "kind": "copy",
+      "ok": true,
+      "error_code": null
+    },
+    {
+      "ts": "2026-10-26T01:45:37.977Z",
+      "event": "revision_requested",
+      "job_id": null,
+      "stage": "final",
+      "cards": [
+        4,
+        5
+      ],
+      "types": [
+        "DESIGN"
+      ],
+      "memo": "디자인 변경"
+    },
+    {
+      "ts": "2026-10-26T01:45:38.027Z",
+      "event": "job_started",
+      "job_id": "job-20261026-014537-4nk",
+      "kind": "revise"
+    },
+    {
+      "ts": "2026-10-26T01:47:44.277Z",
+      "event": "validate_result",
+      "job_id": "job-20261026-014537-4nk",
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy"
+    },
+    {
+      "ts": "2026-10-26T01:47:51.323Z",
+      "event": "validate_result",
+      "job_id": "job-20261026-014537-4nk",
+      "ok": true,
+      "check": "layout",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy",
+      "rendered_cards": [
+        4
+      ]
+    },
+    {
+      "ts": "2026-10-26T01:47:54.289Z",
+      "event": "validate_result",
+      "job_id": "job-20261026-014537-4nk",
+      "ok": true,
+      "check": "layout",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "copy",
+      "rendered_cards": [
+        5
+      ]
+    },
+    {
+      "ts": "2026-10-26T01:48:03.588Z",
+      "event": "job_finished",
+      "job_id": "job-20261026-014537-4nk",
+      "kind": "revise",
+      "ok": true,
+      "error_code": null
+    },
+    {
+      "ts": "2026-10-26T01:48:51.039Z",
+      "event": "validate_result",
+      "job_id": null,
+      "ok": true,
+      "check": "data",
+      "error_codes": [],
+      "cards_with_errors": [],
+      "stage": "approved"
+    },
+    {
+      "ts": "2026-10-26T01:48:51.041Z",
+      "event": "final_approved",
+      "job_id": null,
+      "approved_by": "human"
+    }
+  ]
+}
