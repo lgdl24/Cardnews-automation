@@ -7,15 +7,15 @@
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
-const { paths, loadConfig, loadInput, createReport, printReport, requireProductId } = require('./lib/common');
+const { paths, loadConfig, loadInput, createReport, printReport, requireProductId, designRecord } = require('./lib/common');
 const { validate } = require('./validate');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
-const { pad, buildCardHtml, buildIndexHtml, inspectPage, launchBrowser } = require('./lib/card-html');
+const { pad, buildCardHtml, buildIndexHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
 
 // 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
 // 제품 색이면 사진 픽셀을 읽으려고 브라우저를 먼저 띄움 (HTML만 만들 때도)
-async function colorsFor({ data, input, imageDir, baseColor, browser }) {
+async function colorsFor({ data, input, imageDir, baseColor, browser, pairMin = {} }) {
   const mode = colorModeOf(input, data);
   let pixels = null;
   let image = null;
@@ -33,7 +33,7 @@ async function colorsFor({ data, input, imageDir, baseColor, browser }) {
       }
     }
   }
-  return decideColors({ mode, baseColor, pixels, image, readError });
+  return decideColors({ mode, baseColor, pixels, image, readError, pairMin });
 }
 
 function reportColors(report, colors) {
@@ -123,9 +123,12 @@ async function main() {
   // 카드 색
   const colorMode = colorModeOf(input, data);
   const colors = await colorsFor({
-    data, input, imageDir, baseColor: theme.color, browser: colorMode === '제품 색' ? await startBrowser() : null,
+    data, input, imageDir, baseColor: theme.color, pairMin: theme.contrast || {}, browser: colorMode === '제품 색' ? await startBrowser() : null,
   });
   reportColors(report, colors);
+  const design = designRecord({ input, data });
+  const DESIGN_FROM = { input: '입력에서 고름', cards: data.design && data.design.selected_by === 'human' ? '구성안에서 사람이 고름' : '구성안에서 Claude가 고름', default: '기본값' };
+  console.log(`디자인 묶음: ${design.name} v${design.version ?? '-'} (${DESIGN_FROM[design.source]})`);
   console.log(colorSummary(colors));
   const cardTheme = { ...theme, color: colors.color };
 
@@ -142,10 +145,14 @@ async function main() {
     } finally { await cropPage.close(); }
   }
 
+  // 용도가 제형·배경인 사진 (#74): 사용 가능하고 파일이 있는 첫 장. 묶음 템플릿이 질감·연출 자리에 씀
+  const firstOfKind = (kind) => (input.images || []).find((i) => i.kind === kind && i.usage !== '불가' && fs.existsSync(path.join(imageDir, i.file)))?.file || null;
+  const extraImages = { texture: firstOfKind('제형'), scene: firstOfKind('배경') };
+
   // HTML 생성
   for (const card of targets) {
     const html = buildCardHtml({
-      card, cards: data.cards, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image),
+      card, cards: data.cards, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image), extraImages,
     });
     fs.writeFileSync(path.join(htmlDir, `card-${pad(card.no)}.html`), html);
   }
@@ -166,17 +173,19 @@ async function main() {
       const htmlFile = path.join(htmlDir, `card-${pad(card.no)}.html`);
       await page.goto(pathToFileURL(htmlFile).href, { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);
-      const { issues, overlaps, fontOk } = await inspectPage(page);
+      await waitForFit(page);
+      const { issues, overlaps, textOverlaps, fontOk } = await inspectPage(page);
       const pngFile = path.join(pngDir, `card-${pad(card.no)}.png`);
       await page.screenshot({ path: pngFile, clip: { x: 0, y: 0, ...theme.size } });
 
       const where = `${card.no}번 카드`;
       if (!fontOk) report.warn(where, `웹폰트(${theme.font.family})를 불러오지 못했어요. npm install을 확인해 주세요`);
       for (const o of overlaps) report.warn(`${where} ${o.target}`, `글자가 제품 이미지와 ${o.px}px 겹쳐요. 이미지 여백을 확인해 주세요`);
+      for (const o of textOverlaps) report.warn(`${where} ${o.target}`, `글자 칸끼리 ${o.px}px 겹쳐요. 문구를 줄여 주세요`);
       for (const it of issues) {
         report.error(it.code, `${where} ${it.target}`, it.code === 'OVERFLOW' ? `글자가 영역을 넘쳐요: "${it.text}…"` : `이미지를 불러오지 못했어요: ${it.text}`);
       }
-      results.push({ no: card.no, png: path.relative(paths.root, pngFile), issues, overlaps, fontOk });
+      results.push({ no: card.no, png: path.relative(paths.root, pngFile), issues, overlaps, textOverlaps, fontOk });
     }
   } finally {
     await browser.close();
@@ -184,7 +193,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(outDir, onlyCard === null ? 'render-report.json' : `render-report-card-${pad(onlyCard)}.json`),
-    JSON.stringify({ product_id: id, rendered_at: new Date().toISOString(), colors: colorRecord(colors), results }, null, 2),
+    JSON.stringify({ product_id: id, rendered_at: new Date().toISOString(), design, colors: colorRecord(colors), results }, null, 2),
   );
   console.log(`PNG ${targets.length}장 저장: ${path.relative(paths.root, pngDir)}`);
   printReport(`레이아웃 점검: ${id}`, report);

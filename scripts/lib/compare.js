@@ -3,7 +3,7 @@
 //   - 평가 실행(eval/runs)을 입력 × 규칙 버전 × 비교판으로 묶어 반복 일관성 계산(A6)
 const fs = require('fs');
 const path = require('path');
-const { paths, readJson, loadConfig, loadInput, normalize } = require('./common');
+const { paths, readJson, loadConfig, loadInput, normalize, designOf } = require('./common');
 const { computeQuality, round, mean } = require('./metrics');
 const { readEvents } = require('./events');
 const { summarize } = require('./analysis');
@@ -22,6 +22,7 @@ function loadRun(id, config = null) {
     input: normalize(input.productText),
     roles: data.cards.map((c) => c.role),
     templates: data.cards.map((c) => c.template),
+    design: designOf(input, undefined, data),
     evidence,
     quality: (({ templates, caution }) => computeQuality({ data, input, templates, caution }))(config || loadConfig(input, data)),
     process: summarize(readEvents(id), { cardCount: data.cards.length }),
@@ -49,6 +50,12 @@ function stdev(vals) {
   return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / xs.length);
 }
 
+function countBy(list) {
+  const out = {};
+  for (const v of list) if (v !== undefined && v !== null) out[v] = (out[v] || 0) + 1;
+  return out;
+}
+
 function pairsOf(list) {
   const out = [];
   for (let i = 0; i < list.length; i += 1) for (let j = i + 1; j < list.length; j += 1) out.push([list[i], list[j]]);
@@ -62,6 +69,8 @@ function consistencyOf(runs) {
   return {
     role_order_match: avg((a, b) => seqMatch(a.roles, b.roles)),
     template_order_match: avg((a, b) => seqMatch(a.templates, b.templates)),
+    // 쓴 디자인 묶음이 같은 쌍의 비율 (무드 자동 추천이면 반복마다 달라질 수 있음, #74)
+    design_match: avg((a, b) => (a.design === b.design ? 1 : 0)),
     evidence_overlap: avg((a, b) => jaccard(a.evidence, b.evidence)),
     coverage_stdev: round(stdev(runs.map((r) => r.quality.coverage))),
     char_usage_stdev: round(stdev(runs.map((r) => r.quality.char_usage))),
@@ -175,6 +184,7 @@ function evalConsistency(runsDir, { batch = null, config = null } = {}) {
       completed: done.length,
       checks_passed: list.filter((r) => r.checks && r.checks.pass === true).length,
       first_pass: list.filter((r) => r.metrics && r.metrics.first_pass === true).length,
+      designs: countBy(loaded.map((r) => r.design)),
       stopped_error_codes: errorCodes,
       outcome_same: new Set(list.map((r) => `${r.outcome && r.outcome.result}|${r.outcome && r.outcome.error_code}`)).size === 1,
       consistency: loaded.length >= 2 ? consistencyOf(loaded) : null,

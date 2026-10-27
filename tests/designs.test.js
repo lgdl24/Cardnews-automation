@@ -174,7 +174,7 @@ test('작업실: 구성안 승인 전 디자인 묶음 바꾸기 (입력에 직�
     assert.equal(r.status, 200);
     assert.deepEqual({ id: r.body.design.id, source: r.body.design.source, auto: r.body.design.auto }, { id: '기본', source: 'cards', auto: true });
     assert.equal(r.body.design.selected.selected_by, 'claude');
-    assert.deepEqual(r.body.design.catalog.map((d) => d.id).sort(), ['기본', '프리미엄']);
+    assert.deepEqual(r.body.design.catalog.map((d) => d.id).sort(), ['기본', ...Object.keys(config._designs)].sort());
     assert.equal(r.body.actions.can_select_design, true);
 
     assert.equal((await s.call('PUT', '/products/auto-pick/design', { id: '없는 묶음' })).status, 400);
@@ -196,4 +196,14 @@ test('작업실: 구성안 승인 전 디자인 묶음 바꾸기 (입력에 직�
   } finally {
     s.close();
   }
+});
+
+// ── 4단계: 출력·웹 데이터·평가 결과에 남기는 묶음 기록
+test('designRecord: 이름·버전·정한 곳, 구성안에서 골랐을 때만 고른 사람·이유', () => {
+  const { designRecord } = require('../scripts/lib/common');
+  assert.deepEqual(designRecord({ input: { cond: {} }, data: {}, config }), { id: '기본', name: '기본', version: '1', source: 'default', selected_by: null, reason: null });
+  assert.deepEqual(designRecord({ input: { cond: { 무드: '프리미엄' } }, data: { design: { id: '기본', selected_by: 'claude', reason: 'x' } }, config }),
+    { id: '프리미엄', name: '프리미엄', version: '1', source: 'input', selected_by: null, reason: null });
+  assert.deepEqual(designRecord({ input: { cond: { 무드: '자동 추천' } }, data: { design: { id: '프리미엄', selected_by: 'human', reason: '사람이 고름' } }, config }),
+    { id: '프리미엄', name: '프리미엄', version: '1', source: 'cards', selected_by: 'human', reason: '사람이 고름' });
 });

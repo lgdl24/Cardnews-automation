@@ -31,5 +31,5 @@ export function ClaudeStatus({ info }: { info: ClaudeInfo }) {
       </p>
     );
   }
-  return <p className="notice">Claude Code {info.version} · 이 컴퓨터에서 실행 · 작업은 한 번에 하나씩</p>;
+  return <p className="notice">Claude Code {info.version} · 이 컴퓨터에서 실행 · 작업은 한 번에 하나씩 (나머지는 차례로 대기)</p>;
 }

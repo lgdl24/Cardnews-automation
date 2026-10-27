@@ -1,0 +1,28 @@
+<style>
+/* 큰 타이포 · 이미지 강조형 (시안 10 특징 카드): 강조색 면 전체, 흰 제목을 줄마다 폭에 맞춰 아주 크게(최대 290px), 아래 짧은 설명과 오른쪽 아래 제형·제품 사진 */
+.card.typo { padding:0; background:var(--color-bg); color:var(--color-primary); }
+.typo .pager { position:absolute; right:44px; top:36px; font-size:32px; font-weight:800; color:var(--color-primary); }
+.typo [data-fit-lines] { padding:24px 0; }
+.typo .fit-line { display:table; white-space:nowrap; line-height:1.06; font-weight:900; letter-spacing:-0.01em; }
+.card.typo-image { background:var(--color-primary); }
+.typo-image .pager { color:var(--color-on-primary); }
+.typo-image__label { position:absolute; left:50px; top:30px; font-size:46px; font-weight:800; line-height:1.3; color:var(--color-on-primary); }
+.typo-image__title { position:absolute; left:50px; top:100px; width:985px; max-height:660px; color:var(--color-on-primary); }
+.typo-image__copy { position:absolute; left:62px; top:780px; width:560px; font-size:60px; font-weight:700; line-height:1.34; max-height:241px; color:var(--color-on-primary); }
+.typo-image__visual { position:absolute; left:630px; top:752px; width:430px; height:290px; }
+.typo-image__photo { display:block; width:100%; height:100%; object-fit:contain; }
+.typo-image__texture { display:none; position:absolute; left:610px; top:752px; width:470px; height:318px; object-fit:contain; object-position:right bottom; }
+/* 제형 사진(용도: 제형)이 있으면 시안처럼 제품 대신 제형을 크게 */
+.typo-image.has-texture .typo-image__texture { display:block; }
+.typo-image.has-texture .typo-image__visual { display:none; }
+.typo-image.no-image:not(.has-texture) .typo-image__visual { display:none; }
+.typo-image.no-image:not(.has-texture) .typo-image__copy { width:960px; }
+</style>
+<article class="card typo typo-image role-{{role}} {{imageClass}} {{textureClass}}">
+  <span class="pager">{{page}} / {{total}}</span>
+  <div class="typo-image__label">{{sectionLabel}}</div>
+  <h1 class="typo-image__title" data-fit data-fit-lines="290,120">{{title}}</h1>
+  <div class="typo-image__copy" data-fit>{{caption}}</div>
+  <img class="typo-image__texture" src="{{texture}}" alt="">
+  <div class="typo-image__visual"><img class="typo-image__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
+</article>

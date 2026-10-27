@@ -24,7 +24,7 @@
   "additionalProperties": false,
   "properties": {
     "spec_version": {
-      "const": "0.3"
+      "const": "1.0"
     },
     "id": {
       "type": "string",
@@ -163,9 +163,26 @@
         }
       ],
       "description": "출력에 쓴 카드 색 (render-report.json의 colors, v0.3). #46 이전 출력이면 null"
+    },
+    "design": {
+      "$ref": "#/$defs/design",
+      "description": "쓴 디자인 묶음 (#74, v0.3에 선택 칸으로 추가). 없으면 기본 묶음으로 만든 옛 데이터"
     }
   },
   "$defs": {
+    "design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "version", "source", "selected_by", "reason"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": ["string", "null"] },
+        "source": { "enum": ["input", "cards", "default"], "description": "입력 무드에서 직접 / 구성안에서 고름 / 기본값" },
+        "selected_by": { "enum": ["claude", "human", null] },
+        "reason": { "type": ["string", "null"] }
+      }
+    },
     "revision": {
       "type": "object",
       "required": [

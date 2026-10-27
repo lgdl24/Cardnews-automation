@@ -88,8 +88,9 @@ test('반복 일관성(--eval): 입력 × 규칙 버전으로 묶고, 완료된 
     assert.deepEqual(normalGroup.runs, ['eval-toneup-sunscreen--v1--r1', 'eval-toneup-sunscreen--v1--r2']);
     // 가짜 Claude는 매번 같은 카드를 내므로 완전히 일치
     assert.deepEqual(normalGroup.consistency, {
-      role_order_match: 1, template_order_match: 1, evidence_overlap: 1, coverage_stdev: 0, char_usage_stdev: 0,
+      role_order_match: 1, template_order_match: 1, design_match: 1, evidence_overlap: 1, coverage_stdev: 0, char_usage_stdev: 0,
     });
+    assert.deepEqual(normalGroup.designs, { 기본: 2 }); // 무드 없음 → 기본 (#74)
     assert.equal(normalGroup.key_info_rate_stdev, 0);
     assert.equal(typeof normalGroup.duration_ms_mean, 'number');
 
@@ -103,6 +104,8 @@ test('반복 일관성(--eval): 입력 × 규칙 버전으로 묶고, 완료된 
     assert.match(cli.stdout, /eval-toneup-sunscreen--v1 \(실행 2개: r1, r2\)/);
     assert.match(cli.stdout, /완료 0\/2 \(중단: INPUT_MISSING 2\)/);
     assert.match(cli.stdout, /카드 역할 순서 일치율 100%/);
+    assert.match(cli.stdout, /디자인 묶음 일치율 100%/);
+    assert.match(cli.stdout, /- 디자인 묶음: 기본 2/);
     const json = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'compare.js'), '--eval', '--runs', runsDir, '--json'], { encoding: 'utf8' });
     assert.equal(JSON.parse(json.stdout).groups.length, 2);
   } finally {

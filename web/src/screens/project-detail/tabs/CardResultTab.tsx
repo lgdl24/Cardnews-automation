@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { projectFileUrl } from '../../../data/load';
 import { label } from '../../../data/format';
-import type { Card, CardColors, ColorKey, Labels, Project } from '../../../data/types';
+import type { Card, CardColors, CardDesign, ColorKey, Labels, Project } from '../../../data/types';
 import { cardFileName, downloadBlob } from '../../../lib/download';
 import { buildZip } from '../../../lib/zip';
 import { useProjectContext } from '../ProjectDetailPage';
@@ -55,6 +55,7 @@ export function CardResultTab() {
 
       <ImageSources project={project} labels={labels} />
 
+      {project.design && <DesignUsed design={project.design} />}
       {project.colors && <ColorsUsed colors={project.colors} />}
 
       {index !== null && (
@@ -177,6 +178,24 @@ const COLOR_ORDER: ColorKey[] = ['bg', 'accent', 'surface', 'primary', 'text', '
 
 function Swatch({ hex }: { hex: string }) {
   return <span className="swatch" style={{ background: hex }} aria-hidden="true" />;
+}
+
+const DESIGN_FROM: Record<CardDesign['source'], string> = { input: '입력에서 고름', cards: '구성안에서 고름', default: '기본값' };
+function DesignUsed({ design }: { design: CardDesign }) {
+  const who = design.source === 'cards' ? (design.selected_by === 'human' ? ' · 사람이 바꿈' : ' · Claude 추천') : '';
+  return (
+    <section className="section" aria-labelledby="card-design">
+      <h2 className="section-title" id="card-design">
+        디자인 묶음
+      </h2>
+      <p className="colors-summary">
+        <strong>{design.name}</strong>
+        {design.version ? ` v${design.version}` : ''} · {DESIGN_FROM[design.source]}
+        {who}
+      </p>
+      {design.reason && <p className="muted">이유: “{design.reason}”</p>}
+    </section>
+  );
 }
 
 function ColorsUsed({ colors }: { colors: CardColors }) {
