@@ -71,9 +71,17 @@ function loadConfig(input = null, data = null) {
   const all = readJson(paths.config('templates.json'));
   const overrides = all._designs?.[designOf(input, all, data)];
   const templates = overrides ? { ...all, ...overrides } : all;
+  // 묶음 고유 팔레트·글꼴 굵기 (_designs.<묶음>._theme, #74): 카드 색 '기본'일 때 이 색을 씀. 추가 색(accent-2 등)은 장식용
+  const theme = readJson(paths.config('theme.json'));
+  const own = overrides && overrides._theme;
+  if (own) {
+    if (own.color) theme.color = { ...theme.color, ...own.color };
+    if (own.font && own.font.files) theme.font = { ...theme.font, files: { ...theme.font.files, ...own.font.files } };
+    if (own.contrast) theme.contrast = { ...own.contrast };
+  }
   return {
     templates,
-    theme: readJson(paths.config('theme.json')),
+    theme,
     caution: readJson(paths.config('caution-expressions.json')),
   };
 }
@@ -123,8 +131,9 @@ function parseInput(markdown) {
     .map((l) => l.replace(/^[-*]\s*/, '').trim())
     .filter(Boolean)
     .map((l) => {
-      const [file, desc, source, usage] = l.split('|').map((s) => (s || '').trim());
-      return { file, desc, source, usage };
+      const [file, desc, source, usage, kind] = l.split('|').map((s) => (s || '').trim());
+      // 용도(#74): 제품(누끼, 카드의 image) · 제형(크림 자국·젤 등 질감 사진) · 배경(연출 장면). 비우면 제품
+      return { file, desc, source, usage, kind: kind || '제품' };
     });
 
   const cardCountRaw = (cond['카드 수'] || '').trim();

@@ -174,7 +174,7 @@ test('작업실: 구성안 승인 전 디자인 묶음 바꾸기 (입력에 직�
     assert.equal(r.status, 200);
     assert.deepEqual({ id: r.body.design.id, source: r.body.design.source, auto: r.body.design.auto }, { id: '기본', source: 'cards', auto: true });
     assert.equal(r.body.design.selected.selected_by, 'claude');
-    assert.deepEqual(r.body.design.catalog.map((d) => d.id).sort(), ['기본', '프리미엄']);
+    assert.deepEqual(r.body.design.catalog.map((d) => d.id).sort(), ['기본', ...Object.keys(config._designs)].sort());
     assert.equal(r.body.actions.can_select_design, true);
 
     assert.equal((await s.call('PUT', '/products/auto-pick/design', { id: '없는 묶음' })).status, 400);

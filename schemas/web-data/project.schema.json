@@ -24,7 +24,7 @@
   "additionalProperties": false,
   "properties": {
     "spec_version": {
-      "const": "0.3"
+      "const": "1.0"
     },
     "id": {
       "type": "string",

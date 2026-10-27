@@ -14,7 +14,7 @@ function requiredFields(form = loadForm()) {
 const findField = (form, key) => form.groups.flatMap((g) => g.fields).find((f) => f.key === key);
 
 // input.md 만들기. values가 비어 있는 항목은 '(필수)/(선택) 안내' 줄만 남김 (검사 프로그램은 안내 줄을 내용으로 보지 않음)
-//   values: { '제품명': '...', '주요 특징': ['a', 'b'], '이미지': [{ file, desc, source, usage }], '카드 수': 5 }
+//   values: { '제품명': '...', '주요 특징': ['a', 'b'], '이미지': [{ file, desc, source, usage, kind }], '카드 수': 5 }
 //   웹 입력 폼(W3)이 같은 함수로 input.md를 만들 수 있게 분리해 둠
 function renderInputMd(values = {}, form = loadForm()) {
   const lines = [];
@@ -34,7 +34,7 @@ function renderInputMd(values = {}, form = loadForm()) {
       else if (f.type === 'images') {
         lines.push(...[].concat(v).map((img) => (typeof img === 'string'
           ? `- ${img}`
-          : `- ${[img.file, img.desc, img.source, img.usage].map((s) => String(s ?? '').trim()).join(' | ')}`)));
+          : `- ${[img.file, img.desc, img.source, img.usage, ...(img.kind && img.kind !== '제품' ? [img.kind] : [])].map((s) => String(s ?? '').trim()).join(' | ')}`)));
       } else lines.push(String(v).trim());
     }
   }

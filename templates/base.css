@@ -66,5 +66,5 @@ body {
 }
 
 /* 글자 영역 공통: 높이를 고정하고 넘치면 출력 프로그램이 OVERFLOW로 판정 */
-[data-fit] { overflow: hidden; }
+[data-fit] { overflow: hidden; text-wrap: balance; }   /* 자동 줄바꿈 때 마지막 줄에 한 단어만 남지 않게 줄 길이를 고르게 */
 [data-fit]:empty { display: none; }
