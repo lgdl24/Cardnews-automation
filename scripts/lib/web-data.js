@@ -47,6 +47,7 @@ function latestLayout(id) {
 }
 
 // 출력에 쓴 카드 색 (render-report.json의 colors, #38). 가장 최근 보고서의 값. 색 기록이 없는 옛 출력이면 null
+const COLOR_KEYS = ['bg', 'surface', 'text', 'muted', 'primary', 'accent', 'on-primary'];
 function latestColors(id) {
   const dir = paths.product(id, 'output');
   if (!fs.existsSync(dir)) return null;
@@ -62,7 +63,8 @@ function latestColors(id) {
     source: c.source,
     image: c.image ?? null,
     representative: c.representative ?? null,
-    color: c.color,
+    // 묶음 고유 추가 색(accent-2 등, 장식용)은 내보내지 않음 — 웹 데이터 규격은 색 7개 (#74)
+    color: Object.fromEntries(Object.entries(c.color).filter(([k]) => COLOR_KEYS.includes(k))),
     adjustments: (c.adjustments || []).map(({ key, from, to }) => ({ key, from, to })),
     note: c.note ?? null,
   };

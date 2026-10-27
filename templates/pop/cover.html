@@ -1,27 +1,31 @@
 <style>
-/* 팝 컬러블록 (시안 06 '듀 팝'): 색면 2~3개와 큰 원, 제품을 크게. 글자는 단색 면 위에만 */
-.card.pop-cover { padding:64px 72px; background:var(--color-accent); }
-.pop-cover__block { position:absolute; left:0; right:0; bottom:0; height:420px; background:var(--color-primary); }
-.pop-cover__circle { position:absolute; right:-80px; top:150px; width:640px; height:640px; border-radius:50%; background:var(--color-surface); }
-.pop-cover__dot { position:absolute; right:90px; bottom:330px; width:150px; height:150px; border-radius:50%; background:hsl(from var(--color-primary) calc(h + 150) 70% 72%); }
-.pop-cover .card__top { position:relative; z-index:3; }
-.pop-cover__title { position:absolute; left:72px; top:170px; width:470px; font-size:76px; font-weight:800; line-height:1.24; max-height:283px; color:var(--color-text); z-index:2; }
-.pop-cover__title::first-line { color:var(--color-primary); }
-.pop-cover__copy { position:absolute; left:72px; bottom:150px; width:460px; font-size:32px; font-weight:600; line-height:1.45; max-height:93px; color:var(--color-on-primary); z-index:2; }
-.pop-cover__visual { position:absolute; right:100px; top:170px; width:340px; height:720px; transform:rotate(10deg); z-index:2; }
-.pop-cover__photo { display:block; width:100%; height:100%; object-fit:contain; }
-.pop-cover__footer { position:absolute; left:72px; bottom:64px; font-size:28px; font-weight:800; color:var(--color-on-primary); z-index:2; }
-.pop-cover.no-image .pop-cover__visual, .pop-cover.no-image .pop-cover__circle { display:none; }
-.pop-cover.no-image .pop-cover__title { width:936px; }
-.pop-cover.role-closing .pop-cover__title { top:200px; }
+/* 팝 컬러블록 · 표지 (시안 06 '듀 팝', 1080 기준 실측): 코랄 바탕 위에 핑크 면(위 620px + 왼쪽 큰 원), 오른쪽 크림 큰 원, 라임 점.
+   제목 첫 줄(제품명)만 크게, 기울인 제품, 아래 흰 글자. 색은 묶음 고유색(_theme) */
+.card.pop-cover { padding:0; background:var(--color-primary); }
+.pop-cover__pink { position:absolute; left:0; top:0; width:1080px; height:620px; background:var(--color-bg); }
+.pop-cover__pink::after { content:''; position:absolute; left:-45px; top:65px; width:690px; height:690px; border-radius:50%; background:var(--color-bg); }
+.pop-cover__cream { position:absolute; left:413px; top:138px; width:704px; height:704px; border-radius:50%; background:var(--color-accent); }
+.pop-cover__dot { position:absolute; left:875px; top:650px; width:160px; height:160px; border-radius:50%; background:var(--color-accent-2); }
+.pop-cover .badge { position:absolute; left:80px; top:112px; height:108px; max-width:420px; padding:0 48px; border-radius:54px; background:var(--color-accent-2); color:var(--color-text); font-size:52px; font-weight:900; line-height:108px; z-index:3; }
+.pop-cover .pager { position:absolute; right:45px; top:44px; font-size:32px; font-weight:800; color:var(--color-text); z-index:3; }
+.pop-cover__title { position:absolute; left:85px; top:282px; width:535px; max-height:400px; color:var(--color-text); z-index:3; }
+.pop .fit-line { display:table; white-space:nowrap; line-height:1.24; font-weight:900; letter-spacing:-0.01em; }
+.pop-cover__copy { position:absolute; left:85px; top:938px; width:560px; font-size:40px; font-weight:800; line-height:1.3; max-height:104px; color:var(--color-on-primary); z-index:3; }
+.pop-cover__footer { display:none; position:absolute; left:85px; top:945px; font-size:40px; font-weight:800; color:var(--color-on-primary); z-index:3; }
+.pop-cover__copy:empty + .pop-cover__footer { display:block; }
+.pop-cover__visual { position:absolute; left:705px; top:150px; width:270px; height:770px; transform:rotate(12deg); z-index:2; }
+.pop-cover__photo { display:block; width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 18px 22px rgb(0 0 0 / .18)); }
+.pop-cover.no-image .pop-cover__visual { display:none; }
+.pop-cover.no-image .pop-cover__title { width:900px; }
+.pop-cover.role-closing .pop-cover__title { top:250px; }
 </style>
-<article class="card pop-cover role-{{role}} {{imageClass}}">
-  <div class="pop-cover__circle" aria-hidden="true"></div>
-  <div class="pop-cover__block" aria-hidden="true"></div>
+<article class="card pop pop-cover role-{{role}} {{imageClass}}">
+  <div class="pop-cover__pink" aria-hidden="true"></div>
+  <div class="pop-cover__cream" aria-hidden="true"></div>
   <div class="pop-cover__dot" aria-hidden="true"></div>
-  <header class="card__top"><span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span></header>
-  <h1 class="pop-cover__title" data-fit>{{title}}</h1>
+  <span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span>
+  <h1 class="pop-cover__title" data-fit data-fit-lines="116,60,80">{{title}}</h1>
   <div class="pop-cover__copy" data-fit>{{subtitle}}</div>
-  <div class="pop-cover__visual"><img class="pop-cover__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
   <div class="pop-cover__footer">{{product}}</div>
+  <div class="pop-cover__visual"><img class="pop-cover__photo" style="{{imageCrop}}" src="{{image}}" alt=""></div>
 </article>

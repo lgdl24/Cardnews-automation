@@ -51,7 +51,7 @@
     },
     "타이포": {
       "name": "큰 타이포",
-      "summary": "흰 바탕에 제목을 아주 크게, 강조색 한 가지. 특징 카드는 강조색 면 전체에 흰 글자, 제품 사진은 작게 (시안 10)",
+      "summary": "흰 바탕에 제목을 줄마다 폭에 맞춰 아주 크게, 고유색 파랑 한 가지. 특징 카드는 파란 면 전체에 흰 글자와 제형 사진, 사용법은 큰 숫자 (시안 10)",
       "fits": ["핵심 문구가 짧고 분명한 제품 (선케어·생활용품 등)", "사진이 작거나 한 장뿐인 제품", "축소해도 메시지가 바로 읽혀야 하는 소개"],
       "avoid": ["설명할 특징이 많아 문구가 긴 제품", "제품 사진으로 분위기를 보여주고 싶을 때"],
       "needs": { "product": "optional", "background": "none" },
@@ -60,7 +60,7 @@
     },
     "팝": {
       "name": "팝 컬러블록",
-      "summary": "강조색·보색 색면과 큰 원, 둥근 상자로 경쾌하게. 제품을 크게 기울여 놓고 설명은 원 번호 세 칸 (시안 06)",
+      "summary": "핑크·코랄·라임 고유색 색면과 큰 원, 흰 둥근 패널로 경쾌하게. 제품을 기울여 크게 놓고 사용법은 원 번호 세 칸 (시안 06)",
       "fits": ["색조·립 같은 컬러 메이크업", "젊고 발랄한 분위기의 생활용품·간식", "용기 색이 선명한 제품"],
       "avoid": ["더마·약국 느낌의 차분한 제품", "항목 문구가 긴 카드 (세 칸 배치, 한 줄 6자)"],
       "needs": { "product": "required", "background": "none" },
@@ -69,10 +69,10 @@
     },
     "연출": {
       "name": "위쪽 연출 띠",
-      "summary": "위쪽은 제품을 담은 짙은 색 연출 띠, 아래는 흰 면에 정보를 정돈. 표지는 띠가 크고 설명형은 얇게. 배경 장면 사진 대신 제품 색 띠 (시안 02)",
+      "summary": "위쪽은 배경 장면 사진(없으면 물빛 그라데이션)에 제품을 담은 연출 띠, 아래는 연한 하늘색 면에 남색 글자로 정돈. 표지는 띠가 크고 사용법은 얇게 (시안 02)",
       "fits": ["크림·젤·세럼처럼 용기와 질감을 보여주고 싶은 스킨케어", "사진과 설명을 나눠 차분하게 읽히게 하고 싶은 제품"],
-      "avoid": ["제품 사진이 없을 때 (색 띠만 남음)", "용기가 아주 어두운 색이라 짙은 띠와 겹칠 때"],
-      "needs": { "product": "required", "background": "none" },
+      "avoid": ["제품 사진이 없을 때 (장면만 남음)", "용기가 짙은 파랑이라 물빛 장면과 겹칠 때"],
+      "needs": { "product": "required", "background": "optional" },
       "version": "1",
       "preview": "docs/designs/band/preview.png"
     }
@@ -115,20 +115,21 @@
       }
     },
     "타이포": {
-      "_defaults": { "colorMode": "제품 색" },
+      "_defaults": { "colorMode": "기본" },
+      "_theme": { "color": { "bg": "#FFFFFF", "surface": "#FFFFFF", "text": "#1155CC", "muted": "#1155CC", "primary": "#1155CC", "accent": "#FFFFFF", "on-primary": "#FFFFFF" }, "font": { "files": { "900": "node_modules/pretendard/dist/web/static/woff2/Pretendard-Black.woff2" } } },
       "_notes": [
-        "제목이 아주 크게 나와요(표지 118px·이미지형 132px). 제목은 짧게, 한 줄에 몇 글자만",
-        "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요",
-        "설명형 카드는 사진을 쓰지 않아요"
+        "제목은 줄마다 카드 폭에 맞춰 크기가 정해져요(표지 최대 230px·특징 최대 290px). 제목은 꼭 직접 줄바꿈해서 줄마다 짧게(한 줄 4~7자일 때 가장 커요)",
+        "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·큰 번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요",
+        "설명형 카드는 사진을 쓰지 않아요. 기본 색은 흰 바탕 + 파랑 한 가지예요"
       ],
-      "_measured": "2026-10-26 · Pretendard · Chromium. 측정 최대(전체/한 줄): cover.title 26/10, cover.subtitle 51/20, cover.badge 17/17, image.title 25/9, image.caption 79/16, description.title 21/13, description.items 38/22",
+      "_measured": "2026-10-27 · Pretendard · Chromium. 시안 10 실측 재구성 후. 측정 최대(전체/한 줄): cover.title 42/줄마다 크기 맞춤, cover.subtitle 35/19, cover.badge 11/11, image.title 34/줄마다 크기 맞춤, image.caption 27/11, description.title 29/줄마다 크기 맞춤, description.items 21/13. 제목은 최소 크기에서도 넘치면 줄바꿈되므로 한 줄 기준은 큰 글자를 지키기 위한 디자인 기준",
       "cover": {
         "label": "표지형",
         "file": "templates/typo/cover.html",
         "fields": {
           "title": { "required":  true, "maxChars":  20, "maxCharsPerLine":  8, "maxLines":  3},
-          "subtitle": { "required":  false, "maxChars":  40, "maxCharsPerLine":  16, "maxLines":  3},
-          "badge": { "required":  false, "maxChars":  12, "maxCharsPerLine":  12, "maxLines":  1}
+          "subtitle": { "required": false, "maxChars": 30, "maxCharsPerLine": 15, "maxLines": 2 },
+          "badge": { "required": false, "maxChars": 10, "maxCharsPerLine": 10, "maxLines": 1 }
         },
         "image": "optional", "trimImage": true, "roles": ["cover", "closing"]
       },
@@ -137,7 +138,7 @@
         "file": "templates/typo/image.html",
         "fields": {
           "title": { "required":  true, "maxChars":  18, "maxCharsPerLine":  7, "maxLines":  3},
-          "caption": { "required":  false, "maxChars":  56, "maxCharsPerLine":  14, "maxLines":  4}
+          "caption": { "required": false, "maxChars": 22, "maxCharsPerLine": 11, "maxLines": 2 }
         },
         "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
       },
@@ -146,26 +147,27 @@
         "file": "templates/typo/description.html",
         "fields": {
           "title": { "required":  true, "maxChars":  18, "maxCharsPerLine":  11, "maxLines":  2},
-          "items": { "required":  true, "maxItems":  3, "minItems":  1, "maxCharsPerItem":  30, "maxCharsPerLine":  18, "maxLines":  2}
+          "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 20, "maxCharsPerLine": 12, "maxLines": 2 }
         },
         "image": "none", "trimImage": true, "roles": ["feature", "detail", "usage"]
       }
     },
     "팝": {
-      "_defaults": { "colorMode": "제품 색" },
+      "_defaults": { "colorMode": "기본" },
+      "_theme": { "color": { "bg": "#FAC2D6", "surface": "#FFFFFF", "text": "#420017", "muted": "#420017", "primary": "#FB637C", "accent": "#FDF5EC", "on-primary": "#FFFFFF", "accent-2": "#CDED66" }, "font": { "files": { "900": "node_modules/pretendard/dist/web/static/woff2/Pretendard-Black.woff2" } }, "contrast": { "on-primary/primary": 3, "primary/accent": 1 } },
       "_notes": [
         "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요",
         "표지 제목 첫 줄은 강조색이에요. 제품명·핵심 말을 첫 줄에 두세요",
         "설명형 항목은 세 칸으로 나란히 놓여요. 항목은 짧게(한 줄 6자 안팎)"
       ],
-      "_measured": "2026-10-26 · Pretendard · Chromium. 측정 최대(전체/한 줄): cover.title 20/7, cover.subtitle 34/18, cover.badge 18/18, image.title 25/9, image.caption 64/17, description.title 32/16, description.items 세 칸 배치라 단독 측정값(96/26) 대신 기준 최대 채움으로 확인",
+      "_measured": "2026-10-27 · Pretendard · Chromium. 시안 06 실측 재구성 후. 측정 최대(전체/한 줄): cover.title 42/줄마다 크기 맞춤, cover.subtitle 33/17, cover.badge 7/7, image.title 18/10, image.caption 29/13, description.title 20/12, description.items 세 칸 배치라 단독 측정값(61/22) 대신 기준 최대 채움으로 확인",
       "cover": {
         "label": "표지형",
         "file": "templates/pop/cover.html",
         "fields": {
-          "title": { "required":  true, "maxChars":  18, "maxCharsPerLine":  6, "maxLines":  3},
-          "subtitle": { "required":  false, "maxChars":  30, "maxCharsPerLine":  15, "maxLines":  2},
-          "badge": { "required":  false, "maxChars":  12, "maxCharsPerLine":  12, "maxLines":  1}
+          "title": { "required": true, "maxChars": 20, "maxCharsPerLine": 7, "maxLines": 3 },
+          "subtitle": { "required": false, "maxChars": 24, "maxCharsPerLine": 14, "maxLines": 2 },
+          "badge": { "required": false, "maxChars": 6, "maxCharsPerLine": 6, "maxLines": 1 }
         },
         "image": "optional", "trimImage": true, "roles": ["cover", "closing"]
       },
@@ -173,8 +175,8 @@
         "label": "이미지 강조형",
         "file": "templates/pop/image.html",
         "fields": {
-          "title": { "required":  true, "maxChars":  20, "maxCharsPerLine":  8, "maxLines":  3},
-          "caption": { "required":  false, "maxChars":  54, "maxCharsPerLine":  14, "maxLines":  4}
+          "title": { "required": true, "maxChars": 16, "maxCharsPerLine": 8, "maxLines": 2 },
+          "caption": { "required": false, "maxChars": 24, "maxCharsPerLine": 11, "maxLines": 3 }
         },
         "image": "required", "trimImage": true, "roles": ["feature", "detail", "usage"]
       },
@@ -182,26 +184,27 @@
         "label": "설명형",
         "file": "templates/pop/description.html",
         "fields": {
-          "title": { "required":  true, "maxChars":  26, "maxCharsPerLine":  13, "maxLines":  2},
-          "items": { "required":  true, "maxItems":  3, "minItems":  1, "maxCharsPerItem":  20, "maxCharsPerLine":  6, "maxLines":  3}
+          "title": { "required": true, "maxChars": 20, "maxCharsPerLine": 10, "maxLines": 2 },
+          "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 14, "maxCharsPerLine": 5, "maxLines": 3 }
         },
         "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
       }
     },
     "연출": {
-      "_defaults": { "colorMode": "제품 색" },
+      "_defaults": { "colorMode": "기본" },
+      "_theme": { "color": { "bg": "#F0F8FD", "surface": "#FFFFFF", "text": "#17324F", "muted": "#4A6A8A", "primary": "#3E86C8", "accent": "#DDEEF8", "on-primary": "#FFFFFF", "scene-deep": "#0F3A68", "scene-mid": "#2C6CA8", "scene-light": "#9CCDEE" }, "contrast": { "on-primary/primary": 3, "primary/accent": 3 } },
       "_notes": [
         "위쪽은 제품 사진을 담은 연출 띠예요. 제품 사진이 없으면 색 띠만 보여요",
         "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요"
       ],
-      "_measured": "2026-10-26 · Pretendard · Chromium. 측정 최대(전체/한 줄): cover.title 48/17, cover.subtitle 78/39, cover.badge 18/18, image.title 35/19, image.caption 120/34, description.title 36/20, description.items 61/30(사용법은 STEP 칸만큼 좁음)",
+      "_measured": "2026-10-27 · Pretendard · Chromium. 시안 02 실측 재구성 후. 측정 최대(전체/한 줄): cover.title 30/14, cover.subtitle 31/31, cover.badge 10/10, image.title 32/15, image.caption 47/23, description.title 32/15, description.items 48/23(사용법은 STEP 칸만큼 좁음)",
       "cover": {
         "label": "표지형",
         "file": "templates/band/cover.html",
         "fields": {
-          "title": { "required":  true, "maxChars":  30, "maxCharsPerLine":  14, "maxLines":  3},
-          "subtitle": { "required":  false, "maxChars":  50, "maxCharsPerLine":  30, "maxLines":  2},
-          "badge": { "required":  false, "maxChars":  12, "maxCharsPerLine":  12, "maxLines":  1}
+          "title": { "required": true, "maxChars": 30, "maxCharsPerLine": 11, "maxLines": 3 },
+          "subtitle": { "required": false, "maxChars": 24, "maxCharsPerLine": 24, "maxLines": 1 },
+          "badge": { "required": false, "maxChars": 8, "maxCharsPerLine": 8, "maxLines": 1 }
         },
         "image": "optional", "trimImage": true, "roles": ["cover", "closing"]
       },
@@ -209,8 +212,8 @@
         "label": "이미지 강조형",
         "file": "templates/band/image.html",
         "fields": {
-          "title": { "required":  true, "maxChars":  28, "maxCharsPerLine":  15, "maxLines":  2},
-          "caption": { "required":  false, "maxChars":  90, "maxCharsPerLine":  28, "maxLines":  4}
+          "title": { "required": true, "maxChars": 24, "maxCharsPerLine": 12, "maxLines": 2 },
+          "caption": { "required": false, "maxChars": 36, "maxCharsPerLine": 18, "maxLines": 2 }
         },
         "image": "required", "trimImage": true, "roles": ["feature", "detail", "usage"]
       },
@@ -218,8 +221,8 @@
         "label": "설명형",
         "file": "templates/band/description.html",
         "fields": {
-          "title": { "required":  true, "maxChars":  28, "maxCharsPerLine":  16, "maxLines":  2},
-          "items": { "required":  true, "maxItems":  3, "minItems":  1, "maxCharsPerItem":  32, "maxCharsPerLine":  18, "maxLines":  2}
+          "title": { "required": true, "maxChars": 24, "maxCharsPerLine": 12, "maxLines": 2 },
+          "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 24, "maxCharsPerLine": 12, "maxLines": 2 }
         },
         "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
       }

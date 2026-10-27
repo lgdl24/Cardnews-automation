@@ -26,7 +26,9 @@ test('새 묶음: 템플릿 파일·목록 설명·미리보기·쓰기 주의�
       assert.ok(fs.existsSync(path.join(ROOT, templates[key].file)), `${design} ${key}`);
       assert.notEqual(templates[key].file, `templates/${key}.html`, `${design} ${key}는 묶음 파일`);
     }
-    assert.equal(templates._defaults.colorMode, '제품 색');
+    // 새 묶음은 시안 고유색(_theme)을 그대로 씀 — 제품 색으로 바꾸면 시안과 달라짐
+    assert.equal(templates._defaults.colorMode, '기본');
+    for (const k of ['bg', 'text', 'primary', 'on-primary']) assert.match(templates._theme?.color?.[k] || '', /^#[0-9A-F]{6}$/i, `${design} _theme.${k}`);
     assert.ok(templates._notes.length > 0);
     const meta = catalog.find((d) => d.id === design);
     assert.ok(meta && meta.preview && fs.existsSync(path.join(ROOT, meta.preview)), `${design} preview`);

@@ -125,4 +125,4 @@
 
 **무드 자동 추천 (#74).** 입력 `무드`가 `자동 추천`이면 `npm run check`가 글자 수 대신 묶음 목록을 보여주고, 구성안 작업에서 Claude가 하나를 골라 `design`에 적음(`selected_by: claude`, `reason`은 '어울림'과 맞는 원문 특징·사진 조건). '필요한 사진'이 필수인 묶음은 입력 사진이 조건을 못 채우면 고르지 않음. 작업실 구성안 확인에서 사람이 바꾸면 `selected_by: human`과 기록 `design_selected`(`design`·`from`·`by`). 구성안 승인 뒤에는 못 바꿈. 문구 작업은 `npm run check`를 다시 실행해 고른 묶음의 글자 수 기준을 봄. validate: 자동 추천인데 `design`이 없거나, 목록에 없는 이름·`selected_by` 값·빈 이유면 `SCHEMA_ERROR`. 입력에 무드를 직접 적었는데 `design`이 다르면 경고(입력 우선).
 
-추가 프리셋은 `_designs`의 템플릿·`roles`·`_defaults.colorMode`와 입력 양식 선택지를 등록. 묶음 이름별 실행 코드 분기는 없음. 프리미엄에서 카드 색이 비어 있으면 제품 색, 직접 정하면 그 값 우선.
+추가 프리셋은 `_designs`의 템플릿·`roles`·`_defaults.colorMode`와 입력 양식 선택지를 등록. 묶음 고유 팔레트는 `_designs.<묶음>._theme`(`color`: 색 7개 + 장식용 추가 색, `font.files`: 굵기별 글꼴, `contrast`: 색 짝별 최소 대비 예외 — 큰 글자만 올라가는 짝)로 적고, 카드 색 `기본`일 때 theme.json 대신 이 색을 씀. 묶음 이름별 실행 코드 분기는 없음. 프리미엄에서 카드 색이 비어 있으면 제품 색, 직접 정하면 그 값 우선.

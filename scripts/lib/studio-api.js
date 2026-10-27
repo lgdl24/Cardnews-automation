@@ -366,11 +366,11 @@ function createStudio({
       } else if (!fs.existsSync(path.join(dir, 'images', file))) {
         throw new HttpError(400, `이미지 파일을 올려 주세요: ${file}`);
       }
-      return { file, desc: String(img.desc || '').trim(), source: String(img.source || '').trim(), usage: String(img.usage || '').trim(), data };
+      return { file, desc: String(img.desc || '').trim(), source: String(img.source || '').trim(), usage: String(img.usage || '').trim(), kind: String(img.kind || '제품').trim(), data };
     });
     if (create) fs.mkdirSync(path.join(dir, 'images'), { recursive: true });
     for (const p of prepared) if (p.data) fs.writeFileSync(path.join(dir, 'images', p.file), p.data);
-    values['이미지'] = prepared.map(({ file, desc, source, usage }) => ({ file, desc, source, usage }));
+    values['이미지'] = prepared.map(({ file, desc, source, usage, kind }) => ({ file, desc, source, usage, kind }));
     fs.writeFileSync(path.join(dir, 'input.md'), renderInputMd(values, form));
   }
 

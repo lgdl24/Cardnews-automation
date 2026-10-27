@@ -1,0 +1,509 @@
+{
+ "_about": "시안 충실도 기준값 (tests/design-fidelity.test.js). 좌표는 1080×1080 기준 px. 시안 이미지에서 잰 값에 맞춘 우리 출력 값이에요. 문구는 시안 배치를 보기 위한 예시예요.",
+ "tol": 14,
+ "colorTol": 12,
+ "designs": {
+  "타이포": {
+   "draft": "시안 10 큰 타이포",
+   "cases": [
+    {
+     "name": "cover",
+     "template": "cover",
+     "role": "cover",
+     "no": 1,
+     "image": true,
+     "copy": {
+      "title": "수분 선크림\n가볍게\n산뜻하게 발라요",
+      "badge": "50ml"
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#FFFFFF"
+      },
+      {
+       "sel": ".badge",
+       "left": 50,
+       "top": 35,
+       "height": 70
+      },
+      {
+       "sel": ".typo-cover__title",
+       "text": true,
+       "left": 50,
+       "top": 125,
+       "height": 613,
+       "color": "#1155CC"
+      },
+      {
+       "sel": ".typo-cover__visual",
+       "left": 848,
+       "top": 788,
+       "width": 140,
+       "height": 262
+      }
+     ]
+    },
+    {
+     "name": "image",
+     "template": "image",
+     "role": "feature",
+     "no": 2,
+     "image": true,
+     "copy": {
+      "title": "촉촉하게\n발라요",
+      "caption": "수분 가득한\n에센스 타입이에요"
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#1155CC"
+      },
+      {
+       "sel": ".typo-image__label",
+       "text": true,
+       "left": 50,
+       "top": 32,
+       "height": 55,
+       "color": "#FFFFFF"
+      },
+      {
+       "sel": ".typo-image__title",
+       "text": true,
+       "left": 50,
+       "top": 105,
+       "height": 641,
+       "color": "#FFFFFF"
+      },
+      {
+       "sel": ".typo-image__copy",
+       "text": true,
+       "left": 62,
+       "top": 784,
+       "height": 151,
+       "color": "#FFFFFF"
+      },
+      {
+       "sel": ".typo-image__visual",
+       "left": 630,
+       "top": 752,
+       "width": 430,
+       "height": 290
+      }
+     ]
+    },
+    {
+     "name": "usage",
+     "template": "description",
+     "role": "usage",
+     "no": 4,
+     "image": false,
+     "copy": {
+      "title": "적당량을 덜어\n고르게 펴 발라요",
+      "items": [
+       "적당량을 덜어요",
+       "피부에 올려요",
+       "고르게 펴 발라요"
+      ]
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#FFFFFF"
+      },
+      {
+       "sel": ".typo-description__title",
+       "text": true,
+       "left": 60,
+       "top": 110,
+       "height": 345,
+       "color": "#1155CC"
+      },
+      {
+       "sel": ".desc__item:nth-child(1)",
+       "left": 0,
+       "top": 452,
+       "width": 1080,
+       "height": 196
+      },
+      {
+       "sel": ".desc__item:nth-child(3)",
+       "left": 0,
+       "top": 844,
+       "width": 1080,
+       "height": 196
+      }
+     ]
+    }
+   ]
+  },
+  "팝": {
+   "draft": "시안 06 팝 컬러블록",
+   "cases": [
+    {
+     "name": "cover",
+     "template": "cover",
+     "role": "cover",
+     "no": 1,
+     "image": true,
+     "copy": {
+      "title": "듀 틴트\n촉촉한 컬러를\n입술에 더해요",
+      "badge": "4g"
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#FB637C"
+      },
+      {
+       "sel": ".pop-cover__pink",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 620,
+       "background": "#FAC2D6"
+      },
+      {
+       "sel": ".pop-cover__cream",
+       "left": 413,
+       "top": 138,
+       "width": 704,
+       "height": 704,
+       "background": "#FDF5EC"
+      },
+      {
+       "sel": ".pop-cover__dot",
+       "left": 875,
+       "top": 650,
+       "width": 160,
+       "height": 160,
+       "background": "#CDED66"
+      },
+      {
+       "sel": ".badge",
+       "left": 80,
+       "top": 112,
+       "height": 108,
+       "background": "#CDED66"
+      },
+      {
+       "sel": ".pop-cover__title",
+       "text": true,
+       "left": 85,
+       "top": 282,
+       "height": 342,
+       "color": "#420017"
+      },
+      {
+       "sel": ".pop-cover__visual",
+       "left": 628,
+       "top": 130,
+       "width": 424,
+       "height": 809
+      }
+     ]
+    },
+    {
+     "name": "image",
+     "template": "image",
+     "role": "feature",
+     "no": 2,
+     "image": true,
+     "copy": {
+      "title": "맑은 컬러를\n촉촉하게 발라요",
+      "caption": "물빛 컬러로\n입술을 물들여요"
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#FAC2D6"
+      },
+      {
+       "sel": ".pop-image__lime",
+       "left": 0,
+       "top": 670,
+       "width": 1080,
+       "height": 410,
+       "background": "#CDED66"
+      },
+      {
+       "sel": ".pop-image__panel",
+       "left": 640,
+       "top": 195,
+       "width": 410,
+       "height": 770,
+       "background": "#FFFFFF"
+      },
+      {
+       "sel": ".pop-image__label",
+       "left": 67,
+       "top": 112,
+       "width": 207,
+       "height": 68,
+       "background": "#420017"
+      },
+      {
+       "sel": ".pop-image__title",
+       "text": true,
+       "left": 70,
+       "top": 223,
+       "height": 179,
+       "color": "#420017"
+      },
+      {
+       "sel": ".pop-image__copy",
+       "text": true,
+       "left": 70,
+       "top": 475,
+       "height": 130,
+       "color": "#420017"
+      }
+     ]
+    },
+    {
+     "name": "usage",
+     "template": "description",
+     "role": "usage",
+     "no": 4,
+     "image": true,
+     "copy": {
+      "title": "적당량을 덜어\n입술에 펴 발라요",
+      "items": [
+       "적당량을\n덜어요",
+       "입술에\n올려요",
+       "고르게\n펴 발라요"
+      ]
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#FDF5EC"
+      },
+      {
+       "sel": ".pop-description__head",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 440,
+       "background": "#FB637C"
+      },
+      {
+       "sel": ".pop-description__title",
+       "text": true,
+       "left": 90,
+       "top": 198,
+       "height": 214,
+       "color": "#FFFFFF"
+      },
+      {
+       "sel": ".desc__item:nth-child(1)",
+       "left": 40,
+       "top": 528,
+       "width": 272,
+       "height": 420
+      },
+      {
+       "sel": ".desc__item:nth-child(3)",
+       "left": 586,
+       "top": 528,
+       "width": 274,
+       "height": 420
+      }
+     ]
+    }
+   ]
+  },
+  "연출": {
+   "draft": "시안 02 위쪽 연출 띠",
+   "cases": [
+    {
+     "name": "cover",
+     "template": "cover",
+     "role": "cover",
+     "no": 1,
+     "image": true,
+     "copy": {
+      "title": "워터 슬리핑 마스크\n밤사이 촉촉하게\n수분을 채워요",
+      "badge": "70ml"
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#F0F8FD"
+      },
+      {
+       "sel": ".band__scene",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 620
+      },
+      {
+       "sel": ".badge",
+       "left": 60,
+       "top": 57,
+       "height": 66
+      },
+      {
+       "sel": ".band-cover__title",
+       "text": true,
+       "left": 88,
+       "top": 653,
+       "height": 283,
+       "color": "#17324F"
+      },
+      {
+       "sel": ".band__photo",
+       "left": 400,
+       "top": 150,
+       "width": 540,
+       "height": 350
+      }
+     ]
+    },
+    {
+     "name": "image",
+     "template": "image",
+     "role": "feature",
+     "no": 2,
+     "image": true,
+     "copy": {
+      "title": "산뜻한 젤 크림으로\n밤 케어를 마무리해요",
+      "caption": "빠르게 흡수되는\n젤 크림 제형이에요"
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#F0F8FD"
+      },
+      {
+       "sel": ".band__scene",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 575
+      },
+      {
+       "sel": ".band-label",
+       "text": true,
+       "left": 108,
+       "top": 599,
+       "height": 53,
+       "color": "#3E86C8"
+      },
+      {
+       "sel": ".band-image__title",
+       "text": true,
+       "left": 108,
+       "top": 682,
+       "height": 177,
+       "color": "#17324F"
+      },
+      {
+       "sel": ".band-image__copy",
+       "text": true,
+       "left": 108,
+       "top": 883,
+       "height": 122,
+       "color": "#17324F"
+      }
+     ]
+    },
+    {
+     "name": "usage",
+     "template": "description",
+     "role": "usage",
+     "no": 4,
+     "image": true,
+     "copy": {
+      "title": "잠들기 전 바르고\n아침에 씻어내요",
+      "items": [
+       "크림을 바른 뒤\n얼굴에 고르게 펴요",
+       "바른 채로\n밤사이 그대로 둬요",
+       "다음 날 아침\n물로 씻어내요"
+      ]
+     },
+     "checks": [
+      {
+       "sel": ".card",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 1080,
+       "background": "#F0F8FD"
+      },
+      {
+       "sel": ".band__scene",
+       "left": 0,
+       "top": 0,
+       "width": 1080,
+       "height": 320
+      },
+      {
+       "sel": ".band-label",
+       "text": true,
+       "left": 112,
+       "top": 352,
+       "height": 48,
+       "color": "#3E86C8"
+      },
+      {
+       "sel": ".band-description__title",
+       "text": true,
+       "left": 112,
+       "top": 420,
+       "height": 176,
+       "color": "#17324F"
+      },
+      {
+       "sel": ".desc__item:nth-child(1)",
+       "left": 112,
+       "top": 632,
+       "width": 910,
+       "height": 120
+      },
+      {
+       "sel": ".desc__item:nth-child(3)",
+       "left": 112,
+       "top": 872,
+       "width": 910,
+       "height": 120
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

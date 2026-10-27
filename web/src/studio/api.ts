@@ -15,6 +15,8 @@ export interface FormField {
   guide: string;
   example?: string[];
   usage?: string[];
+  /** 이미지 용도 (제품·제형·배경, #74) */
+  kinds?: string[];
   options?: string[];
   min?: number;
   max?: number;
@@ -156,7 +158,7 @@ export interface DesignInfo {
 export interface ProductDetail extends ProductSummary {
   input: {
     values: Record<string, string | string[]>;
-    images: { file: string; desc: string; source: string; usage: string }[];
+    images: { file: string; desc: string; source: string; usage: string; kind?: string }[];
     card_count: number | null;
   };
   check: Report;

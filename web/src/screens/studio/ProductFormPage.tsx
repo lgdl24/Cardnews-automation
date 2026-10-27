@@ -12,6 +12,7 @@ interface ImageRow {
   desc: string;
   source: string;
   usage: string;
+  kind: string; // 제품·제형·배경 (#74)
   data?: string; // base64 (새로 고른 파일만)
   preview?: string;
 }
@@ -46,7 +47,7 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
         const v: Values = {};
         for (const [k, x] of Object.entries(d.input.values)) v[k] = Array.isArray(x) ? x.join('\n') : x;
         setValues(v);
-        setImages(d.input.images.map((img) => ({ ...img, preview: imageUrl(editId, img.file) })));
+        setImages(d.input.images.map((img) => ({ ...img, kind: img.kind || '제품', preview: imageUrl(editId, img.file) })));
         setLoading(false);
       },
       (e: Error) => {
@@ -67,7 +68,7 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
             const reader = new FileReader();
             reader.onload = () => {
               const url = String(reader.result);
-              resolve({ file: safeName(f.name), desc: '', source: '', usage: '가능', data: url.split(',')[1], preview: url });
+              resolve({ file: safeName(f.name), desc: '', source: '', usage: '가능', kind: '제품', data: url.split(',')[1], preview: url });
             };
             reader.onerror = () => reject(reader.error);
             reader.readAsDataURL(f);
@@ -86,7 +87,7 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
       values: Object.fromEntries(
         fields.filter((f) => f.type !== 'images').map((f) => [f.key, f.type === 'list' ? (values[f.key] ?? '').split('\n').map((s) => s.replace(/^[-*]\s*/, '').trim()).filter(Boolean) : (values[f.key] ?? '')]),
       ),
-      images: images.map(({ file, desc, source, usage, data }) => ({ file, desc, source, usage, data })),
+      images: images.map(({ file, desc, source, usage, kind, data }) => ({ file, desc, source, usage, kind, data })),
     };
     try {
       const d = editId
@@ -221,6 +222,11 @@ function ImagesField({
               <select aria-label={`${img.file} 사용 가능 여부`} value={img.usage} onChange={(e) => update(i, { usage: e.target.value })}>
                 {(f.usage ?? ['가능', '불가', '확인 중']).map((u) => (
                   <option key={u}>{u}</option>
+                ))}
+              </select>
+              <select aria-label={`${img.file} 용도`} title="제품: 배경 지운 제품 사진 · 제형: 크림 자국 같은 질감 사진 · 배경: 제품 없는 연출 장면" value={img.kind} onChange={(e) => update(i, { kind: e.target.value })}>
+                {(f.kinds ?? ['제품', '제형', '배경']).map((k) => (
+                  <option key={k}>{k}</option>
                 ))}
               </select>
             </div>
