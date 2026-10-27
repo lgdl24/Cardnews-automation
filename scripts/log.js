@@ -47,8 +47,8 @@ function printSummary(id, s) {
   const v = (x, unit = '') => (x === null || x === undefined ? '-' : `${x}${unit}`);
   console.log(`\n== 제작 요약: ${id} (규칙 ${s.skill_versions.join(', ') || '-'}) ==`);
   console.log(`상태: ${s.complete ? '최종 승인 완료' : '진행 중 (최종 승인 전)'}`);
-  console.log(`총 제작 시간 ${v(s.total_minutes, '분')} · AI 처리 ${v(s.ai_minutes, '분')} · 사람 검토 ${v(s.human_minutes, '분')}`);
-  console.log('\n단계\t소요(분)');
+  console.log(`총 제작 시간 ${v(s.total_minutes, '분')} (AI 작업 시간 합, 사람이 확인·대기한 시간은 넣지 않음)`);
+  console.log('\n작업 종류\t소요(분)');
   for (const [k, label] of Object.entries(PHASES)) console.log(`${label}\t${s.phases[k]}`);
 
   console.log('\n작업\t종류\t결과\t소요(분)\t1회 통과\t자동 수정');
@@ -66,7 +66,7 @@ function printSummary(id, s) {
   const q = s.quality;
   console.log('\n-- 테스트·제작 기록에 옮길 값 --');
   console.log(`Skill 버전: ${s.skill_versions.join(', ') || '-'}`);
-  console.log(`소요 시간(분): ${v(s.total_minutes)}`);
+  console.log(`소요 시간(분, AI 작업): ${v(s.total_minutes)}`);
   console.log(`수정 횟수: ${s.plan_revisions + s.revision_rounds}`);
   console.log(`원문 커버리지(%): ${q && q.coverage !== null ? Math.round(q.coverage * 100) : '-'}`);
   console.log(`근거 연결률(%): ${q && q.evidence_rate !== null ? Math.round(q.evidence_rate * 100) : '-'}`);

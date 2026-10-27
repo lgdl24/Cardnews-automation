@@ -38,7 +38,7 @@ function printConsistency(c, indent = '') {
 
 function printProducts(res) {
   if (!res.same_input) console.log('[경고] 입력 원문이 서로 달라요. 같은 입력으로 만든 결과끼리 비교해야 해요.');
-  console.log('\n제작\t규칙\t카드 구성\t커버리지\t근거 연결\t글자 활용\t주의(원문 밖)\t수정\t자동 수정\t1회 통과\t시간(분)');
+  console.log('\n제작\t규칙\t카드 구성\t커버리지\t근거 연결\t글자 활용\t주의(원문 밖)\t수정\t자동 수정\t1회 통과\tAI 작업(분)');
   for (const r of res.runs) {
     const fp = r.first_pass === null ? '-' : r.first_pass ? 'O' : 'X';
     console.log([

@@ -8,7 +8,7 @@ const { summarize, PHASES } = require('./analysis');
 const { findCautions, round } = require('./metrics');
 const { pad } = require('./card-html');
 
-const SPEC_VERSION = '0.3';
+const SPEC_VERSION = '1.0';
 const KINDS = { production: '실제 제작', example: '예시', eval: '평가 실행' };
 const STAGE_LABELS = { plan: '구성안', copy: '문구', approved: '승인 완료' };
 const ROLE_LABELS = { cover: '표지', feature: '특징', usage: '사용법', detail: '상세', closing: '마무리' };
@@ -188,7 +188,6 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
       complete: s.complete,
       total_minutes: s.total_minutes,
       ai_minutes: s.ai_minutes,
-      human_minutes: s.human_minutes,
       phases: s.phases,
       plan_revisions: s.plan_revisions,
       revision_rounds: s.revision_rounds,

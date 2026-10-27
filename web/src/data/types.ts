@@ -54,7 +54,7 @@ export interface ProjectSummary {
 }
 
 export interface WebIndex {
-  spec_version: '0.3';
+  spec_version: '1.0';
   exported_at: string;
   skill_version: string;
   labels: Labels;
@@ -175,7 +175,7 @@ export interface CardDesign {
 }
 
 export interface Project {
-  spec_version: '0.3';
+  spec_version: '1.0';
   id: string;
   kind: Kind;
   label: string | null;
@@ -231,12 +231,10 @@ export type EventName =
   | 'revision_requested'
   | 'design_selected';
 
+/** 작업 종류별 AI 작업 시간(분). 사람이 확인·대기한 시간은 넣지 않음 (v1.0) */
 export interface Phases {
-  input: number;
   plan_job: number;
-  plan_review: number;
   copy_job: number;
-  final_review: number;
   revise_job: number;
 }
 
@@ -274,13 +272,13 @@ export interface TimelineEvent {
 }
 
 export interface Timeline {
-  spec_version: '0.3';
+  spec_version: '1.0';
   id: string;
   summary: {
     complete: boolean;
+    /** AI 작업 시간 합(분). 사람이 확인·대기한 시간은 넣지 않음 (v1.0) */
     total_minutes: number | null;
     ai_minutes: number | null;
-    human_minutes: number | null;
     phases: Phases;
     plan_revisions: number;
     revision_rounds: number;
