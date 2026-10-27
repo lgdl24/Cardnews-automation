@@ -1,6 +1,6 @@
 {
   "spec_version": "0.3",
-  "exported_at": "2026-10-21T02:26:46.623Z",
+  "exported_at": "2026-10-26T06:30:24.247Z",
   "skill_version": "v1",
   "labels": {
     "kinds": {
@@ -64,6 +64,28 @@
         "first_pass": true,
         "total_minutes": 2.8,
         "revision_rounds": 0
+      },
+      "eval": null
+    },
+    {
+      "id": "demo-cleansing-oil",
+      "kind": "example",
+      "label": "시연 백업 · 웹 모드 · 프리미엄 (가상 제품)",
+      "product_name": "카모마일 순한 클렌징 오일",
+      "brand": "샘플랩 내추럴 (시연용 가상 브랜드)",
+      "category": "클렌징 · 오일",
+      "stage": "approved",
+      "skill_version": "v1",
+      "card_count": 5,
+      "updated_at": "2026-10-26T01:48:51.041Z",
+      "thumbnail": "projects/demo-cleansing-oil/png/card-01.png",
+      "summary": {
+        "coverage": 1,
+        "evidence_rate": 0.8,
+        "caution_total": 0,
+        "first_pass": false,
+        "total_minutes": 84.7,
+        "revision_rounds": 1
       },
       "eval": null
     }

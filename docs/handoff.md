@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-26 | Claude | #72 · `feat/72-demo-backup` | **시연 백업 결과 웹 추가**: 웹 모드로 처음부터 끝까지 만든 가상 제품 `demo-cleansing-oil`(무드 프리미엄·제품 색, 입력은 예전 `디자인:` 칸 → #69 호환으로 읽힘)을 `config/export.json`(`example`)에 넣고 `--only`로 내보냄. 처리 시간: 구성안 2분 41초, 문구·출력 13분(그중 11분 40초 진행 표시 없음 — Claude가 문구를 한 번에 쓰며 글자 수를 직접 셈, 규칙 개선은 별도 결정), 카드 1장 수정(다른 제품) 1분 15초. 출력 PNG는 `.gitignore`라 웹 데이터에만 있음 |
 | 2026-10-26 | Claude · Codex | #53 · `fix/53-premium-review` (#69) | **#68 위로 #69 정리**: 글자 수 안내·`test:web`은 #68 것 사용, #69의 중복 안내·`test:ui` 제외. 입력 칸 이름 '디자인'→'무드'(#64), calibrate `--mood`(`--design`도 됨). 예전 입력은 '무드' 칸이 없을 때만 '디자인' 값을 읽음(`moodInputOf`), 두 칸이 있으면 빈 값이라도 무드 우선, 잘못된 값은 읽은 칸에 경고. 내부 `_designs`·`designOf`·결과 규격은 그대로 |
 | 2026-10-22 | Claude | #67 · `fix/67-design-limits` | **디자인별 글자 수 기준 안내**: `npm run check` 끝에 이 제품의 디자인(기본·프리미엄)·카드 색과 템플릿별 글자 수 기준을 출력(`scripts/lib/limits.js`). 프리미엄이면 '_designs.프리미엄 기준을 쓰라'고 명시 → Claude가 1단계에서 보고 그 숫자로 문구를 씀. 규칙 문서·규칙 버전은 그대로. 웹 화면 테스트 2개(`plan-evidence-ui`·`premium-form-ui`)를 `npm run test:web`으로 등록, `CHROMIUM_PATH` 지원 |
 | 2026-10-21 | Codex | #53 · `feat/53-lilac-design` | **라일락 → 프리미엄 첫 무드 프리셋**: `디자인` 기본·프리미엄, `templates/premium/` 3개. 색 비움은 제품 색, 직접 지정 우선. Point N·How to·STEP·분할 면·큰 제품·역할별 배치, 칸별 실측 7개·최대 문구 45경우 통과. 기본 템플릿·카드 스키마·규칙 버전 유지. 로컬 구현, 커밋 전 |
@@ -17,7 +18,6 @@
 | 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
-| 2026-10-20 | Claude | #49 · `feat/49-eval-variants` | **평가 비교판(A8)이 실제로 규칙을 바꿈**: 전에는 `--variant`가 이름만 붙이고 규칙은 그대로였음. 이제 `eval/variants/<이름>/variant.json`(description·changes) + `files/`(바꾼 `CLAUDE.md`·`.claude/skills/*/*.md`·`prompts/eval/plan|copy.md`만)를 작업 실행기가 작업 폴더에 덮어씀(`runJob`·`createWorkspace`·`fillPrompt`의 `overlayDir`). 스크립트·`config/`·`schemas/`는 못 바꿈. 정의 없는 이름은 시작 전에 멈춤. `result.json` `notes`에 비교판 설명. 형식 `eval/variants/README.md`, eval-spec 비교판 줄에 위치 추가. 비교판 내용은 A8 때 정함 |
 
 ## 현재 작업 (이용석, 2026-10-26)
 
@@ -26,16 +26,17 @@
 - 확인 필요: 예전 '디자인' 입력 호환 방식(#68 댓글로 이규동에게 물음). 웹 Vite 7.3.6 설치 감사 high 1건은 이규동 쪽 별도 확인(이번 의존성 변경 없음).
 - 다음: 퍼플 프리미엄 실제 제작(10.28 시연). 핵심 정보 포함률은 평가 실행기(`eval-runner.js`)에 이미 계산이 있어 남은 범위(제품 `quality.json` 추가 여부) 확인. #66은 이규동 답변 대기.
 
-## 현재 작업 (이규동, 2026-10-22)
+## 현재 작업 (이규동, 2026-10-26)
 
-- 확인일·작성 도구: 2026-10-22 · Claude.
-- 10.22 `main` 병합: #59·#62·#63(이규동), #64·#65(이용석, #65는 이규동 결정으로 병합). 열린 PR은 이 작업만.
-- 이슈·PR: [#67](https://github.com/lgdl24/Cardnews-automation/issues/67) · PR은 push 후 생성(기준 `main`). 리뷰 이용석. **`main` 병합은 이규동.**
-- 상태: 구현·테스트 완료(`npm test` 154개, `test:render` 9개, `test:web` 8개). 실제 Claude로 프리미엄 제작은 아직 안 함(웹 제작 화면에서 확인 필요).
-- 작업 브랜치: `fix/67-design-limits` · 기준 `main`(`c47dcc2`).
-- 변경 파일: `scripts/lib/limits.js`(새로), `scripts/check-input.js`, `tests/check-input.test.js`, `tests/plan-evidence-ui.test.js`·`tests/premium-form-ui.test.js`(Chromium 경로), `package.json`(`test:web`), `README.md`, `docs/card-data-spec.md`, 이 문서.
+- 확인일·작성 도구: 2026-10-26 · Claude.
+- 10.26 `main` 병합: #68(이규동, #67), #69·#71(이용석). 이슈 #67·#70 닫힘.
+- 이슈·PR: [#72](https://github.com/lgdl24/Cardnews-automation/issues/72) 시연 백업 결과 웹 추가. 리뷰 이용석. **`main` 병합은 이규동.**
+- 상태: export → web:build → check:web 오류 0. 10.28 멘토 시연 준비 중(노션 '시연 시나리오 (10.28)').
+- 작업 브랜치: `feat/72-demo-backup` · 기준 `main`(`d908157`).
+- 변경 파일: `config/export.json`, `products/demo-cleansing-oil/`(입력·사진·cards.json·log.jsonl), `web/public/data/`, 이 문서.
+- 커밋 안 함(이 PC 로컬 시험): `products/213/`, `products/test-injection-r1/` 수정(작업실 수정 요청 시험), `products/toneup-web/`.
+- 다음: 디자인 묶음 목록·자동 추천 설계(이슈 예정, #53 이용석 제안과 합침). GPT 디자인 시안 10종은 이규동이 뽑는 중(내부 참고용, 저장소에 안 올림).
 - 실행 중인 작업: 없음.
-
 ## 도구 분담 (이용석 작업, Claude Code · Codex)
 
 2026-10-20 이용석이 정함. 두 도구 모두 GitHub·노션·Figma를 직접 보므로 서로 '학습'시키지 않는다. 대신 **아직 어디에도 안 올라간 상태**(미커밋 변경, 진행 중 작업, 말로 정한 결정)는 이 문서에만 있으니 교대할 때마다 이 문서를 갱신한다. Claude 쪽 개인 메모리는 Codex가 못 본다.

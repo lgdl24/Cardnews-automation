@@ -1,0 +1,202 @@
+{
+  "spec_version": "0.1",
+  "product_id": "demo-cleansing-oil",
+  "stage": "approved",
+  "sources": [
+    {
+      "id": "S1",
+      "section": "제품 설명",
+      "quote": "카모마일꽃추출물을 담은 순한 클렌징 오일이에요."
+    },
+    {
+      "id": "S2",
+      "section": "제품 설명",
+      "quote": "물과 만나면 우유처럼 뽀얗게 변해서 미온수로 가볍게 헹궈져요."
+    },
+    {
+      "id": "S3",
+      "section": "제품 설명",
+      "quote": "세안 후에도 피부가 땅기지 않도록 해바라기씨오일을 더했어요."
+    },
+    {
+      "id": "S4",
+      "section": "주요 특징",
+      "quote": "카모마일꽃추출물 함유"
+    },
+    {
+      "id": "S5",
+      "section": "주요 특징",
+      "quote": "물과 만나면 유화되어 미온수로 헹궈지는 오일 제형"
+    },
+    {
+      "id": "S6",
+      "section": "주요 특징",
+      "quote": "해바라기씨오일 함유"
+    },
+    {
+      "id": "S7",
+      "section": "주요 특징",
+      "quote": "워터프루프 제품은 두 번 세안을 권장해요"
+    },
+    {
+      "id": "S8",
+      "section": "주요 특징",
+      "quote": "200ml 펌프 용기"
+    },
+    {
+      "id": "S9",
+      "section": "사용 방법",
+      "quote": "마른 손과 마른 얼굴에 2~3번 펌프해 부드럽게 마사지해요."
+    },
+    {
+      "id": "S10",
+      "section": "사용 방법",
+      "quote": "물을 조금 묻혀 뽀얗게 변하면 미온수로 헹궈요."
+    },
+    {
+      "id": "S11",
+      "section": "사용 방법",
+      "quote": "필요하면 폼클렌저로 한 번 더 세안해요."
+    }
+  ],
+  "analysis": {
+    "core_message": "물과 만나면 뽀얗게 유화되는 카모마일 클렌징 오일로 마른 손·마른 얼굴에 편하게 세안해요",
+    "core_evidence": [
+      "S1",
+      "S2",
+      "S5"
+    ],
+    "features": [
+      {
+        "summary": "물과 만나면 우유처럼 유화되어 미온수로 헹궈지는 오일 제형",
+        "evidence": [
+          "S2",
+          "S5"
+        ]
+      },
+      {
+        "summary": "카모마일꽃추출물 함유로 순한 세정",
+        "evidence": [
+          "S1",
+          "S4"
+        ]
+      },
+      {
+        "summary": "해바라기씨오일 함유로 세안 후 당김 없음",
+        "evidence": [
+          "S3",
+          "S6"
+        ]
+      },
+      {
+        "summary": "워터프루프 제품은 두 번 세안 권장",
+        "evidence": [
+          "S7"
+        ]
+      }
+    ],
+    "usage": [
+      {
+        "summary": "마른 손과 마른 얼굴에 2~3번 펌프해 마사지",
+        "evidence": [
+          "S9"
+        ]
+      },
+      {
+        "summary": "물을 묻혀 뽀얗게 유화되면 미온수로 헹굼",
+        "evidence": [
+          "S10"
+        ]
+      },
+      {
+        "summary": "필요하면 폼클렌저로 추가 세안",
+        "evidence": [
+          "S11"
+        ]
+      }
+    ]
+  },
+  "cards": [
+    {
+      "no": 1,
+      "role": "cover",
+      "template": "cover",
+      "intent": "제품명과 핵심 특징인 유화 오일 제형을 표지로 소개해 관심을 끔. 200ml 뱃지 포함",
+      "image": "main.png",
+      "evidence": [
+        "S8"
+      ],
+      "copy": {
+        "title": "카모마일\n순한\n클렌징 오일",
+        "subtitle": "샘플랩 내추럴",
+        "badge": "200ml"
+      }
+    },
+    {
+      "no": 2,
+      "role": "feature",
+      "template": "image",
+      "intent": "강조 정보인 물과 만나면 뽀얗게 유화되는 특징을 이미지와 함께 부각",
+      "image": "main.png",
+      "evidence": [
+        "S2",
+        "S5"
+      ],
+      "copy": {
+        "title": "물과 만나면\n뽀얗게\n유화돼요",
+        "caption": "물과 닿으면 우유처럼\n뽀얗게 변해요\n미온수로 헹궈져요"
+      }
+    },
+    {
+      "no": 3,
+      "role": "feature",
+      "template": "description",
+      "intent": "카모마일꽃추출물과 해바라기씨오일 두 가지 핵심 성분을 설명",
+      "image": "main.png",
+      "evidence": [
+        "S1",
+        "S3",
+        "S4",
+        "S6"
+      ],
+      "copy": {
+        "title": "두 가지\n핵심 성분",
+        "items": [
+          "카모마일꽃추출물로\n순하게 세정해요",
+          "해바라기씨오일로\n세안 후 당기지 않아요"
+        ]
+      }
+    },
+    {
+      "no": 4,
+      "role": "usage",
+      "template": "description",
+      "intent": "마른 손·마른 얼굴에 펌프 후 유화해 헹구는 단계별 사용법 안내. 워터프루프 권장도 포함",
+      "evidence": [
+        "S7",
+        "S9",
+        "S10",
+        "S11"
+      ],
+      "copy": {
+        "title": "클렌징 오일\n사용법",
+        "items": [
+          "마른 손·얼굴에\n2~3번 펌프하고\n마사지해요",
+          "물 묻혀 뽀얗게 변하면\n미온수로 헹궈요",
+          "워터프루프는 두 번\n세안해요. 필요시\n폼클렌저를 써요"
+        ]
+      }
+    },
+    {
+      "no": 5,
+      "role": "closing",
+      "template": "cover",
+      "intent": "핵심 메시지로 마무리하며 브랜드를 강조",
+      "image": "main.png",
+      "copy": {
+        "title": "카모마일로\n순하게\n세안해요",
+        "subtitle": "샘플랩 내추럴의\n클렌징 오일이에요"
+      }
+    }
+  ]
+}

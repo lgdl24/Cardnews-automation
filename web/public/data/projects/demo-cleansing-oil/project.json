@@ -1,0 +1,436 @@
+{
+  "spec_version": "0.3",
+  "id": "demo-cleansing-oil",
+  "kind": "example",
+  "label": "시연 백업 · 웹 모드 · 프리미엄 (가상 제품)",
+  "stage": "approved",
+  "skill_version": "v1",
+  "updated_at": "2026-10-26T01:48:51.041Z",
+  "product": {
+    "name": "카모마일 순한 클렌징 오일",
+    "brand": "샘플랩 내추럴 (시연용 가상 브랜드)",
+    "category": "클렌징 · 오일",
+    "purpose": "제품 소개, 사용법 안내",
+    "emphasis": "물과 만나면 뽀얗게 변하는 오일 제형, 마른 손·마른 얼굴에 사용",
+    "card_count": 5
+  },
+  "images": [
+    {
+      "file": "main.png",
+      "desc": "펌프 병 단독 컷 (시연용 가상 일러스트)",
+      "source": "직접 제작",
+      "usage": "가능"
+    }
+  ],
+  "sources": [
+    {
+      "id": "S1",
+      "section": "제품 설명",
+      "quote": "카모마일꽃추출물을 담은 순한 클렌징 오일이에요."
+    },
+    {
+      "id": "S2",
+      "section": "제품 설명",
+      "quote": "물과 만나면 우유처럼 뽀얗게 변해서 미온수로 가볍게 헹궈져요."
+    },
+    {
+      "id": "S3",
+      "section": "제품 설명",
+      "quote": "세안 후에도 피부가 땅기지 않도록 해바라기씨오일을 더했어요."
+    },
+    {
+      "id": "S4",
+      "section": "주요 특징",
+      "quote": "카모마일꽃추출물 함유"
+    },
+    {
+      "id": "S5",
+      "section": "주요 특징",
+      "quote": "물과 만나면 유화되어 미온수로 헹궈지는 오일 제형"
+    },
+    {
+      "id": "S6",
+      "section": "주요 특징",
+      "quote": "해바라기씨오일 함유"
+    },
+    {
+      "id": "S7",
+      "section": "주요 특징",
+      "quote": "워터프루프 제품은 두 번 세안을 권장해요"
+    },
+    {
+      "id": "S8",
+      "section": "주요 특징",
+      "quote": "200ml 펌프 용기"
+    },
+    {
+      "id": "S9",
+      "section": "사용 방법",
+      "quote": "마른 손과 마른 얼굴에 2~3번 펌프해 부드럽게 마사지해요."
+    },
+    {
+      "id": "S10",
+      "section": "사용 방법",
+      "quote": "물을 조금 묻혀 뽀얗게 변하면 미온수로 헹궈요."
+    },
+    {
+      "id": "S11",
+      "section": "사용 방법",
+      "quote": "필요하면 폼클렌저로 한 번 더 세안해요."
+    }
+  ],
+  "analysis": {
+    "core_message": "물과 만나면 뽀얗게 유화되는 카모마일 클렌징 오일로 마른 손·마른 얼굴에 편하게 세안해요",
+    "core_evidence": [
+      "S1",
+      "S2",
+      "S5"
+    ],
+    "features": [
+      {
+        "summary": "물과 만나면 우유처럼 유화되어 미온수로 헹궈지는 오일 제형",
+        "evidence": [
+          "S2",
+          "S5"
+        ]
+      },
+      {
+        "summary": "카모마일꽃추출물 함유로 순한 세정",
+        "evidence": [
+          "S1",
+          "S4"
+        ]
+      },
+      {
+        "summary": "해바라기씨오일 함유로 세안 후 당김 없음",
+        "evidence": [
+          "S3",
+          "S6"
+        ]
+      },
+      {
+        "summary": "워터프루프 제품은 두 번 세안 권장",
+        "evidence": [
+          "S7"
+        ]
+      }
+    ],
+    "usage": [
+      {
+        "summary": "마른 손과 마른 얼굴에 2~3번 펌프해 마사지",
+        "evidence": [
+          "S9"
+        ]
+      },
+      {
+        "summary": "물을 묻혀 뽀얗게 유화되면 미온수로 헹굼",
+        "evidence": [
+          "S10"
+        ]
+      },
+      {
+        "summary": "필요하면 폼클렌저로 추가 세안",
+        "evidence": [
+          "S11"
+        ]
+      }
+    ]
+  },
+  "cards": [
+    {
+      "no": 1,
+      "role": "cover",
+      "template": "cover",
+      "intent": "제품명과 핵심 특징인 유화 오일 제형을 표지로 소개해 관심을 끔. 200ml 뱃지 포함",
+      "image": "main.png",
+      "evidence": [
+        "S8"
+      ],
+      "copy": {
+        "title": "카모마일\n순한\n클렌징 오일",
+        "subtitle": "샘플랩 내추럴",
+        "badge": "200ml"
+      },
+      "png": "png/card-01.png",
+      "chars": [
+        {
+          "field": "title",
+          "index": null,
+          "chars": 12,
+          "limit": 20,
+          "ratio": 0.6
+        },
+        {
+          "field": "subtitle",
+          "index": null,
+          "chars": 7,
+          "limit": 42,
+          "ratio": 0.167
+        },
+        {
+          "field": "badge",
+          "index": null,
+          "chars": 5,
+          "limit": 12,
+          "ratio": 0.417
+        }
+      ],
+      "cautions": [],
+      "layout": {
+        "ok": true,
+        "issues": [],
+        "overlaps": []
+      },
+      "revisions": []
+    },
+    {
+      "no": 2,
+      "role": "feature",
+      "template": "image",
+      "intent": "강조 정보인 물과 만나면 뽀얗게 유화되는 특징을 이미지와 함께 부각",
+      "image": "main.png",
+      "evidence": [
+        "S2",
+        "S5"
+      ],
+      "copy": {
+        "title": "물과 만나면\n뽀얗게\n유화돼요",
+        "caption": "물과 닿으면 우유처럼\n뽀얗게 변해요\n미온수로 헹궈져요"
+      },
+      "png": "png/card-02.png",
+      "chars": [
+        {
+          "field": "title",
+          "index": null,
+          "chars": 13,
+          "limit": 20,
+          "ratio": 0.65
+        },
+        {
+          "field": "caption",
+          "index": null,
+          "chars": 27,
+          "limit": 72,
+          "ratio": 0.375
+        }
+      ],
+      "cautions": [],
+      "layout": {
+        "ok": true,
+        "issues": [],
+        "overlaps": []
+      },
+      "revisions": []
+    },
+    {
+      "no": 3,
+      "role": "feature",
+      "template": "description",
+      "intent": "카모마일꽃추출물과 해바라기씨오일 두 가지 핵심 성분을 설명",
+      "image": "main.png",
+      "evidence": [
+        "S1",
+        "S3",
+        "S4",
+        "S6"
+      ],
+      "copy": {
+        "title": "두 가지\n핵심 성분",
+        "items": [
+          "카모마일꽃추출물로\n순하게 세정해요",
+          "해바라기씨오일로\n세안 후 당기지 않아요"
+        ]
+      },
+      "png": "png/card-03.png",
+      "chars": [
+        {
+          "field": "title",
+          "index": null,
+          "chars": 9,
+          "limit": 20,
+          "ratio": 0.45
+        },
+        {
+          "field": "items",
+          "index": 0,
+          "chars": 17,
+          "limit": 28,
+          "ratio": 0.607
+        },
+        {
+          "field": "items",
+          "index": 1,
+          "chars": 20,
+          "limit": 28,
+          "ratio": 0.714
+        }
+      ],
+      "cautions": [],
+      "layout": {
+        "ok": true,
+        "issues": [],
+        "overlaps": []
+      },
+      "revisions": []
+    },
+    {
+      "no": 4,
+      "role": "usage",
+      "template": "description",
+      "intent": "마른 손·마른 얼굴에 펌프 후 유화해 헹구는 단계별 사용법 안내. 워터프루프 권장도 포함",
+      "image": null,
+      "evidence": [
+        "S7",
+        "S9",
+        "S10",
+        "S11"
+      ],
+      "copy": {
+        "title": "클렌징 오일\n사용법",
+        "items": [
+          "마른 손·얼굴에\n2~3번 펌프하고\n마사지해요",
+          "물 묻혀 뽀얗게 변하면\n미온수로 헹궈요",
+          "워터프루프는 두 번\n세안해요. 필요시\n폼클렌저를 써요"
+        ]
+      },
+      "png": "png/card-04.png",
+      "chars": [
+        {
+          "field": "title",
+          "index": null,
+          "chars": 9,
+          "limit": 20,
+          "ratio": 0.45
+        },
+        {
+          "field": "items",
+          "index": 0,
+          "chars": 22,
+          "limit": 28,
+          "ratio": 0.786
+        },
+        {
+          "field": "items",
+          "index": 1,
+          "chars": 20,
+          "limit": 28,
+          "ratio": 0.714
+        },
+        {
+          "field": "items",
+          "index": 2,
+          "chars": 27,
+          "limit": 28,
+          "ratio": 0.964
+        }
+      ],
+      "cautions": [],
+      "layout": {
+        "ok": true,
+        "issues": [],
+        "overlaps": []
+      },
+      "revisions": [
+        {
+          "ts": "2026-10-26T01:45:37.977Z",
+          "types": [
+            "DESIGN"
+          ],
+          "memo": "디자인 변경"
+        }
+      ]
+    },
+    {
+      "no": 5,
+      "role": "closing",
+      "template": "cover",
+      "intent": "핵심 메시지로 마무리하며 브랜드를 강조",
+      "image": "main.png",
+      "evidence": [],
+      "copy": {
+        "title": "카모마일로\n순하게\n세안해요",
+        "subtitle": "샘플랩 내추럴의\n클렌징 오일이에요"
+      },
+      "png": "png/card-05.png",
+      "chars": [
+        {
+          "field": "title",
+          "index": null,
+          "chars": 12,
+          "limit": 20,
+          "ratio": 0.6
+        },
+        {
+          "field": "subtitle",
+          "index": null,
+          "chars": 17,
+          "limit": 42,
+          "ratio": 0.405
+        }
+      ],
+      "cautions": [],
+      "layout": {
+        "ok": true,
+        "issues": [],
+        "overlaps": []
+      },
+      "revisions": [
+        {
+          "ts": "2026-10-26T01:45:37.977Z",
+          "types": [
+            "DESIGN"
+          ],
+          "memo": "디자인 변경"
+        }
+      ]
+    }
+  ],
+  "plan_revisions": [],
+  "colors": {
+    "mode": "제품 색",
+    "source": "product",
+    "image": "main.png",
+    "representative": "#E8D6A0",
+    "color": {
+      "bg": "#F9F8F5",
+      "surface": "#FFFFFF",
+      "text": "#2E2A1F",
+      "muted": "#6D685A",
+      "primary": "#766725",
+      "accent": "#ECE9DF",
+      "on-primary": "#FFFFFF"
+    },
+    "adjustments": [
+      {
+        "key": "muted",
+        "from": "#706B5C",
+        "to": "#6D685A"
+      },
+      {
+        "key": "primary",
+        "from": "#C6A339",
+        "to": "#766725"
+      }
+    ],
+    "note": null
+  },
+  "quality": {
+    "stage": "approved",
+    "card_count": 5,
+    "coverage": 1,
+    "evidence_rate": 0.8,
+    "char_usage": 0.546,
+    "char_usage_max": 0.964,
+    "caution": {
+      "total": 0,
+      "in_source": 0,
+      "not_in_source": 0
+    },
+    "coverage_detail": {
+      "covered": 8,
+      "total": 8,
+      "missing": [],
+      "excluded_count": 0
+    }
+  }
+}
