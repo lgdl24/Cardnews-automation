@@ -3,19 +3,21 @@
    흰 테두리 알약 용량, 아래 연한 하늘색 면에 남색 제목 3줄 + 브랜드 자리. 색은 묶음 고유색(_theme) */
 .card.band { padding:0; background:var(--color-bg); }
 .band__scene { position:absolute; left:0; top:0; width:1080px; overflow:hidden;
-  background:
-    radial-gradient(22% 14% at 18% 34%, rgb(255 255 255 / .42), transparent 72%),
-    radial-gradient(16% 10% at 84% 44%, rgb(255 255 255 / .38), transparent 72%),
-    radial-gradient(60% 26% at 50% 88%, var(--color-scene-light), transparent 72%),
-    linear-gradient(180deg, var(--color-scene-deep) 0%, var(--color-scene-mid) 58%, var(--color-scene-light) 100%); }
-.band__scene-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+  background: linear-gradient(180deg, var(--color-scene-deep) 0%, var(--color-scene-mid) 64%, color-mix(in srgb, var(--color-scene-mid) 80%, var(--color-scene-light)) 100%); }
+/* 배경 사진이 없을 때: 사진 흉내(빛 번짐·흐림) 대신 스튜디오 무대 — 벽·바닥 경계·유리 받침 */
+.band__scene::before { content:""; position:absolute; left:0; right:0; bottom:0; height:var(--band-floor, 30%); background:linear-gradient(180deg, rgb(255 255 255 / .16), rgb(255 255 255 / .06)); border-top:2px solid rgb(255 255 255 / .28); }
+.band__stage { position:absolute; z-index:1; border-radius:50%; background:linear-gradient(180deg, rgb(255 255 255 / .55), rgb(255 255 255 / .16)); border:2px solid rgb(255 255 255 / .55); box-shadow:0 14px 24px rgb(4 24 52 / .35); }
+.band__scene-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; z-index:2; }
 .has-scene .band__scene-img { display:block; }
-.band__scene::after { content:""; position:absolute; left:0; right:0; bottom:0; height:var(--band-fade, 140px); background:linear-gradient(to bottom, transparent, var(--color-bg)); }
-.band__photo { position:absolute; display:block; object-fit:contain; object-position:center bottom; z-index:1; filter:drop-shadow(0 22px 26px rgb(0 0 0 / .32)); }
+.has-scene .band__stage, .no-image .band__stage { display:none; }
+/* 아래 면으로 이어지는 그라데이션은 배경 사진이 있을 때만 */
+.band__scene::after { content:""; display:none; position:absolute; z-index:3; left:0; right:0; bottom:0; height:var(--band-fade, 140px); background:linear-gradient(to bottom, transparent, var(--color-bg)); }
+.has-scene .band__scene::after { display:block; }
+.band__photo { position:absolute; display:block; object-fit:contain; object-position:center bottom; z-index:2; filter:drop-shadow(0 18px 18px rgb(4 24 52 / .40)); }
 .band .pager { position:absolute; right:35px; top:38px; font-size:36px; font-weight:800; color:#FFFFFF; z-index:3; }
 .band-label { position:absolute; display:flex; align-items:center; gap:36px; font-size:44px; font-weight:800; line-height:1.2; color:var(--color-primary); z-index:2; }
 .band-label::after { content:""; width:100px; height:3px; background:var(--color-primary); }
-.band-cover .band__scene { height:620px; --band-fade:150px; }
+.band-cover .band__scene { height:620px; --band-fade:150px; --band-floor:32%; }
 .band-cover .band__photo { left:400px; top:150px; width:540px; height:350px; }
 .band-cover .badge { position:absolute; left:60px; top:57px; height:66px; max-width:420px; padding:0 42px; border:3px solid #FFFFFF; border-radius:33px; background:transparent; color:#FFFFFF; font-size:40px; font-weight:800; line-height:60px; z-index:3; }
 .band-cover__title { position:absolute; left:88px; top:652px; width:904px; font-size:78px; font-weight:800; line-height:1.22; letter-spacing:-0.01em; max-height:286px; color:var(--color-text); z-index:2; }
@@ -25,7 +27,7 @@
 .band-cover.no-image .band__photo { display:none; }
 </style>
 <article class="card band band-cover role-{{role}} {{imageClass}} {{sceneClass}}">
-  <div class="band__scene image__frame" aria-hidden="true"><img class="band__scene-img" src="{{scene}}" alt=""></div>
+  <div class="band__scene image__frame" aria-hidden="true"><img class="band__scene-img" src="{{scene}}" alt=""><div class="band__stage" style="left:500px; top:470px; width:340px; height:64px"></div></div>
   <img class="band__photo" style="{{imageCrop}}" src="{{image}}" alt="">
   <span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span>
   <h1 class="band-cover__title" data-fit>{{title}}</h1>
