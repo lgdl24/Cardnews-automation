@@ -41,10 +41,10 @@
       },
       {
        "sel": ".typo-cover__visual",
-       "left": 848,
-       "top": 788,
-       "width": 140,
-       "height": 262
+       "left": 678,
+       "top": 754,
+       "width": 332,
+       "height": 286
       }
      ]
     },
@@ -383,9 +383,9 @@
       {
        "sel": ".band__photo",
        "left": 400,
-       "top": 150,
+       "top": 96,
        "width": 540,
-       "height": 350
+       "height": 412
       }
      ]
     },

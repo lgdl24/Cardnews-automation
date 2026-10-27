@@ -18,7 +18,7 @@
 .band-label { position:absolute; display:flex; align-items:center; gap:36px; font-size:44px; font-weight:800; line-height:1.2; color:var(--color-primary); z-index:2; }
 .band-label::after { content:""; width:100px; height:3px; background:var(--color-primary); }
 .band-cover .band__scene { height:620px; --band-fade:150px; --band-floor:32%; }
-.band-cover .band__photo { left:400px; top:150px; width:540px; height:350px; }
+.band-cover .band__photo { left:400px; top:96px; width:540px; height:412px; }
 .band-cover .badge { position:absolute; left:60px; top:57px; height:66px; max-width:420px; padding:0 42px; border:3px solid #FFFFFF; border-radius:33px; background:transparent; color:#FFFFFF; font-size:40px; font-weight:800; line-height:60px; z-index:3; }
 .band-cover__title { position:absolute; left:88px; top:652px; width:904px; font-size:78px; font-weight:800; line-height:1.22; letter-spacing:-0.01em; max-height:286px; color:var(--color-text); z-index:2; }
 .band-cover__copy { position:absolute; left:88px; top:978px; width:904px; font-size:36px; font-weight:500; line-height:1.3; max-height:47px; color:var(--color-muted); z-index:2; }
@@ -27,7 +27,7 @@
 .band-cover.no-image .band__photo { display:none; }
 </style>
 <article class="card band band-cover role-{{role}} {{imageClass}} {{sceneClass}}">
-  <div class="band__scene image__frame" aria-hidden="true"><img class="band__scene-img" src="{{scene}}" alt=""><div class="band__stage" style="left:500px; top:470px; width:340px; height:64px"></div></div>
+  <div class="band__scene image__frame" aria-hidden="true"><img class="band__scene-img" src="{{scene}}" alt=""><div class="band__stage" style="left:500px; top:478px; width:340px; height:64px"></div></div>
   <img class="band__photo" style="{{imageCrop}}" src="{{image}}" alt="">
   <span class="badge" data-fit>{{badge}}</span><span class="pager">{{page}} / {{total}}</span>
   <h1 class="band-cover__title" data-fit>{{title}}</h1>

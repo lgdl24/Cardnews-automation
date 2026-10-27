@@ -1,8 +1,9 @@
-<!-- 설명형: 제목(필수) · 항목 1~3개(필수) -->
+<!-- 설명형: 제목(필수) · 항목 1~3개(필수)
+     디자인: 상자 대신 가는 선으로 나눈 줄. 번호는 표지·이미지 카드와 같은 아치 모양 작은 칸. 줄은 남는 높이에 고르게 놓임 -->
 <style>
   .desc__title {
     flex: none;
-    margin-top: 40px;
+    margin-top: 44px;
     font-size: 64px;
     font-weight: 800;
     line-height: 1.25;
@@ -12,29 +13,32 @@
   }
   .desc__list {
     list-style: none;
-    margin-top: 56px;
+    flex: 1;
+    min-height: 0;
+    margin: 40px 0 32px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    justify-content: center;
     counter-reset: item;
   }
   .desc__item {
     display: flex;
     align-items: center;
-    gap: 32px;
-    padding: 36px 40px;
-    border-radius: 28px;
-    background: var(--color-surface);
+    gap: 40px;
+    padding: 34px 0;
+    border-top: 2px solid color-mix(in srgb, var(--color-text) 12%, transparent);
     counter-increment: item;
   }
+  .desc__item:last-child { border-bottom: 2px solid color-mix(in srgb, var(--color-text) 12%, transparent); }
   .desc__item::before {
-    content: counter(item, decimal-leading-zero);
+    content: counter(item);
     flex: none;
-    width: 72px; height: 72px;
-    border-radius: 50%;
+    width: 76px; height: 92px;
+    padding-top: 10px;
+    border-radius: 38px 38px 12px 12px;
     background: var(--color-accent);
     color: var(--color-primary);
-    font-size: 28px;
+    font-size: 40px;
     font-weight: 800;
     display: flex;
     align-items: center;

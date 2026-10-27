@@ -28,6 +28,12 @@
 .band-description.role-usage .desc__item { padding-left:320px; }
 .band-description.role-usage .desc__item::after { content:'STEP ' counter(points); position:absolute; left:130px; top:24px; font-size:36px; font-weight:800; color:var(--color-primary); }
 .band-description.no-image .band__photo { display:none; }
+/* 제품 사진이 없는 설명 카드: 장면 띠를 얇게 줄이고 글을 위로 올림 (빈 띠가 크게 남지 않게) */
+.band-description.no-image .band__scene { height:150px; }
+.band-description.no-image .band__scene::before { display:none; }
+.band-description.no-image .band-label { top:212px; }
+.band-description.no-image .band-description__title { top:278px; }
+.band-description.no-image .band-description__items { top:500px; }
 </style>
 <article class="card band band-description role-{{role}} {{imageClass}} {{sceneClass}}">
   <div class="band__scene image__frame" aria-hidden="true"><img class="band__scene-img" src="{{scene}}" alt=""><div class="band__stage" style="left:595px; top:262px; width:210px; height:38px"></div></div>

@@ -9,7 +9,7 @@
       "subtitle": { "required": false, "maxChars": 34, "maxCharsPerLine": 29, "maxLines": 2 },
       "badge":    { "required": false, "maxChars": 12, "maxCharsPerLine": 12, "maxLines": 1 }
     },
-    "image": "optional"
+    "image": "optional", "trimImage": true
   },
   "image": {
     "label": "이미지 강조형",
@@ -18,7 +18,7 @@
       "title":   { "required": true,  "maxChars": 18, "maxCharsPerLine": 17, "maxLines": 2 },
       "caption": { "required": false, "maxChars": 40, "maxCharsPerLine": 32, "maxLines": 2 }
     },
-    "image": "required"
+    "image": "required", "trimImage": true
   },
   "description": {
     "label": "설명형",
