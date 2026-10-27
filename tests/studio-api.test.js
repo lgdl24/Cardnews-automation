@@ -58,6 +58,15 @@ async function startServer() {
     }
     throw new Error('작업이 끝나지 않았어요');
   };
+  // 진행 중 작업과 대기열이 모두 빌 때까지
+  const waitIdle = async () => {
+    for (let i = 0; i < 400; i++) {
+      const r = await call('GET', '/jobs');
+      if (!r.body.running && r.body.queue.length === 0) return;
+      await new Promise((ok) => setTimeout(ok, 50));
+    }
+    throw new Error('대기열이 비지 않았어요');
+  };
   // Host 헤더를 직접 정해 보내기 (fetch는 Host를 바꿀 수 없음)
   const rawStatus = (host) => new Promise((resolve, reject) => {
     const req = http.request({ host: '127.0.0.1', port: server.address().port, path: '/api/studio/status', headers: { host } }, (res) => {
@@ -71,7 +80,7 @@ async function startServer() {
     server.close();
     fs.rmSync(dir, { recursive: true, force: true });
   };
-  return { call, waitJob, close, rawStatus, productsDir, exportConfigFile, exported };
+  return { call, waitJob, waitIdle, close, rawStatus, productsDir, exportConfigFile, exported };
 }
 
 // toneup 입력을 웹 폼 값으로
@@ -221,6 +230,78 @@ test('보안: 다른 호스트·헤더 없는 쓰기·잘못된 ID·파일명·�
     assert.equal((await s.call('GET', '/products/nope')).status, 404);
     assert.equal((await s.call('GET', '/products/../../etc/passwd')).status, 404);
   } finally {
+    s.close();
+  }
+});
+
+test('대기열: 한 제품 작업 중에 다른 제품 작업을 누르면 차례를 기다렸다가 자동으로 시작, 취소 가능, 수정 요청은 시작할 때 기록', async () => {
+  process.env.FAKE_CLAUDE_DELAY_MS = '700';
+  const s = await startServer();
+  try {
+    for (const id of ['queue-a', 'queue-b', 'queue-c']) assert.equal((await s.call('POST', '/products', { id, ...formValues() })).status, 201);
+
+    // A 시작 → B는 대기 1번째, C는 대기 2번째
+    let r = await s.call('POST', '/products/queue-a/jobs', { kind: 'plan' });
+    assert.equal(r.body.job.status, 'running');
+    r = await s.call('GET', '/products/queue-b');
+    assert.equal(r.body.actions.can_plan, true, '다른 제품이 돌아도 누를 수 있음');
+    assert.equal(r.body.actions.wait_ahead, 1);
+    r = await s.call('POST', '/products/queue-b/jobs', { kind: 'plan' });
+    assert.equal(r.status, 202);
+    assert.equal(r.body.job.status, 'queued');
+    assert.equal(r.body.job.position, 1);
+    assert.equal(r.body.job.ahead.product_id, 'queue-a');
+    assert.equal((await s.call('POST', '/products/queue-b/jobs', { kind: 'plan' })).status, 409, '같은 제품은 한 번만');
+    r = await s.call('POST', '/products/queue-c/jobs', { kind: 'plan' });
+    assert.equal(r.body.job.position, 2);
+
+    r = await s.call('GET', '/jobs');
+    assert.equal(r.body.running.product_id, 'queue-a');
+    assert.equal(r.body.running.name, '데일리 글로우 톤업 선크림');
+    assert.deepEqual(r.body.queue.map((q) => [q.product_id, q.position]), [['queue-b', 1], ['queue-c', 2]]);
+    r = await s.call('GET', '/products');
+    const byId = Object.fromEntries(r.body.products.map((p) => [p.id, p]));
+    assert.equal(byId['queue-a'].running, true);
+    assert.equal(byId['queue-c'].queued, true);
+    assert.equal(byId['queue-c'].queue_position, 2);
+    r = await s.call('GET', '/products/queue-c');
+    assert.equal(r.body.job.status, 'queued');
+    assert.equal(r.body.actions.job_state, 'queued');
+    assert.equal(r.body.actions.can_edit_input, false, '대기 중에는 입력을 고칠 수 없음');
+
+    // C 취소 → 대기에서 빠지고 다시 시작할 수 있음
+    assert.equal((await s.call('DELETE', '/products/queue-c/queue')).status, 200);
+    assert.equal((await s.call('DELETE', '/products/queue-c/queue')).status, 409);
+    r = await s.call('GET', '/products/queue-c');
+    assert.equal(r.body.actions.job_state, null);
+    assert.equal(r.body.actions.can_plan, true);
+
+    // A가 끝나면 B가 자동으로 시작해서 끝남
+    await s.waitIdle();
+    for (const id of ['queue-a', 'queue-b']) {
+      r = await s.call('GET', `/products/${id}`);
+      assert.equal(r.body.stage, 'plan', id);
+      assert.equal(r.body.job.ok, true, `${id} ${JSON.stringify(r.body.job)}`);
+    }
+    assert.equal((await s.call('GET', '/products/queue-c')).body.stage, 'input', '취소한 제품은 그대로');
+
+    // 수정 요청이 대기 중이면 아직 기록하지 않고, 취소하면 기록이 남지 않음
+    assert.equal((await s.call('POST', '/products/queue-a/revisions', { stage: 'plan', types: ['ORDER'], memo: '순서 바꿔 줘요' })).body.job.status, 'running');
+    r = await s.call('POST', '/products/queue-b/revisions', { stage: 'plan', types: ['LEN'], memo: '취소할 요청' });
+    assert.equal(r.body.job.status, 'queued');
+    const revs = async (id) => (await s.call('GET', `/products/${id}`)).body.events.filter((e) => e.event === 'revision_requested').length;
+    assert.equal(await revs('queue-b'), 0);
+    await s.call('DELETE', '/products/queue-b/queue');
+    r = await s.call('POST', '/products/queue-b/revisions', { stage: 'plan', types: ['LEN'], memo: '실제 요청' });
+    assert.equal(r.body.job.status, 'queued');
+    await s.waitIdle();
+    const events = (await s.call('GET', '/products/queue-b')).body.events;
+    const rev = events.filter((e) => e.event === 'revision_requested');
+    assert.deepEqual(rev.map((e) => e.memo), ['실제 요청']);
+    const started = events.filter((e) => e.event === 'job_started' && e.kind === 'revise');
+    assert.ok(started.length === 1 && rev[0].ts <= started[0].ts, '수정 요청 기록 → 작업 시작 순서');
+  } finally {
+    delete process.env.FAKE_CLAUDE_DELAY_MS;
     s.close();
   }
 });

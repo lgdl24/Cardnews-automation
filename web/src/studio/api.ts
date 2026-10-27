@@ -65,7 +65,8 @@ export interface Revision {
   memo: string;
 }
 export interface StudioJob {
-  status: 'running' | 'done';
+  /** queued: 다른 제품 작업이 끝나길 기다리는 중 (대기열) */
+  status: 'running' | 'done' | 'queued';
   product_id?: string;
   job_id: string | null;
   kind: JobKind;
@@ -78,12 +79,22 @@ export interface StudioJob {
   crash?: string | null;
   report?: ResultReport | null;
   verify?: { ok: boolean; reasons: string[]; validate?: string } | null;
+  /** 대기 중일 때: 대기열 순서(1부터), 들어간 시각, 지금 돌고 있는 작업 */
+  position?: number;
+  queued_at?: string;
+  ahead?: { product_id: string; name: string; kind: JobKind } | null;
+}
+/** 작업실 전체 작업: 지금 도는 작업 하나 + 대기열 */
+export interface JobsOverview {
+  running: { product_id: string; name: string; kind: JobKind; started_at: string } | null;
+  queue: { product_id: string; name: string; kind: JobKind; queued_at: string; position: number }[];
 }
 export interface StudioStatus {
   ok: true;
   mode: 'web';
   claude: ClaudeInfo;
   job: StudioJob | null;
+  jobs?: JobsOverview;
   form: FormDef;
   revision_types: RevisionType[];
 }
@@ -94,6 +105,8 @@ export interface ProductSummary {
   stage: StudioStage;
   updated_at: string;
   running: boolean;
+  queued?: boolean;
+  queue_position?: number | null;
 }
 export interface StudioCard {
   no: number;
@@ -106,7 +119,11 @@ export interface StudioCard {
   copy?: CardCopy;
 }
 export interface Actions {
+  /** 이 제품이 작업 중이거나 대기 중 */
   running: boolean;
+  job_state?: 'running' | 'queued' | null;
+  /** 지금 작업을 시작하면 앞에서 기다릴 작업 수 (0이면 바로 시작) */
+  wait_ahead?: number;
   last_job_ok: boolean | null;
   can_edit_input: boolean;
   can_plan: boolean;

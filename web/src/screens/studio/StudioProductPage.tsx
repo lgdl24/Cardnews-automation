@@ -19,7 +19,8 @@ export function StudioProductPage() {
   const { id = '' } = useParams();
   if (status === undefined) return <div className="page"><Loading /></div>;
   if (status === null) return <StudioOff />;
-  return <StudioProduct id={id} revisionTypes={status.revision_types} />;
+  // key: 다른 제품으로 넘어가면 화면을 새로 그림 (이전 제품 내용이 새 데이터가 올 때까지 남아 보이지 않게)
+  return <StudioProduct key={id} id={id} revisionTypes={status.revision_types} />;
 }
 
 function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: RevisionType[] }) {
@@ -35,7 +36,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   const p = data;
   const a = p.actions;
 
-  const act = async (path: string, body?: unknown, method: 'POST' | 'PUT' = 'POST') => {
+  const act = async (path: string, body?: unknown, method: 'POST' | 'PUT' | 'DELETE' = 'POST') => {
     setBusy(true);
     setActionError(null);
     try {
@@ -73,7 +74,12 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
         </p>
       )}
 
-      {p.job && <JobPanel job={p.job} />}
+      {p.job && <JobPanel job={p.job} busy={busy} onCancel={() => act(`/products/${id}/queue`, undefined, 'DELETE')} />}
+      {!a.running && (a.wait_ahead ?? 0) > 0 && (
+        <p className="notice notice-queue">
+          다른 제품 작업이 진행 중이에요. 지금 시작하면 차례를 기다렸다가 자동으로 시작해요 (앞에 {a.wait_ahead}개).
+        </p>
+      )}
 
       {/* 입력 단계 */}
       {p.stage === 'input' && (
@@ -185,7 +191,42 @@ function Steps({ detail }: { detail: ProductDetail }) {
 }
 
 // ── 작업 진행·결과
-function JobPanel({ job }: { job: StudioJob }) {
+function JobPanel({ job, busy, onCancel }: { job: StudioJob; busy: boolean; onCancel: () => void }) {
+  if (job.status === 'queued') return <QueuedPanel job={job} busy={busy} onCancel={onCancel} />;
+  return <JobProgress job={job} />;
+}
+
+// 대기 중: 앞에서 도는 작업과 순서, 취소
+function QueuedPanel({ job, busy, onCancel }: { job: StudioJob; busy: boolean; onCancel: () => void }) {
+  return (
+    <section className="section panel job-panel is-queued" aria-live="polite">
+      <div className="job-head">
+        <span className="job-icon" aria-hidden="true">
+          ⏳
+        </span>
+        <strong>
+          {JOB_LABEL[job.kind]} 대기 중 · {job.position}번째
+        </strong>
+        {job.revision && <span className="muted">수정 요청: {job.revision.memo}</span>}
+      </div>
+      <p className="muted job-hint">
+        {job.ahead ? (
+          <>
+            지금 <Link to={`/studio/${job.ahead.product_id}`}>{job.ahead.name}</Link>의 {JOB_LABEL[job.ahead.kind]}이 돌고 있어요.{' '}
+          </>
+        ) : null}
+        앞 작업이 끝나면 자동으로 시작해요. 이 화면을 닫아도 돼요.
+      </p>
+      <div className="action-bar">
+        <button className="btn" disabled={busy} onClick={onCancel}>
+          대기 취소
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function JobProgress({ job }: { job: StudioJob }) {
   const running = job.status === 'running';
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
