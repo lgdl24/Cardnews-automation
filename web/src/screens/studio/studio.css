@@ -280,6 +280,9 @@
 .job-panel.is-running {
   border-left-color: #3b78c4;
 }
+.job-panel.is-queued {
+  border-left-color: #c9a227;
+}
 .job-panel.is-ok {
   border-left-color: var(--stage-approved-fg);
 }
@@ -526,4 +529,77 @@
 .design-change p {
   flex-basis: 100%;
   margin: 0;
+}
+
+/* ── 대기열 (작업은 한 번에 하나, 나머지는 차례로) */
+.tag-queued {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7a5b06;
+  background: #fbf0cf;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.notice-queue {
+  border-color: #ecd9a0;
+  background: #fffaeb;
+}
+.job-bar {
+  background: #eef3fa;
+  border-bottom: 1px solid #d5e1f1;
+  font-size: 0.9rem;
+}
+.job-bar-inner {
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 8px var(--gutter);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+}
+.job-bar-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+.job-bar-now:hover strong {
+  text-decoration: underline;
+}
+.job-bar-time {
+  font-variant-numeric: tabular-nums;
+  color: #2b5d9b;
+  font-weight: 700;
+}
+.job-bar-queue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.job-bar-label {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7a5b06;
+  background: #fbf0cf;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.job-bar-queue ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.job-bar-queue a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.job-bar-queue a:hover {
+  text-decoration: underline;
 }
