@@ -1,18 +1,14 @@
-// 과정 지표 계산 (데이터 분석 A1·A3): 이벤트 기록 → 단계별 시간, 수정, 자동 수정, 1회 통과, 토큰·비용
+// 과정 지표 계산 (데이터 분석 A1·A3): 이벤트 기록 → 작업별 시간, 수정, 자동 수정, 1회 통과, 토큰·비용
 // 정의는 docs/event-log-spec.md '과정 지표'
+// 시간은 AI 작업 시간만 셈 (2026-10-27): 사람이 확인·대기한 시간은 다른 제품 작업·자리 비움이 섞여 비교할 수 없어서 뺌
 const { round } = require('./metrics');
 
 const PHASES = {
-  input: '입력',
   plan_job: '구성안 작업',
-  plan_review: '구성안 확인',
   copy_job: '문구·출력 작업',
-  final_review: '최종 검토',
   revise_job: '수정 작업',
 };
 const JOB_PHASE = { plan: 'plan_job', copy: 'copy_job', revise: 'revise_job' };
-const AI_PHASES = ['plan_job', 'copy_job', 'revise_job'];
-const HUMAN_PHASES = ['input', 'plan_review', 'final_review'];
 
 const toMin = (ms) => round(ms / 60000, 1);
 
@@ -33,28 +29,15 @@ function summarize(events, { cardCount = null } = {}) {
   const outside = []; // 작업 밖에서 실행한 검사
   const revisions = [];
   const versions = new Set();
-  let start = null;
   let finalApprovedAt = null;
-  let planApproved = false;
-  let waitingSince = null;
 
   const t = (e) => new Date(e.ts).getTime();
-  const closeWaiting = (e) => {
-    if (waitingSince === null) return;
-    ms[planApproved ? 'final_review' : 'plan_review'] += t(e) - waitingSince;
-    waitingSince = null;
-  };
 
   for (const e of events) {
     if (e.skill_version) versions.add(e.skill_version);
-    if (start === null) start = e.form_started_at ? new Date(e.form_started_at).getTime() : t(e);
 
     switch (e.event) {
-      case 'input_submitted':
-        if (e.form_started_at) ms.input += t(e) - new Date(e.form_started_at).getTime();
-        break;
       case 'job_started':
-        closeWaiting(e);
         jobs.set(e.job_id, { job_id: e.job_id, kind: e.kind, started: t(e), finished: null, ok: null, results: [] });
         break;
       case 'job_finished': {
@@ -67,7 +50,6 @@ function summarize(events, { cardCount = null } = {}) {
         job.cost_usd = e.cost_usd ?? null;
         jobs.set(e.job_id, job);
         if (job.started !== null && JOB_PHASE[job.kind]) ms[JOB_PHASE[job.kind]] += job.finished - job.started;
-        waitingSince = t(e);
         break;
       }
       case 'validate_result': {
@@ -75,16 +57,10 @@ function summarize(events, { cardCount = null } = {}) {
         (job ? job.results : outside).push(e);
         break;
       }
-      case 'plan_approved':
-        closeWaiting(e);
-        planApproved = true;
-        break;
       case 'final_approved':
-        closeWaiting(e);
         finalApprovedAt = t(e);
         break;
       case 'revision_requested':
-        closeWaiting(e);
         revisions.push(e);
         break;
       default:
@@ -120,15 +96,16 @@ function summarize(events, { cardCount = null } = {}) {
     return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
   };
   const firstCopy = jobList.find((j) => j.kind === 'copy');
-  const lastTs = events.length ? t(events[events.length - 1]) : null;
   const phases = Object.fromEntries(Object.entries(ms).map(([k, v]) => [k, toMin(v)]));
+  const aiMs = Object.values(ms).reduce((a, v) => a + v, 0);
+  const timedJobs = jobList.some((j) => j.minutes !== null);
 
   return {
     skill_versions: [...versions],
     complete: finalApprovedAt !== null,
-    total_minutes: start !== null ? toMin((finalApprovedAt ?? lastTs) - start) : null,
-    ai_minutes: toMin(AI_PHASES.reduce((a, k) => a + ms[k], 0)),
-    human_minutes: toMin(HUMAN_PHASES.reduce((a, k) => a + ms[k], 0)),
+    // 총 제작 시간 = AI 작업 시간 합 (사람 확인·대기 시간 제외). 시간을 잰 작업이 없으면 null
+    total_minutes: timedJobs ? toMin(aiMs) : null,
+    ai_minutes: timedJobs ? toMin(aiMs) : null,
     phases,
     plan_revision_requested: planRev.length > 0,
     plan_revisions: planRev.length,

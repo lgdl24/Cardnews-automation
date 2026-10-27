@@ -7,27 +7,23 @@
   "required": ["spec_version", "id", "summary", "jobs", "events"],
   "additionalProperties": false,
   "properties": {
-    "spec_version": { "const": "0.3" },
+    "spec_version": { "const": "1.0" },
     "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
     "summary": {
       "type": "object",
-      "required": ["complete", "total_minutes", "ai_minutes", "human_minutes", "phases", "plan_revisions", "revision_rounds", "revised_card_ratio", "revision_types", "first_pass", "auto_fix_total"],
+      "required": ["complete", "total_minutes", "ai_minutes", "phases", "plan_revisions", "revision_rounds", "revised_card_ratio", "revision_types", "first_pass", "auto_fix_total"],
       "additionalProperties": false,
       "properties": {
         "complete": { "type": "boolean", "description": "final_approved가 있으면 true" },
-        "total_minutes": { "type": ["number", "null"] },
-        "ai_minutes": { "type": ["number", "null"] },
-        "human_minutes": { "type": ["number", "null"] },
+        "total_minutes": { "type": ["number", "null"], "description": "AI 작업 시간 합(분). 사람이 확인·대기한 시간은 넣지 않음 (v1.0)" },
+        "ai_minutes": { "type": ["number", "null"], "description": "total_minutes와 같음 (v1.0)" },
         "phases": {
           "type": "object",
-          "required": ["input", "plan_job", "plan_review", "copy_job", "final_review", "revise_job"],
+          "required": ["plan_job", "copy_job", "revise_job"],
           "additionalProperties": false,
           "properties": {
-            "input": { "type": "number" },
             "plan_job": { "type": "number" },
-            "plan_review": { "type": "number" },
             "copy_job": { "type": "number" },
-            "final_review": { "type": "number" },
             "revise_job": { "type": "number" }
           }
         },

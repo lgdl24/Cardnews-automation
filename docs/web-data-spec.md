@@ -1,4 +1,4 @@
-# 웹 데이터 규격 — v0.2
+# 웹 데이터 규격 — v1.0
 
 로컬 제작 결과를 **결과 보기 웹**에 보여주기 위한 파일 형식입니다. 내보내기(`npm run export`)가 이 형식으로 쓰고, 웹 화면(V1 목록·V2 프로젝트 상세·V4 버전 비교)이 읽습니다.
 두 사람의 기능을 잇는 **연결 규격**이라 바꿀 때는 두 사람 모두 승인합니다. (초안 이규동 · 확인 이용석)
@@ -108,7 +108,7 @@ npm run export -- --no-eval            # 평가 실행은 빼고 config/export.j
 | `card_count` | 카드 수 |
 | `updated_at` | 제작 기록의 마지막 시각 (기록이 없으면 `null`) |
 | `thumbnail` | 대표 카드(1번) PNG 경로 |
-| `summary` | 목록에 보여줄 숫자: `coverage`(원문 커버리지) · `evidence_rate`(근거 연결률) · `caution_total`(주의 표현 건수) · `first_pass`(1회 통과) · `total_minutes`(총 제작 시간) · `revision_rounds`(카드 수정 요청 횟수) |
+| `summary` | 목록에 보여줄 숫자: `coverage`(원문 커버리지) · `evidence_rate`(근거 연결률) · `caution_total`(주의 표현 건수) · `first_pass`(1회 통과) · `total_minutes`(총 제작 시간 = AI 작업 시간 합, v1.0) · `revision_rounds`(카드 수정 요청 횟수) |
 | `eval` | 평가 실행일 때만: `input_id`(평가 입력 ID) · `run_id`(실행 ID) · `repeat`(반복 번호) · `variant`(A8 비교판 이름, 기본 규칙이면 `null`). 이름은 `docs/eval-spec.md`와 맞춤. 그 외는 `null` |
 
 비율 값(`coverage` 등)은 0~1입니다. 화면에서 %로 바꿉니다.
@@ -153,7 +153,7 @@ npm run export -- --no-eval            # 평가 실행은 빼고 config/export.j
 | 필드 | 설명 |
 |---|---|
 | `spec_version` · `id` | |
-| `summary` | `npm run log -- <제품ID> --summary`와 같은 계산(`scripts/lib/analysis.js`): `complete`(최종 승인 여부) · `total_minutes` · `ai_minutes` · `human_minutes` · `phases`(단계별 분: `input` · `plan_job` · `plan_review` · `copy_job` · `final_review` · `revise_job`) · `plan_revisions` · `revision_rounds` · `revised_card_ratio` · `revision_types`(코드별 건수) · `first_pass` · `auto_fix_total` |
+| `summary` | `npm run log -- <제품ID> --summary`와 같은 계산(`scripts/lib/analysis.js`): `complete`(최종 승인 여부) · `total_minutes`(AI 작업 시간 합) · `ai_minutes`(같은 값) · `phases`(작업 종류별 분: `plan_job` · `copy_job` · `revise_job`) · `plan_revisions` · `revision_rounds` · `revised_card_ratio` · `revision_types`(코드별 건수) · `first_pass` · `auto_fix_total` |
 | `jobs[]` | 작업별: `job_id` · `kind`(`plan` · `copy` · `revise`) · `ok` · `minutes` · `error_code` · `first_pass` · `auto_fix_count` |
 | `events[]` | 제작 기록을 시간순으로. 공통 `ts` · `event` · `job_id`, 이벤트별로 `kind` · `ok` · `error_code` · `check` · `error_codes` · `cards_with_errors` · `rendered_cards` · `stage` · `cards` · `types` · `memo` · `approved_by` 중 있는 것만 |
 
@@ -191,4 +191,5 @@ npm run export -- --no-eval            # 평가 실행은 빼고 config/export.j
 - v0.1 (2026-10-16): 초안. 필드를 추가하면 부 버전(0.2), 지우거나 뜻을 바꾸면 주 버전(1.0)을 올리고 두 사람이 함께 확인합니다.
 - v0.2 (2026-10-19, 이용석 리뷰): `project.json` `cards[].cautions[].fields` 추가 (V2 구성안·근거에서 [주의] 표현이 나온 칸을 강조). 다른 필드는 그대로
 - v0.3 (2026-10-21, #46 리뷰 이용석 의견): `project.json` `colors` 추가 (V2 카드 결과 '카드 색'). 다른 필드는 그대로
+- v1.0 (2026-10-27): 시간은 AI 작업 시간만 — `timeline.json` `summary.human_minutes`와 `phases`의 `input`·`plan_review`·`final_review`를 지우고, `total_minutes`(index·timeline)는 AI 작업 시간 합으로 뜻을 바꿈. 필드를 지우고 뜻을 바꿔서 주 버전. 이용석 확인 필요 (V3·V4)
 - v0.3 선택 칸 (2026-10-26, #74): `project.json` `design`(쓴 디자인 묶음), `timeline.json` 이벤트 `design_selected`(`design`·`from`·`by`). 없어도 되는 칸이라 버전은 그대로
