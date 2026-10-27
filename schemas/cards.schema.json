@@ -10,6 +10,17 @@
     "spec_version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
     "product_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
     "stage": { "enum": ["plan", "copy", "approved"] },
+    "design": {
+      "description": "구성안 작업에서 고른 디자인 묶음 (#74, 선택). 입력 무드가 '자동 추천'이면 필수(validate가 검사). 묶음 이름이 목록(config/templates.json _catalog)에 있는지는 validate가 검사",
+      "type": "object",
+      "required": ["id", "selected_by", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "selected_by": { "enum": ["claude", "human"] },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
     "sources": {
       "type": "array",
       "minItems": 1,

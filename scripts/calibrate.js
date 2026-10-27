@@ -10,7 +10,7 @@ const os = require('os');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { paths, loadConfig, countChars } = require('./lib/common');
-const { buildCardHtml, inspectPage, launchBrowser } = require('./lib/card-html');
+const { buildCardHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 
 // 측정용 문장 유형: 줄바꿈 위치가 달라지므로 여러 유형 중 가장 적게 들어가는 값을 기준으로 삼음
 const PATTERNS = {
@@ -45,7 +45,8 @@ function createRenderer(page, theme, templates) {
     fs.writeFileSync(file, html);
     await page.goto(pathToFileURL(file).href, { waitUntil: 'load' });
     await page.evaluate(() => document.fonts.ready);
-    const { issues, overlaps, fontOk } = await inspectPage(page);
+    await waitForFit(page);
+    const { issues, overlaps, textOverlaps, fontOk } = await inspectPage(page);
     // 칸마다 실제 줄 수 (줄 높이 기준)
     const lines = await page.evaluate(() => [...document.querySelectorAll('[data-fit]')]
       .filter((el) => el.textContent.trim())
@@ -54,7 +55,7 @@ function createRenderer(page, theme, templates) {
         lines: Math.round((el.scrollHeight - parseFloat(getComputedStyle(el).paddingTop) - parseFloat(getComputedStyle(el).paddingBottom)) / parseFloat(getComputedStyle(el).lineHeight)),
       })));
     fs.rmSync(file);
-    return { ok: issues.length === 0 && overlaps.length === 0, issues, overlaps, fontOk, lines };
+    return { ok: issues.length === 0 && overlaps.length === 0 && textOverlaps.length === 0, issues, overlaps, textOverlaps, fontOk, lines };
   }
   return { check, cleanup: () => fs.rmSync(dir, { recursive: true, force: true }) };
 }
@@ -156,7 +157,7 @@ async function measure({ fullOnly = false, design = '기본' } = {}) {
             for (const no of sides) {
               const res = await r.check(key, copy, { image, role, no });
               fontOk = fontOk && res.fontOk;
-              full.push({ template: key, pattern: pname, image, role, no, ok: res.ok, issues: res.issues, overlaps: res.overlaps });
+              full.push({ template: key, pattern: pname, image, role, no, ok: res.ok, issues: res.issues, overlaps: res.overlaps, textOverlaps: res.textOverlaps });
             }
           }
         }
@@ -214,6 +215,7 @@ function printResult({ fields, full, fontOk }) {
     const detail = [
       ...c.issues.map((i) => `${i.code} ${i.target}`),
       ...c.overlaps.map((o) => `이미지 겹침 ${o.target} ${o.px}px`),
+      ...(c.textOverlaps || []).map((o) => `글자 겹침 ${o.target} ${o.px}px`),
     ].join(', ');
     console.log(`[${tag}] ${c.template} · ${c.pattern} · 이미지 ${c.image ? '있음' : '없음'}${detail ? ` — ${detail}` : ''}`);
   }

@@ -1,7 +1,8 @@
 // V2 제작 과정 — 담당 이규동
 // 읽는 데이터: timeline.json (summary · jobs · events), project.json quality
 // 노션 '웹 화면 설계' V2 · 제작 과정: 작업 시작·끝, 구성안 승인, 수정 요청(유형·메모), 검증 결과,
-// 단계별 소요 시간(AI 처리/사람 검토), 품질 지표. 실시간 진행이 아니라 끝난 작업의 기록을 보여줌
+// 작업 종류별 AI 작업 시간, 품질 지표. 실시간 진행이 아니라 끝난 작업의 기록을 보여줌
+// 시간은 AI 작업 시간만 (웹 데이터 v1.0): 사람이 확인·대기한 시간은 다른 제품 작업·자리 비움이 섞여 빼요
 import type { ReactNode } from 'react';
 import { useTimeline } from '../../../data/load';
 import { formatDateTime, formatMinutes, formatPercent, label } from '../../../data/format';
@@ -11,9 +12,8 @@ import { MetricCard, MetricGrid } from '../../../components/MetricCard';
 import { ErrorState, Loading } from '../../../components/StateView';
 import './timeline.css';
 
-// 단계 순서와 처리 주체 — scripts/lib/analysis.js의 PHASES·AI_PHASES·HUMAN_PHASES와 같게 유지
-const PHASE_ORDER: (keyof Phases)[] = ['input', 'plan_job', 'plan_review', 'copy_job', 'final_review', 'revise_job'];
-const AI_PHASES = new Set<keyof Phases>(['plan_job', 'copy_job', 'revise_job']);
+// 작업 종류 순서 — scripts/lib/analysis.js의 PHASES와 같게 유지
+const PHASE_ORDER: (keyof Phases)[] = ['plan_job', 'copy_job', 'revise_job'];
 const JOB_KIND: Record<JobKind, string> = { plan: '구성안', copy: '문구·출력', revise: '수정' };
 const jobKind = (k: JobKind | null | undefined) => (k ? JOB_KIND[k] : '작업');
 
@@ -40,9 +40,9 @@ function Summary({ timeline: { summary: s } }: { timeline: Timeline }) {
   return (
     <MetricGrid>
       <MetricCard
-        label="전체 소요 시간"
+        label="제작 시간 (AI 작업)"
         value={formatMinutes(s.total_minutes)}
-        hint={s.complete ? `AI 처리 ${formatMinutes(s.ai_minutes)} · 사람 검토 ${formatMinutes(s.human_minutes)}` : '최종 승인 전 (진행 중 기록)'}
+        hint={s.complete ? '사람이 확인·대기한 시간은 넣지 않아요' : '최종 승인 전 (진행 중 기록)'}
       />
       <MetricCard label="수정 요청" value={`${s.revision_rounds}회`} hint={`구성안 수정 ${s.plan_revisions}회 · 수정된 카드 ${formatPercent(s.revised_card_ratio)}`} />
       <MetricCard label="자동 수정" value={`${s.auto_fix_total}회`} hint="검증 오류를 Claude가 스스로 고친 횟수" />
@@ -51,38 +51,29 @@ function Summary({ timeline: { summary: s } }: { timeline: Timeline }) {
   );
 }
 
-// 단계별 시간 막대: 너비 = 시간 비율, 색 = 처리 주체(AI / 사람). 색만으로 구분하지 않게 아래 표에 글자로도 적음
+// 작업 종류별 AI 작업 시간 막대: 너비 = 시간 비율. 막대만으로 알 수 없게 아래 목록에 글자로도 적음
 function PhaseBar({ phases, labels }: { phases: Phases; labels: Labels }) {
-  const rows = PHASE_ORDER.map((k) => ({ key: k, name: label(labels.phases, k), min: phases[k], ai: AI_PHASES.has(k) }));
+  const rows = PHASE_ORDER.map((k) => ({ key: k, name: label(labels.phases, k), min: phases[k] ?? 0 }));
   const total = rows.reduce((a, r) => a + r.min, 0);
   const shown = rows.filter((r) => r.min > 0);
   return (
     <section className="section" aria-labelledby="phase-title">
       <div className="phase-head">
         <h2 className="section-title" id="phase-title">
-          단계별 소요 시간
+          작업별 소요 시간
         </h2>
-        <ul className="legend" aria-label="범례">
-          <li>
-            <span className="legend-swatch phase-ai" aria-hidden="true" />
-            AI 처리
-          </li>
-          <li>
-            <span className="legend-swatch phase-human" aria-hidden="true" />
-            사람 검토
-          </li>
-        </ul>
+        <p className="muted phase-note">AI 작업 시간만 보여줘요. 사람이 확인·대기한 시간은 넣지 않아요.</p>
       </div>
       {total === 0 ? (
-        <p className="muted">기록된 단계 시간이 없어요.</p>
+        <p className="muted">기록된 작업 시간이 없어요.</p>
       ) : (
         <div className="phase-bar" role="img" aria-label={shown.map((r) => `${r.name} ${formatMinutes(r.min)}`).join(', ')}>
           {shown.map((r) => (
             <div
               key={r.key}
-              className={`phase-seg ${r.ai ? 'phase-ai' : 'phase-human'}`}
+              className="phase-seg phase-ai"
               style={{ flexGrow: r.min }}
-              title={`${r.name} · ${r.ai ? 'AI 처리' : '사람 검토'} · ${formatMinutes(r.min)} (${Math.round((r.min / total) * 100)}%)`}
+              title={`${r.name} · ${formatMinutes(r.min)} (${Math.round((r.min / total) * 100)}%)`}
             >
               {r.min / total >= 0.12 && <span className="phase-seg-label">{r.name}</span>}
             </div>
@@ -92,10 +83,8 @@ function PhaseBar({ phases, labels }: { phases: Phases; labels: Labels }) {
       <ol className="phase-steps">
         {rows.map((r) => (
           <li key={r.key} className={r.min > 0 ? undefined : 'is-empty'}>
-            <span className={`phase-dot ${r.ai ? 'phase-ai' : 'phase-human'}`} aria-hidden="true" />
-            <span className="phase-step-name">
-              {r.name} <span className="phase-step-who">{r.ai ? 'AI' : '사람'}</span>
-            </span>
+            <span className="phase-dot phase-ai" aria-hidden="true" />
+            <span className="phase-step-name">{r.name}</span>
             <span className="phase-step-min">{r.min > 0 ? formatMinutes(r.min) : '—'}</span>
           </li>
         ))}
@@ -239,6 +228,13 @@ function describe(e: TimelineEvent, labels: Labels): { title: string; badge?: st
       return { title: '구성안 승인', tone: 'human', badge: e.approved_by === 'eval' ? '평가 자동 승인' : '사람 승인' };
     case 'final_approved':
       return { title: '최종 승인', tone: 'human', badge: e.approved_by === 'eval' ? '평가 자동 승인' : '사람 승인' };
+    case 'design_selected':
+      return {
+        title: '디자인 묶음 변경',
+        tone: 'human',
+        badge: '사람',
+        detail: <p className="event-detail">{e.from ? `${e.from} → ` : ''}{e.design}</p>,
+      };
     case 'revision_requested':
       return {
         title: e.stage === 'plan' ? '구성안 수정 요청' : '카드 수정 요청',

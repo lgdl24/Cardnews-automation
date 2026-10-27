@@ -119,7 +119,7 @@ test('값을 채워 만든 양식은 다시 읽었을 때 같은 값이 나온�
     '제품 설명': '촉촉한 크림이에요.',
     '주요 특징': ['특징 하나', '특징 둘'],
     '사용 방법': '세안 후 바릅니다.',
-    이미지: [{ file: 'main.png', desc: '단독 컷', source: '직접 촬영', usage: '가능' }],
+    이미지: [{ file: 'main.png', desc: '단독 컷', source: '직접 촬영', usage: '가능' }, { file: 'texture.png', desc: '제형 컷', source: '직접 촬영', usage: '가능', kind: '제형' }],
     '콘텐츠 목적': '신제품 소개',
     '카드 수': 5,
   };
@@ -127,7 +127,7 @@ test('값을 채워 만든 양식은 다시 읽었을 때 같은 값이 나온�
   assert.equal(parsed.info['제품명'], '테스트 크림');
   assert.equal(parsed.info['주요 특징'], '- 특징 하나\n- 특징 둘');
   assert.equal(parsed.info['브랜드'], '');
-  assert.deepEqual(parsed.images, [{ file: 'main.png', desc: '단독 컷', source: '직접 촬영', usage: '가능' }]);
+  assert.deepEqual(parsed.images, [{ file: 'main.png', desc: '단독 컷', source: '직접 촬영', usage: '가능', kind: '제품' }, { file: 'texture.png', desc: '제형 컷', source: '직접 촬영', usage: '가능', kind: '제형' }]);
   assert.equal(parsed.cardCount, 5);
 });
 

@@ -16,7 +16,7 @@ export function StudioHomePage() {
 
 function StudioHome() {
   const { status } = useStudioStatus();
-  const list = usePolling(() => studioFetch<{ products: ProductSummary[] }>('/products'), [], (d) => (d && d.products.some((p) => p.running) ? 2000 : null));
+  const list = usePolling(() => studioFetch<{ products: ProductSummary[] }>('/products'), [], (d) => (d && d.products.some((p) => p.running || p.queued) ? 2000 : null));
 
   return (
     <div className="page">
@@ -55,6 +55,7 @@ function StudioHome() {
                     <span className="muted"> · {p.id}</span>
                   </span>
                   {p.running && <span className="tag-running">작업 중</span>}
+                  {p.queued && <span className="tag-queued">대기 {p.queue_position}번째</span>}
                   <span className="studio-row-date muted">{formatDateTime(p.updated_at)}</span>
                 </Link>
               </li>

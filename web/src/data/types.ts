@@ -54,7 +54,7 @@ export interface ProjectSummary {
 }
 
 export interface WebIndex {
-  spec_version: '0.3';
+  spec_version: '1.0';
   exported_at: string;
   skill_version: string;
   labels: Labels;
@@ -164,8 +164,18 @@ export interface Quality {
   [metric: string]: unknown;
 }
 
+/** 디자인 묶음 기록 (#74): 정한 곳 input(입력 무드) · cards(구성안에서 고름) · default */
+export interface CardDesign {
+  id: string;
+  name: string;
+  version: string | null;
+  source: 'input' | 'cards' | 'default';
+  selected_by: 'claude' | 'human' | null;
+  reason: string | null;
+}
+
 export interface Project {
-  spec_version: '0.3';
+  spec_version: '1.0';
   id: string;
   kind: Kind;
   label: string | null;
@@ -187,6 +197,8 @@ export interface Project {
   plan_revisions: Revision[];
   /** 출력에 쓴 카드 색 (v0.3). 색 기록이 없는 옛 출력이면 null */
   colors: CardColors | null;
+  /** 쓴 디자인 묶음 (#74). 옛 데이터면 없음 */
+  design?: CardDesign;
   quality: Quality;
 }
 
@@ -216,14 +228,13 @@ export type EventName =
   | 'validate_result'
   | 'plan_approved'
   | 'final_approved'
-  | 'revision_requested';
+  | 'revision_requested'
+  | 'design_selected';
 
+/** 작업 종류별 AI 작업 시간(분). 사람이 확인·대기한 시간은 넣지 않음 (v1.0) */
 export interface Phases {
-  input: number;
   plan_job: number;
-  plan_review: number;
   copy_job: number;
-  final_review: number;
   revise_job: number;
 }
 
@@ -254,16 +265,20 @@ export interface TimelineEvent {
   memo?: string;
   /** plan_approved·final_approved만 */
   approved_by?: 'human' | 'eval';
+  /** design_selected만: 고른 디자인 묶음·바꾸기 전 묶음 (#74) */
+  design?: string;
+  from?: string | null;
+  by?: 'human';
 }
 
 export interface Timeline {
-  spec_version: '0.3';
+  spec_version: '1.0';
   id: string;
   summary: {
     complete: boolean;
+    /** AI 작업 시간 합(분). 사람이 확인·대기한 시간은 넣지 않음 (v1.0) */
     total_minutes: number | null;
     ai_minutes: number | null;
-    human_minutes: number | null;
     phases: Phases;
     plan_revisions: number;
     revision_rounds: number;

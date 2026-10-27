@@ -3,11 +3,11 @@
 // 실제 제작은 작업 실행기(job-runner.js)가 내 컴퓨터의 claude -p로 실행
 //
 // 보안: 이 컴퓨터(localhost)에서 온 요청만 받음 · 바꾸는 요청은 X-Studio 헤더 필수(다른 사이트의 폼 전송 차단)
-//       제품ID·파일명 형식 검사 · 이미지 크기·형식 제한 · 작업은 한 번에 하나
+//       제품ID·파일명 형식 검사 · 이미지 크기·형식 제한 · 작업은 한 번에 하나 (나머지는 대기열에서 차례로)
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { ROOT, readJson, parseInput } = require('./common');
+const { ROOT, readJson, parseInput, resolveDesign, designCatalog, moodInputOf } = require('./common');
 const { loadForm, renderInputMd } = require('./input-form');
 const { summarize } = require('./analysis');
 const jobRunner = require('./job-runner');
@@ -95,7 +95,20 @@ function createStudio({
   const productDir = (id) => path.join(productsDir, id);
   const logFile = (id) => path.join(productDir(id), 'log.jsonl');
   let current = null; // { product_id, kind, job_id, status: 'running'|'done', started_at, progress: [], summary }
+  // 대기열: 작업 중에 다른 제품 작업을 누르면 거절하지 않고 차례를 기다림. 제품마다 하나만, 서버를 끄면 사라짐
+  const queue = []; // { product_id, kind, revision, queued_at, beforeStart }
   const lastJobs = new Map(); // 제품ID → 마지막 작업 요약
+  const isRunning = () => Boolean(current && current.status === 'running');
+  const queueIndex = (id) => queue.findIndex((q) => q.product_id === id);
+  // 이 제품의 작업 상태: 'running' | 'queued' | null
+  const jobStateOf = (id) => (isRunning() && current.product_id === id ? 'running' : queueIndex(id) >= 0 ? 'queued' : null);
+  const nameOf = (id) => {
+    try {
+      return (parseInput(fs.readFileSync(path.join(productDir(id), 'input.md'), 'utf8')).info['제품명'] || id).split('\n')[0];
+    } catch {
+      return id;
+    }
+  };
   let claudeInfo = null;
 
   // 스크립트(check·validate·export)는 이 제품 폴더를 보도록 경로를 넘겨 별도 프로세스로 실행
@@ -191,13 +204,31 @@ function createStudio({
       brand: input.info['브랜드'] || null,
       stage: cards ? cards.stage : 'input',
       updated_at: last ? last.ts : fs.statSync(path.join(dir, 'input.md')).mtime.toISOString(),
-      running: Boolean(current && current.status === 'running' && current.product_id === id),
+      running: jobStateOf(id) === 'running',
+      queued: jobStateOf(id) === 'queued',
+      queue_position: queueIndex(id) >= 0 ? queueIndex(id) + 1 : null,
+    };
+  }
+
+  // 디자인 묶음 (#74): 지금 쓰는 묶음과 정한 곳, 구성안에서 고른 것, 목록
+  const templatesConfig = () => readJson(path.join(root, 'config', 'templates.json'));
+  function designInfo(input, cards) {
+    const config = templatesConfig();
+    const used = resolveDesign({ input, data: cards, config });
+    return {
+      id: used.id,
+      source: used.source,
+      auto: moodInputOf(input).value === '자동 추천',
+      selected: (cards && cards.design) || null,
+      catalog: designCatalog(config).map(({ id, name, summary, fits, avoid, needs, version, colorMode }) => ({ id, name, summary, fits, avoid, needs, version, color_mode: colorMode })),
     };
   }
 
   // 지금 할 수 있는 다음 행동 (화면 버튼과 API 검사가 같은 기준을 씀)
+  // running: 이 제품이 작업 중이거나 대기 중 (다른 제품 작업과는 상관없음 — 다른 제품이 돌면 누른 작업은 대기열로)
   function nextActions(id, { cards, events, check }) {
-    const running = Boolean(current && current.status === 'running');
+    const state = jobStateOf(id);
+    const running = state !== null;
     const lastFinish = [...events].reverse().find((e) => e.event === 'job_finished');
     const stage = cards ? cards.stage : 'input';
     const planApproved = events.some((e) => e.event === 'plan_approved');
@@ -207,11 +238,15 @@ function createStudio({
     const lastOk = lastFinish ? lastFinish.ok : null;
     return {
       running,
+      job_state: state,
+      // 지금 작업을 누르면 앞에 기다릴 작업 수 (0이면 바로 시작)
+      wait_ahead: state ? 0 : (isRunning() ? 1 : 0) + queue.length,
       last_job_ok: lastOk,
       can_edit_input: !running && !cards,
       can_plan: !running && !cards && check.errors.length === 0,
       can_approve_plan: !running && stage === 'plan' && !approvedCurrentPlan,
       can_revise_plan: !running && stage === 'plan' && !approvedCurrentPlan,
+      can_select_design: !running && stage === 'plan' && !approvedCurrentPlan,
       can_copy: !running && stage === 'plan' && Boolean(approvedCurrentPlan),
       can_approve_final: !running && stage === 'copy',
       can_revise_final: !running && stage === 'copy',
@@ -233,7 +268,10 @@ function createStudio({
       : [];
     const exportCfg = readJsonSafe(exportConfigFile);
     const webIndex = readJsonSafe(webIndexFile);
-    const job = current && current.product_id === id ? publicJob(current) : lastJobs.get(id) || lastReport(id);
+    const qi = queueIndex(id);
+    const job = qi >= 0
+      ? publicQueued(queue[qi], qi)
+      : current && current.product_id === id ? publicJob(current) : lastJobs.get(id) || lastReport(id);
     return {
       ...productSummary(id),
       input: { values: inputValues(input), images: input.images, card_count: input.cardCount },
@@ -242,9 +280,10 @@ function createStudio({
       validation,
       pngs,
       timeline: summarize(events, { cardCount: cards && cards.cards ? cards.cards.length : null }),
-      events: events.map(({ ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards }) => ({
-        ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards,
+      events: events.map(({ ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards, design, from }) => ({
+        ts, event, job_id, kind, ok, error_code, check: c, error_codes, cards_with_errors, stage, cards: cs, types, memo, approved_by, rendered_cards, design, from,
       })),
+      design: designInfo(input, cards),
       job,
       export: {
         listed: Boolean(exportCfg && exportCfg.projects.some((p) => p.id === id)),
@@ -286,11 +325,50 @@ function createStudio({
     ? { ...publicSummary(j.summary), status: 'done', product_id: j.product_id }
     : { status: j.status, product_id: j.product_id, kind: j.kind, job_id: j.job_id, started_at: j.started_at, progress: j.progress.slice(-80), revision: j.revision });
 
-  // ── 작업 시작 (응답은 바로, 작업은 뒤에서)
-  function startJob(id, kind, revision = null) {
-    if (current && current.status === 'running') throw new HttpError(409, `다른 작업이 진행 중이에요 (${current.product_id})`);
+  const publicQueued = (q, i) => ({
+    status: 'queued', product_id: q.product_id, kind: q.kind, job_id: null, queued_at: q.queued_at, started_at: q.queued_at, progress: [], revision: q.revision,
+    position: i + 1, ahead: current && current.status === 'running' ? { product_id: current.product_id, name: nameOf(current.product_id), kind: current.kind } : null,
+  });
+  // 작업실 전체 작업 (화면 위 '진행 중 작업' 띠)
+  const jobsOverview = () => ({
+    running: isRunning() ? { product_id: current.product_id, name: nameOf(current.product_id), kind: current.kind, started_at: current.started_at } : null,
+    queue: queue.map((q, i) => ({ product_id: q.product_id, name: nameOf(q.product_id), kind: q.kind, queued_at: q.queued_at, position: i + 1 })),
+  });
+
+  // ── 작업 시작 (응답은 바로, 작업은 뒤에서). 다른 제품 작업이 돌고 있으면 대기열에 넣음
+  //    beforeStart: 실제로 시작할 때 남길 기록 (수정 요청은 대기를 취소하면 기록하지 않음)
+  function startJob(id, kind, revision = null, { beforeStart = null } = {}) {
+    if (jobStateOf(id)) throw new HttpError(409, '이 제품은 이미 작업 중이거나 차례를 기다리고 있어요');
     const info = claudeStatus();
     if (!info.installed) throw new HttpError(503, 'Claude Code(claude)를 찾을 수 없어요. 설치하고 로그인한 뒤 다시 시도하세요');
+    if (isRunning()) {
+      const q = { product_id: id, kind, revision, queued_at: new Date().toISOString(), beforeStart };
+      queue.push(q);
+      return publicQueued(q, queue.length - 1);
+    }
+    return runNow(id, kind, revision, beforeStart);
+  }
+
+  function cancelQueued(id) {
+    const i = queueIndex(id);
+    if (i < 0) throw new HttpError(409, '대기 중인 작업이 없어요');
+    queue.splice(i, 1);
+  }
+
+  // 앞 작업이 끝나면 대기열 맨 앞 작업 시작. 시작하다 실패하면 그 작업은 실패로 남기고 다음으로
+  function startNext() {
+    while (!isRunning() && queue.length) {
+      const q = queue.shift();
+      try {
+        runNow(q.product_id, q.kind, q.revision, q.beforeStart);
+      } catch (e) {
+        lastJobs.set(q.product_id, { job_id: null, kind: q.kind, ok: false, error_code: 'RUN_ERROR', crash: e.message, report: null, verify: null, started_at: q.queued_at, finished_at: new Date().toISOString(), progress: [], revision: q.revision, status: 'done' });
+      }
+    }
+  }
+
+  function runNow(id, kind, revision, beforeStart) {
+    if (beforeStart) beforeStart();
     const job = { status: 'running', product_id: id, kind, job_id: null, started_at: new Date().toISOString(), progress: [], revision };
     current = job;
     runJob({
@@ -318,7 +396,8 @@ function createStudio({
         job.status = 'done';
         job.summary = { job_id: job.job_id, kind, ok: false, error_code: 'RUN_ERROR', crash: e.message, report: null, verify: null, progress: job.progress };
         lastJobs.set(id, { ...publicSummary(job.summary), status: 'done' });
-      });
+      })
+      .finally(startNext);
     return publicJob(job);
   }
 
@@ -350,11 +429,11 @@ function createStudio({
       } else if (!fs.existsSync(path.join(dir, 'images', file))) {
         throw new HttpError(400, `이미지 파일을 올려 주세요: ${file}`);
       }
-      return { file, desc: String(img.desc || '').trim(), source: String(img.source || '').trim(), usage: String(img.usage || '').trim(), data };
+      return { file, desc: String(img.desc || '').trim(), source: String(img.source || '').trim(), usage: String(img.usage || '').trim(), kind: String(img.kind || '제품').trim(), data };
     });
     if (create) fs.mkdirSync(path.join(dir, 'images'), { recursive: true });
     for (const p of prepared) if (p.data) fs.writeFileSync(path.join(dir, 'images', p.file), p.data);
-    values['이미지'] = prepared.map(({ file, desc, source, usage }) => ({ file, desc, source, usage }));
+    values['이미지'] = prepared.map(({ file, desc, source, usage, kind }) => ({ file, desc, source, usage, kind }));
     fs.writeFileSync(path.join(dir, 'input.md'), renderInputMd(values, form));
   }
 
@@ -378,7 +457,7 @@ function createStudio({
     const parts = url.pathname.slice(API.length).split('/').filter(Boolean).map(decodeURIComponent);
 
     if (method === 'GET' && parts[0] === 'status' && parts.length === 1) {
-      return send(res, 200, { ok: true, mode: 'web', claude: claudeStatus(), job: current ? publicJob(current) : null, form: loadForm(), revision_types: readJson(path.join(root, 'config', 'revision-types.json')).types.map(({ code, label, example }) => ({ code, label, example })) });
+      return send(res, 200, { ok: true, mode: 'web', claude: claudeStatus(), job: current ? publicJob(current) : null, jobs: jobsOverview(), form: loadForm(), revision_types: readJson(path.join(root, 'config', 'revision-types.json')).types.map(({ code, label, example }) => ({ code, label, example })) });
     }
     if (method === 'GET' && parts[0] === 'products' && parts.length === 1) {
       const ids = fs.existsSync(productsDir)
@@ -421,6 +500,29 @@ function createStudio({
         if (!detail().actions.can_edit_input) throw new HttpError(409, '구성안을 만든 뒤에는 입력을 고칠 수 없어요');
         const body = await readBody(req);
         writeInput(id, body, { create: false });
+        return send(res, 200, detail());
+      }
+      // 구성안 확인 때 사람이 디자인 묶음을 바꿈 (#74). 입력에 무드를 직접 적었으면 입력이 우선이라 막음
+      if (method === 'PUT' && parts[2] === 'design' && parts.length === 3) {
+        if (!detail().actions.can_select_design) throw new HttpError(409, '구성안을 승인하기 전에만 디자인 묶음을 바꿀 수 있어요');
+        const body = await readBody(req);
+        const config = templatesConfig();
+        const ids = designCatalog(config).map((d) => d.id);
+        const to = String(body.id || '').trim();
+        if (!ids.includes(to)) throw new HttpError(400, `묶음 목록에 없는 이름이에요: ${to}`);
+        const input = parseInput(fs.readFileSync(path.join(productDir(id), 'input.md'), 'utf8'));
+        if (resolveDesign({ input, data: null, config }).source === 'input') {
+          throw new HttpError(409, '입력에 무드를 직접 적었어요. 입력의 무드가 우선이라 여기서는 바꿀 수 없어요');
+        }
+        const file = path.join(productDir(id), 'cards.json');
+        const data = readJson(file);
+        const from = data.design ? data.design.id : null;
+        if (from === to) return send(res, 200, detail());
+        const reason = String(body.reason || '').trim().slice(0, 200);
+        data.design = { id: to, selected_by: 'human', reason: reason || `작업실에서 사람이 고름${from ? ` (구성안 추천: ${from})` : ''}` };
+        fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+        appendEvent(id, 'design_selected', { design: to, from, by: 'human' });
+        validateReport(id, { log: true });
         return send(res, 200, detail());
       }
       if (method === 'POST' && parts[2] === 'jobs' && parts.length === 3) {
@@ -472,9 +574,12 @@ function createStudio({
         const cards = [...new Set([].concat(body.cards || []).map(Number))].filter((n) => Number.isInteger(n) && n >= 1 && n <= count).sort((x, y) => x - y);
         const fields = { stage, types, memo };
         if (cards.length) fields.cards = cards;
-        appendEvent(id, 'revision_requested', fields);
-        const job = startJob(id, 'revise', { stage, cards, types, memo });
+        const job = startJob(id, 'revise', { stage, cards, types, memo }, { beforeStart: () => appendEvent(id, 'revision_requested', fields) });
         return send(res, 202, { job });
+      }
+      if (method === 'DELETE' && parts[2] === 'queue' && parts.length === 3) {
+        cancelQueued(id);
+        return send(res, 200, detail());
       }
       if (method === 'POST' && parts[2] === 'export' && parts.length === 3) {
         if (!detail().actions.can_export) throw new HttpError(409, '최종 승인한 뒤에 내보낼 수 있어요');
@@ -483,7 +588,10 @@ function createStudio({
       }
     }
     if (method === 'GET' && parts[0] === 'job' && parts.length === 1) {
-      return send(res, 200, { job: current ? publicJob(current) : null });
+      return send(res, 200, { job: current ? publicJob(current) : null, jobs: jobsOverview() });
+    }
+    if (method === 'GET' && parts[0] === 'jobs' && parts.length === 1) {
+      return send(res, 200, jobsOverview());
     }
     throw new HttpError(404, '없는 API예요');
   }
@@ -510,7 +618,7 @@ function createStudio({
     return true;
   }
 
-  return { handle, state: () => ({ current, claude: claudeInfo }) };
+  return { handle, state: () => ({ current, queue: queue.map(({ beforeStart, ...q }) => q), claude: claudeInfo }) };
 }
 
 function readJsonSafeStr(s) {

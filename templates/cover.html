@@ -1,25 +1,46 @@
-<!-- 표지형: 제목(필수) · 부제(선택) · 뱃지(선택) · 이미지(선택) -->
+<!-- 표지형: 제목(필수) · 부제(선택) · 뱃지(선택) · 이미지(선택)
+     디자인: 화장품 진열장의 아치 칸을 공통 모양으로 씀. 위쪽 무대(남는 높이 전부)에 아치 + 받침 위 제품을 크게,
+     아래에 제목·부제. 글자가 짧으면 무대가 커져 제품도 커짐. 마무리 카드는 아치를 왼쪽에 -->
 <style>
-  .card--cover { background: var(--color-accent); }
-  .cover__deco {
+  .card--cover { background: var(--color-bg); }
+  .cover__stage {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    margin: 20px 0 44px;
+  }
+  .cover__arch {
     position: absolute;
-    width: 760px; height: 760px;
-    right: -220px; top: -200px;
+    right: -96px; top: 0; bottom: -460px;   /* 오른쪽·아래로 카드 끝까지 이어짐 (글자 뒤) */
+    width: 560px;
+    border-radius: 280px 0 0 0;
+    background: linear-gradient(180deg, var(--color-accent) 0%, color-mix(in srgb, var(--color-accent) 70%, var(--color-surface)) 100%);
+  }
+  .cover__floor {
+    position: absolute;
+    right: 70px; bottom: 18px;
+    width: 360px; height: 46px;
     border-radius: 50%;
-    background: var(--color-bg);
-    opacity: 0.7;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--color-text) 22%, transparent), transparent);
   }
   .cover__image {
     position: absolute;
-    right: 96px; top: 140px;     /* 상단 바 바로 아래. 제목·부제가 최대 길이여도 겹치지 않는 크기 (npm run calibrate) */
-    width: 380px; height: 380px;
+    right: 30px; top: 44px; bottom: 36px;
+    width: 420px; height: auto;
+    max-height: calc(100% - 80px);
     object-fit: contain;
+    object-position: center bottom;
     z-index: 1;
   }
-  .no-image .cover__image { display: none; }
+  .role-closing .cover__arch { right: auto; left: -96px; border-radius: 0 280px 0 0; }
+  .role-closing .cover__floor { right: auto; left: 70px; }
+  .role-closing .cover__image { right: auto; left: 50px; }
+  .no-image .cover__image, .no-image .cover__floor { display: none; }
+  .no-image .cover__arch { width: 300px; opacity: .7; }
+  .card--cover .card__footer { position: relative; z-index: 2; }
   .cover__body {
-    margin-top: auto;
-    margin-bottom: 56px;
+    flex: none;
+    margin-bottom: 52px;
     position: relative;
     z-index: 2;
   }
@@ -32,30 +53,26 @@
     white-space: pre-line;
   }
   .cover__subtitle {
-    margin-top: 28px;
+    margin-top: 24px;
     font-size: 36px;
     font-weight: 400;
     line-height: 1.45;
-    color: var(--color-text);
+    color: var(--color-muted);
     max-height: 105px;           /* 2줄 */
     white-space: pre-line;
   }
-  .cover__rule {
-    width: 72px; height: 8px;
-    border-radius: 4px;
-    background: var(--color-primary);
-    margin-bottom: 36px;
-  }
 </style>
-<div class="card card--cover {{imageClass}}">
-  <div class="cover__deco"></div>
-  <img class="cover__image" src="{{image}}" alt="">
+<div class="card card--cover role-{{role}} {{imageClass}}">
   <header class="card__top">
     <span class="badge" data-fit>{{badge}}</span>
     <span class="pager">{{page}} / {{total}}</span>
   </header>
+  <div class="cover__stage">
+    <div class="cover__arch"></div>
+    <div class="cover__floor"></div>
+    <img class="cover__image" style="{{imageCrop}}" src="{{image}}" alt="">
+  </div>
   <div class="cover__body">
-    <div class="cover__rule"></div>
     <h1 class="cover__title" data-fit>{{title}}</h1>
     <p class="cover__subtitle" data-fit>{{subtitle}}</p>
   </div>

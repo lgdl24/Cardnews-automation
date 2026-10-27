@@ -18,6 +18,8 @@ if (process.argv[2] === '-v') {
 if (process.argv[2] === 'auth') process.exit(0);
 const scenario = process.env.FAKE_CLAUDE_SCENARIO || 'ok';
 if (process.env.FAKE_CLAUDE_ARGS_OUT) fs.writeFileSync(process.env.FAKE_CLAUDE_ARGS_OUT, JSON.stringify(process.argv.slice(2)));
+// 작업이 오래 걸리는 상황 (대기열 테스트): 시작 전에 잠깐 멈춤
+if (Number(process.env.FAKE_CLAUDE_DELAY_MS) > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(process.env.FAKE_CLAUDE_DELAY_MS));
 
 let prompt = '';
 process.stdin.on('data', (d) => (prompt += d));

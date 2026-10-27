@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const Ajv2020 = require('ajv/dist/2020');
-const { readJson, normalize } = require('./common');
+const { readJson, normalize, parseInput, designRecord } = require('./common');
 const jobRunner = require('./job-runner');
 const { summarize } = require('./analysis');
 
@@ -244,6 +244,13 @@ function overallPass(expectedRows, forbiddenRows) {
   return true;
 }
 
+function designOfRun(runDir, cards) {
+  const file = path.join(runDir, 'input.md');
+  if (!fs.existsSync(file)) return null;
+  const { id, version, source, selected_by: selectedBy } = designRecord({ input: parseInput(fs.readFileSync(file, 'utf8')), data: cards });
+  return { id, version, source, selected_by: selectedBy };
+}
+
 function buildResult({ run, checklist, jobs, check, startedAt, finishedAt, model, claudeCodeVersion }) {
   const cards = readJsonIf(path.join(run.runDir, 'cards.json'));
   const quality = readJsonIf(path.join(run.runDir, 'output', 'quality.json'));
@@ -296,6 +303,8 @@ function buildResult({ run, checklist, jobs, check, startedAt, finishedAt, model
     outcome,
     metrics,
     checks: { expected: expectedRows, forbidden: forbiddenRows, pass: overallPass(expectedRows, forbiddenRows) },
+    // 쓴 디자인 묶음 (#74): 같은 입력을 반복할 때 자동 추천이 같은 묶음을 골랐는지 A6에서 비교
+    design: designOfRun(run.runDir, cards),
     ...(run.variantInfo ? { notes: `비교판 ${run.variant}: ${run.variantInfo.description} (바꾼 파일: ${run.variantInfo.files.join(', ')})` } : {}),
   };
 }

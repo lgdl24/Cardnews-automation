@@ -1,17 +1,13 @@
 {
-  "spec_version": "0.3",
+  "spec_version": "1.0",
   "id": "toneup-sunscreen-r1",
   "summary": {
     "complete": true,
-    "total_minutes": 2.8,
+    "total_minutes": 1.3,
     "ai_minutes": 1.3,
-    "human_minutes": 1.5,
     "phases": {
-      "input": 0,
       "plan_job": 0.7,
-      "plan_review": 0.9,
       "copy_job": 0.6,
-      "final_review": 0.6,
       "revise_job": 0
     },
     "plan_revisions": 0,
