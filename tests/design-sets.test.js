@@ -47,12 +47,12 @@ test('프리미엄 설명형 사진과 글자 수 검증·품질 지표가 같�
  ws.editCards(d=>{d.cards[0].copy.title='가'.repeat(base._designs['프리미엄'].cover.fields.title.maxChars+1);});assert.ok(ws.use(validate).report.errors.some(x=>x.code==='CHAR_LIMIT'));
  }finally{ws.cleanup();}
 });
-test('role·투명 여백 스타일은 새 템플릿에서만 사용',()=>{
+test('role·투명 여백 자르기: 프리미엄과 기본 모두 사용 (기본은 2026-10-27 디자인 개선부터)',()=>{
  const theme=loadConfig().theme,l=loadConfig({cond:{무드:'프리미엄'}}).templates;
  const args={total:5,product:'테스트',theme,htmlDir:path.join(ROOT,'tmp'),imageDir:path.join(ROOT,'products/toneup-sunscreen/images'),imageCrop:{left:.2,top:.1,width:.6,height:.8}};
  const card={no:1,role:'closing',template:'cover',image:'main.png',copy:{title:'안내'}};
  const html=buildCardHtml({...args,card,tpl:l.cover});assert.match(html,/role-closing/);assert.match(html,/object-view-box: inset/);
- const plain=buildCardHtml({...args,card,tpl:base.cover});assert.ok(!plain.includes('object-view-box: inset'));assert.ok(!plain.includes('role-closing'));
+ const plain=buildCardHtml({...args,card,tpl:base.cover});assert.ok(plain.includes('object-view-box: inset'));assert.ok(plain.includes('role-closing'));
 });
 
 test('묶음 이름은 설정에서 찾고, 프리미엄만 제품 색을 기본으로 사용',()=>{

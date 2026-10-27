@@ -125,6 +125,7 @@ eval/runs/<실행ID>/   ← 실행 하나 = 제작 폴더 하나 (제품ID = 실
 | `input_id`, `input_type`, `input_source` | 체크리스트의 `input_id`·`type`·`source` |
 | `skill_version` | `config/skill-version.json`의 `version` |
 | `variant` | 비교판 이름. 기본 규칙이면 `null` |
+| `design` | 쓴 디자인 묶음(#74, 선택 칸): `id`·`version`·`source`(`input` 입력 무드 · `cards` 구성안에서 고름 · `default`)·`selected_by`. 무드 자동 추천 입력을 반복하면 A6에서 묶음 일치율(`design_match`)·묶음별 횟수(`designs`)로 비교 |
 | `repeat` | 반복 번호 (1부터) |
 | `model` | 실행에 쓴 모델 (`claude -p` 시작 메시지의 `model`) |
 | `claude_code_version` | `claude --version` 결과 |

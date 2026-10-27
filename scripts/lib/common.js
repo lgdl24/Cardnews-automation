@@ -25,18 +25,63 @@ function moodInputOf(input) {
   return { key, value: (cond[key] || '').split('\n')[0].trim() };
 }
 
-function designOf(input, config = readJson(paths.config('templates.json'))) {
+// 디자인 묶음 정하기 (#74). 앞에서부터 처음 맞는 것을 씀
+//   ① 입력 '무드'(예전 '디자인')에 목록에 있는 묶음을 직접 적음 → 사람이 고른 것
+//   ② cards.json의 design.id → 구성안 작업에서 고른 묶음 (자동 추천, #74 3단계)
+//   ③ 기본
+// 목록에 없는 값·빈 값은 건너뜀. 반환 source: 'input' | 'cards' | 'default'
+function resolveDesign({ input = null, data = null, config = readJson(paths.config('templates.json')) } = {}) {
+  const known = (v) => typeof v === 'string' && (v === '기본' || Object.hasOwn(config._designs || {}, v));
   const { value } = moodInputOf(input);
-  return Object.hasOwn(config._designs || {}, value) ? value : '기본';
+  if (value && known(value)) return { id: value, source: 'input' };
+  const picked = data && data.design && data.design.id;
+  if (known(picked)) return { id: picked, source: 'cards' };
+  return { id: '기본', source: 'default' };
 }
 
-function loadConfig(input = null) {
+function designOf(input, config = readJson(paths.config('templates.json')), data = null) {
+  return resolveDesign({ input, data, config }).id;
+}
+
+// 디자인 묶음 목록 (config/templates.json _catalog): 이름·설명·어울리는 제품·필요한 사진·버전
+function designCatalog(config = readJson(paths.config('templates.json'))) {
+  const catalog = config._catalog || {};
+  return Object.entries(catalog)
+    .filter(([id]) => !id.startsWith('_'))
+    .map(([id, meta]) => ({ id, ...meta, colorMode: (id === '기본' ? null : config._designs?.[id]?._defaults?.colorMode) || '기본' }));
+}
+
+// 출력·웹 데이터·평가 결과에 남기는 묶음 기록 (#74 4단계): 이름·버전·정한 곳, 구성안에서 골랐으면 고른 사람·이유
+function designRecord({ input = null, data = null, config = readJson(paths.config('templates.json')) } = {}) {
+  const used = resolveDesign({ input, data, config });
+  const meta = (config._catalog || {})[used.id] || {};
+  const picked = used.source === 'cards' ? data.design : null;
+  return {
+    id: used.id,
+    name: meta.name || used.id,
+    version: meta.version != null ? String(meta.version) : null,
+    source: used.source,
+    selected_by: picked ? picked.selected_by : null,
+    reason: picked ? picked.reason : null,
+  };
+}
+
+// data(cards.json)를 넘기면 구성안에서 고른 묶음도 봄
+function loadConfig(input = null, data = null) {
   const all = readJson(paths.config('templates.json'));
-  const overrides = all._designs?.[designOf(input, all)];
+  const overrides = all._designs?.[designOf(input, all, data)];
   const templates = overrides ? { ...all, ...overrides } : all;
+  // 묶음 고유 팔레트·글꼴 굵기 (_designs.<묶음>._theme, #74): 카드 색 '기본'일 때 이 색을 씀. 추가 색(accent-2 등)은 장식용
+  const theme = readJson(paths.config('theme.json'));
+  const own = overrides && overrides._theme;
+  if (own) {
+    if (own.color) theme.color = { ...theme.color, ...own.color };
+    if (own.font && own.font.files) theme.font = { ...theme.font, files: { ...theme.font.files, ...own.font.files } };
+    if (own.contrast) theme.contrast = { ...own.contrast };
+  }
   return {
     templates,
-    theme: readJson(paths.config('theme.json')),
+    theme,
     caution: readJson(paths.config('caution-expressions.json')),
   };
 }
@@ -86,8 +131,9 @@ function parseInput(markdown) {
     .map((l) => l.replace(/^[-*]\s*/, '').trim())
     .filter(Boolean)
     .map((l) => {
-      const [file, desc, source, usage] = l.split('|').map((s) => (s || '').trim());
-      return { file, desc, source, usage };
+      const [file, desc, source, usage, kind] = l.split('|').map((s) => (s || '').trim());
+      // 용도(#74): 제품(누끼, 카드의 image) · 제형(크림 자국·젤 등 질감 사진) · 배경(연출 장면). 비우면 제품
+      return { file, desc, source, usage, kind: kind || '제품' };
     });
 
   const cardCountRaw = (cond['카드 수'] || '').trim();
@@ -133,6 +179,6 @@ function requireProductId(argv) {
 }
 
 module.exports = {
-  ROOT, paths, readJson, moodInputOf, designOf, loadConfig, normalize, countChars,
+  ROOT, paths, readJson, moodInputOf, resolveDesign, designOf, designCatalog, designRecord, loadConfig, normalize, countChars,
   parseInput, loadInput, createReport, printReport, requireProductId,
 };

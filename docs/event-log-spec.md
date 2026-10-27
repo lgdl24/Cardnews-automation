@@ -1,4 +1,4 @@
-# 제작 기록(이벤트)·지표 규격 — v0.2
+# 제작 기록(이벤트)·지표 규격 — v0.3
 
 데이터 분석(A1~A8)의 원본 데이터 형식입니다. 대화 모드·웹 모드·평가 모드 모두 제품(평가 실행이면 실행별) 폴더의 `products/<제품ID>/log.jsonl`에 한 줄씩 저장합니다.
 결과 보기 웹에는 내보내기(`npm run export`)가 공개해도 되는 필드만 옮깁니다(`docs/web-data-spec.md`).
@@ -24,6 +24,7 @@
 | `validate_result` | `check`: `data` · `layout`, `ok`, `error_codes`, `error_count`, `cards_with_errors`, `caution_count`, `stage`, `metrics`(data만), `rendered_cards`(layout만) | `validate`·`render` 스크립트 (세 모드 같음) |
 | `plan_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 웹 제작 화면(`human`) / 평가 실행기(`eval`) |
 | `final_approved` | `approved_by`(선택): `human`(기본) · `eval` | Claude / 웹 제작 화면(`human`) / (평가 모드는 남기지 않음) |
+| `design_selected` | `design`(고른 묶음), `from`(바꾸기 전 묶음, 없으면 `null`), `by`: `human` | (대화 모드는 cards.json을 직접 고침) / 웹 제작 화면 / (평가 모드에는 없음) — 구성안 확인 때 사람이 디자인 묶음을 바꿈 (#74) |
 | `revision_requested` | `stage`: `plan` · `final`, `cards`(카드 번호 배열, 전체면 빈 배열 — 웹 모드는 전체면 `cards`를 남기지 않음), `types`(유형 코드 배열), `memo` | Claude / 웹 제작 화면 / (평가 모드에는 없음) |
 
 - 웹 모드·평가 모드(`CARDNEWS_MODE=web|eval`)에서는 `log.js`가 기록하지 않습니다. 작업 시작·끝은 작업 실행기(`scripts/lib/job-runner.js`)가, 입력·승인·수정 요청은 웹 모드는 웹 제작 화면(로컬 제작 API `scripts/lib/studio-api.js`)이, 평가 모드는 평가 실행기가 남깁니다. `validate_result`는 세 모드 모두 스크립트가 남깁니다.
@@ -53,9 +54,10 @@
 
 | 지표 | 계산 |
 |---|---|
-| 단계별 소요 시간 | 입력 = `input_submitted` − `form_started_at` / 구성안·문구·수정 작업 = `job_started`~`job_finished` / 구성안 확인·최종 검토 = 작업이 끝난 뒤 다음 승인·수정 요청·작업 시작까지 (구성안 승인 전이면 구성안 확인) |
-| AI 처리 / 사람 검토 시간 | 작업 시간 합 / 입력·구성안 확인·최종 검토 시간 합 |
-| 총 제작 시간 | 첫 기록(또는 `form_started_at`) ~ `final_approved` (승인 전이면 마지막 기록까지) |
+| 작업별 소요 시간 | 구성안·문구·수정 작업 = `job_started`~`job_finished` (작업 종류별 합) |
+| 총 제작 시간 | AI 작업 시간 합 = 작업별 소요 시간의 합 (`total_minutes` = `ai_minutes`). 시간을 잰 작업이 없으면 비움 |
+
+> 사람이 입력·확인·대기한 시간은 지표에 넣지 않습니다 (v0.3). 웹 제작 화면에서 여러 제품을 번갈아 다루면 다른 제품 작업·자리 비움 시간이 이 제품의 확인 시간으로 잡혀 제품끼리 비교할 수 없기 때문이에요. 기록(`form_started_at`, 승인·수정 요청 시각)은 그대로 남깁니다.
 | 구성안 수정 요청 / 카드 수정 요청 | `revision_requested`의 `stage`별 건수 |
 | 수정 카드 비율 | 카드 수정 요청에 나온 카드 번호 수 ÷ 전체 카드 |
 | 수정 유형 분포 | `types` 코드별 건수 |
@@ -75,4 +77,5 @@ npm run compare -- toneup-sunscreen-r1 toneup-sunscreen-r2 toneup-sunscreen-r3  
 ## 버전
 
 - v0.1 (2026-10-10): 첫 정의. 이벤트·필드를 추가하면 부 버전, 의미를 바꾸면 주 버전을 올리고 노션 '데이터 분석 설계'도 함께 고칩니다.
+- v0.3 (2026-10-27): 과정 지표의 시간을 AI 작업 시간만으로 — 입력·구성안 확인·최종 검토(사람) 시간과 `human_minutes`를 없애고, 총 제작 시간 = AI 작업 시간 합. 이벤트 기록은 그대로
 - v0.2 (2026-10-19, 이용석 리뷰): 웹 모드(#21) 반영 — 누가 남기나에 웹 모드 칸, `job_started.executor`, 웹·평가 모드 `job_id` 형식, 웹 모드의 `revision_requested.cards` 생략. 기록 내용은 바뀌지 않음(코드에 이미 있는 것을 문서에 맞춤)

@@ -15,6 +15,8 @@ export interface FormField {
   guide: string;
   example?: string[];
   usage?: string[];
+  /** 이미지 용도 (제품·제형·배경, #74) */
+  kinds?: string[];
   options?: string[];
   min?: number;
   max?: number;
@@ -63,7 +65,8 @@ export interface Revision {
   memo: string;
 }
 export interface StudioJob {
-  status: 'running' | 'done';
+  /** queued: 다른 제품 작업이 끝나길 기다리는 중 (대기열) */
+  status: 'running' | 'done' | 'queued';
   product_id?: string;
   job_id: string | null;
   kind: JobKind;
@@ -76,12 +79,22 @@ export interface StudioJob {
   crash?: string | null;
   report?: ResultReport | null;
   verify?: { ok: boolean; reasons: string[]; validate?: string } | null;
+  /** 대기 중일 때: 대기열 순서(1부터), 들어간 시각, 지금 돌고 있는 작업 */
+  position?: number;
+  queued_at?: string;
+  ahead?: { product_id: string; name: string; kind: JobKind } | null;
+}
+/** 작업실 전체 작업: 지금 도는 작업 하나 + 대기열 */
+export interface JobsOverview {
+  running: { product_id: string; name: string; kind: JobKind; started_at: string } | null;
+  queue: { product_id: string; name: string; kind: JobKind; queued_at: string; position: number }[];
 }
 export interface StudioStatus {
   ok: true;
   mode: 'web';
   claude: ClaudeInfo;
   job: StudioJob | null;
+  jobs?: JobsOverview;
   form: FormDef;
   revision_types: RevisionType[];
 }
@@ -92,6 +105,8 @@ export interface ProductSummary {
   stage: StudioStage;
   updated_at: string;
   running: boolean;
+  queued?: boolean;
+  queue_position?: number | null;
 }
 export interface StudioCard {
   no: number;
@@ -104,12 +119,18 @@ export interface StudioCard {
   copy?: CardCopy;
 }
 export interface Actions {
+  /** 이 제품이 작업 중이거나 대기 중 */
   running: boolean;
+  job_state?: 'running' | 'queued' | null;
+  /** 지금 작업을 시작하면 앞에서 기다릴 작업 수 (0이면 바로 시작) */
+  wait_ahead?: number;
   last_job_ok: boolean | null;
   can_edit_input: boolean;
   can_plan: boolean;
   can_approve_plan: boolean;
   can_revise_plan: boolean;
+  /** 구성안 승인 전 디자인 묶음 바꾸기 (#74) */
+  can_select_design?: boolean;
   can_copy: boolean;
   can_approve_final: boolean;
   can_revise_final: boolean;
@@ -130,11 +151,31 @@ export interface StudioEvent {
   types?: string[];
   memo?: string;
   approved_by?: 'human' | 'eval';
+  design?: string;
+  from?: string | null;
+}
+/** 디자인 묶음 (#74): 지금 쓰는 묶음, 정한 곳, 구성안에서 고른 것, 목록 */
+export interface DesignCatalogItem {
+  id: string;
+  name: string;
+  summary: string;
+  fits: string[];
+  avoid?: string[];
+  needs: { product: string; background: string };
+  version: string;
+  color_mode: string;
+}
+export interface DesignInfo {
+  id: string;
+  source: 'input' | 'cards' | 'default';
+  auto: boolean;
+  selected: { id: string; selected_by: 'claude' | 'human'; reason: string } | null;
+  catalog: DesignCatalogItem[];
 }
 export interface ProductDetail extends ProductSummary {
   input: {
     values: Record<string, string | string[]>;
-    images: { file: string; desc: string; source: string; usage: string }[];
+    images: { file: string; desc: string; source: string; usage: string; kind?: string }[];
     card_count: number | null;
   };
   check: Report;
@@ -145,6 +186,7 @@ export interface ProductDetail extends ProductSummary {
   job: StudioJob | null;
   export: { listed: boolean; exported_at: string | null };
   actions: Actions;
+  design?: DesignInfo;
 }
 
 export class StudioError extends Error {

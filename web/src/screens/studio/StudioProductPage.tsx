@@ -19,7 +19,8 @@ export function StudioProductPage() {
   const { id = '' } = useParams();
   if (status === undefined) return <div className="page"><Loading /></div>;
   if (status === null) return <StudioOff />;
-  return <StudioProduct id={id} revisionTypes={status.revision_types} />;
+  // key: 다른 제품으로 넘어가면 화면을 새로 그림 (이전 제품 내용이 새 데이터가 올 때까지 남아 보이지 않게)
+  return <StudioProduct key={id} id={id} revisionTypes={status.revision_types} />;
 }
 
 function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: RevisionType[] }) {
@@ -35,11 +36,11 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   const p = data;
   const a = p.actions;
 
-  const act = async (path: string, body?: unknown) => {
+  const act = async (path: string, body?: unknown, method: 'POST' | 'PUT' | 'DELETE' = 'POST') => {
     setBusy(true);
     setActionError(null);
     try {
-      const r = await studioFetch<Partial<ProductDetail> & { job?: StudioJob; product?: ProductDetail }>(path, { method: 'POST', body });
+      const r = await studioFetch<Partial<ProductDetail> & { job?: StudioJob; product?: ProductDetail }>(path, { method, body });
       if (r.product) setData(r.product);
       else if (r.id) setData(r as ProductDetail);
       refresh();
@@ -73,7 +74,12 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
         </p>
       )}
 
-      {p.job && <JobPanel job={p.job} />}
+      {p.job && <JobPanel job={p.job} busy={busy} onCancel={() => act(`/products/${id}/queue`, undefined, 'DELETE')} />}
+      {!a.running && (a.wait_ahead ?? 0) > 0 && (
+        <p className="notice notice-queue">
+          다른 제품 작업이 진행 중이에요. 지금 시작하면 차례를 기다렸다가 자동으로 시작해요 (앞에 {a.wait_ahead}개).
+        </p>
+      )}
 
       {/* 입력 단계 */}
       {p.stage === 'input' && (
@@ -99,6 +105,12 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
           <h2 className="section-title" id="plan-title">
             구성안 확인
           </h2>
+          <DesignPanel
+            detail={p}
+            busy={busy}
+            canChange={Boolean(a.can_select_design) && p.design?.source !== 'input'}
+            onChange={(designId) => act(`/products/${id}/design`, { id: designId }, 'PUT')}
+          />
           <PlanReview detail={p} labels={labels} />
           <ValidationPanel validation={p.validation} />
           {!a.running && (
@@ -125,6 +137,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
           <h2 className="section-title" id="cards-title">
             {p.stage === 'approved' ? '최종 카드' : '카드 확인'}
           </h2>
+          <DesignPanel detail={p} busy={busy} canChange={false} onChange={() => undefined} />
           <CardReview detail={p} labels={labels} />
           <ValidationPanel validation={p.validation} />
           {p.stage === 'copy' && !a.running && (
@@ -178,7 +191,42 @@ function Steps({ detail }: { detail: ProductDetail }) {
 }
 
 // ── 작업 진행·결과
-function JobPanel({ job }: { job: StudioJob }) {
+function JobPanel({ job, busy, onCancel }: { job: StudioJob; busy: boolean; onCancel: () => void }) {
+  if (job.status === 'queued') return <QueuedPanel job={job} busy={busy} onCancel={onCancel} />;
+  return <JobProgress job={job} />;
+}
+
+// 대기 중: 앞에서 도는 작업과 순서, 취소
+function QueuedPanel({ job, busy, onCancel }: { job: StudioJob; busy: boolean; onCancel: () => void }) {
+  return (
+    <section className="section panel job-panel is-queued" aria-live="polite">
+      <div className="job-head">
+        <span className="job-icon" aria-hidden="true">
+          ⏳
+        </span>
+        <strong>
+          {JOB_LABEL[job.kind]} 대기 중 · {job.position}번째
+        </strong>
+        {job.revision && <span className="muted">수정 요청: {job.revision.memo}</span>}
+      </div>
+      <p className="muted job-hint">
+        {job.ahead ? (
+          <>
+            지금 <Link to={`/studio/${job.ahead.product_id}`}>{job.ahead.name}</Link>의 {JOB_LABEL[job.ahead.kind]}이 돌고 있어요.{' '}
+          </>
+        ) : null}
+        앞 작업이 끝나면 자동으로 시작해요. 이 화면을 닫아도 돼요.
+      </p>
+      <div className="action-bar">
+        <button className="btn" disabled={busy} onClick={onCancel}>
+          대기 취소
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function JobProgress({ job }: { job: StudioJob }) {
   const running = job.status === 'running';
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -273,6 +321,51 @@ function IssueList({ items, tone, prefix }: { items: { code?: string; where: str
         </li>
       ))}
     </ul>
+  );
+}
+
+// ── 디자인 묶음 (#74): 지금 쓰는 묶음·정한 곳·이유, 구성안 승인 전에는 다른 묶음으로 바꾸기
+const DESIGN_SOURCE: Record<string, string> = { input: '입력에서 직접 고름', default: '기본값' };
+const NEEDS_TEXT: Record<string, string> = { required: '필수', optional: '있으면 좋음', none: '안 씀' };
+function DesignPanel({ detail, busy, canChange, onChange }: { detail: ProductDetail; busy: boolean; canChange: boolean; onChange: (id: string) => void }) {
+  const d = detail.design;
+  const [pick, setPick] = useState(d?.id ?? '');
+  if (!d) return null;
+  const current = d.catalog.find((x) => x.id === d.id);
+  const by = d.source === 'cards' ? (d.selected?.selected_by === 'human' ? '작업실에서 사람이 고름' : 'Claude 추천') : DESIGN_SOURCE[d.source];
+  const picked = d.catalog.find((x) => x.id === pick);
+  return (
+    <div className="panel design-panel">
+      <p className="muted">디자인 묶음{d.auto ? ' · 무드 자동 추천' : ''}</p>
+      <p className="design-name">
+        <strong>{current?.name ?? d.id}</strong> <span className="chip">{by}</span>
+        {current ? <span className="muted"> v{current.version}</span> : null}
+      </p>
+      {current && <p className="muted">{current.summary}</p>}
+      {d.source === 'cards' && d.selected && <p className="design-reason">이유: “{d.selected.reason}”</p>}
+      {canChange && (
+        <div className="design-change">
+          <label>
+            다른 묶음으로{' '}
+            <select value={pick} disabled={busy} onChange={(e) => setPick(e.target.value)}>
+              {d.catalog.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="btn" disabled={busy || pick === d.id} onClick={() => onChange(pick)}>
+            바꾸기
+          </button>
+          {picked && pick !== d.id && (
+            <p className="muted">
+              {picked.summary} · 어울림: {picked.fits.join(' / ')} · 제품 사진 {NEEDS_TEXT[picked.needs.product] ?? picked.needs.product}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -487,6 +580,7 @@ const EVENT_TEXT: Record<string, string> = {
   plan_approved: '구성안 승인',
   final_approved: '최종 승인',
   revision_requested: '수정 요청',
+  design_selected: '디자인 묶음 변경',
 };
 function EventLog({ events, labels }: { events: ProductDetail['events']; labels?: Labels }) {
   if (!events.length) return null;

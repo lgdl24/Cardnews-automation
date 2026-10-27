@@ -1,17 +1,13 @@
 {
-  "spec_version": "0.3",
+  "spec_version": "1.0",
   "id": "demo-cleansing-oil",
   "summary": {
     "complete": true,
-    "total_minutes": 84.7,
+    "total_minutes": 18.2,
     "ai_minutes": 18.2,
-    "human_minutes": 66.3,
     "phases": {
-      "input": 0,
       "plan_job": 2.7,
-      "plan_review": 4.6,
       "copy_job": 13.1,
-      "final_review": 61.8,
       "revise_job": 2.4
     },
     "plan_revisions": 0,

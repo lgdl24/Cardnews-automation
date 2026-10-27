@@ -51,7 +51,7 @@ npm run studio        # → http://127.0.0.1:5173/studio
 5. [내보내기] → 결과 보기 웹 데이터(`web/public/data/`)가 갱신돼요. 배포하려면 `web/public/data/`와 `config/export.json`을 커밋합니다.
 
 - 작업 실행기(`scripts/lib/job-runner.js`)는 임시 작업 폴더에 규칙과 이 제품만 복사해 실행하고, 허용된 도구·명령(`cards.json` 쓰기, `check`·`validate`·`render`)만 쓰게 해요. 끝나면 결과를 다시 검증해 통과할 때만 반영해요.
-- 작업은 한 번에 하나씩이고, 사용량은 로그인한 Claude 계정에서 나가요.
+- 작업은 한 번에 하나씩 돌아요. 다른 제품 작업 중에 시작하면 대기열에 들어가 차례로 자동 시작하고, 화면 위 띠에 진행 중·대기 작업이 보여요. 사용량은 로그인한 Claude 계정에서 나가요.
 - 로컬 제작 API(`/api/studio`)는 개발 서버에만 있고 `127.0.0.1`에서만 열려요. 배포 사이트에는 들어가지 않아요.
 - 화면 시험: `CARDNEWS_STUDIO_SANDBOX=<폴더> CARDNEWS_CLAUDE_BIN=tests/fixtures/fake-claude.js npm run studio` (가짜 Claude, 시험용 제품 폴더)
 

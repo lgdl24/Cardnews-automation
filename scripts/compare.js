@@ -31,13 +31,14 @@ const sec = (ms) => (typeof ms === 'number' ? `${Math.round(ms / 1000)}초` : '-
 function printConsistency(c, indent = '') {
   console.log(`${indent}- 카드 역할 순서 일치율 ${pct(c.role_order_match)}`);
   console.log(`${indent}- 템플릿 순서 일치율 ${pct(c.template_order_match)}`);
+  if (c.design_match !== undefined && c.design_match !== null) console.log(`${indent}- 디자인 묶음 일치율 ${pct(c.design_match)}`);
   console.log(`${indent}- 사용한 원문 근거 겹침(교집합÷합집합) ${pct(c.evidence_overlap)}`);
   console.log(`${indent}- 원문 커버리지 편차 ${num(c.coverage_stdev)} · 글자 수 활용률 편차 ${num(c.char_usage_stdev)}`);
 }
 
 function printProducts(res) {
   if (!res.same_input) console.log('[경고] 입력 원문이 서로 달라요. 같은 입력으로 만든 결과끼리 비교해야 해요.');
-  console.log('\n제작\t규칙\t카드 구성\t커버리지\t근거 연결\t글자 활용\t주의(원문 밖)\t수정\t자동 수정\t1회 통과\t시간(분)');
+  console.log('\n제작\t규칙\t카드 구성\t커버리지\t근거 연결\t글자 활용\t주의(원문 밖)\t수정\t자동 수정\t1회 통과\tAI 작업(분)');
   for (const r of res.runs) {
     const fp = r.first_pass === null ? '-' : r.first_pass ? 'O' : 'X';
     console.log([
@@ -65,6 +66,8 @@ function printEval(res) {
     console.log(`- 완료 ${g.completed}/${g.run_count}${codes ? ` (중단: ${codes})` : ''} · 체크리스트 통과 ${g.checks_passed}/${g.run_count} · 1회 통과 ${g.first_pass}/${g.run_count} · 결과 같음 ${g.outcome_same ? 'O' : 'X'}`);
     console.log(`- 핵심 정보 포함률 평균 ${pct(g.key_info_rate_mean)} · 편차 ${num(g.key_info_rate_stdev)}`);
     console.log(`- 처리 시간 평균 ${sec(g.duration_ms_mean)} · 편차 ${sec(g.duration_ms_stdev)}`);
+    const designs = Object.entries(g.designs || {}).map(([k, n]) => `${k} ${n}`).join(', ');
+    if (designs) console.log(`- 디자인 묶음: ${designs}`);
     if (g.consistency) printConsistency(g.consistency);
     else console.log('- 카드 구성 비교: 완료된 실행이 2개 이상일 때 계산해요');
   }

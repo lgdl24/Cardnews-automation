@@ -65,6 +65,7 @@ function checkInput(productId) {
       report.error('INPUT_MISSING', where, 'images/ 폴더에 파일이 없어요');
     }
     if (!img.source) report.error('INPUT_MISSING', where, '출처가 비어 있어요');
+    if (imageRule.kinds && !imageRule.kinds.includes(img.kind)) report.warn(where, `용도 "${img.kind}"는 고를 수 없는 값이에요. ${imageRule.kinds.join('·')} 중 하나로 써주세요 (지금은 제품으로 봐요)`);
     if (img.usage === '불가') report.error('INPUT_MISSING', where, '사용 불가 이미지예요. 다른 이미지로 바꿔주세요');
     else if (img.usage !== '가능') report.warn(where, `사용 가능 여부: "${img.usage || '미기재'}". 최종 출력 전에 확인이 필요해요`);
   }
@@ -88,7 +89,14 @@ if (require.main === module) {
   // 문구를 쓸 때 쓸 글자 수 기준 (무드에 따라 다름, #67)
   const input = loadInput(id);
   if (input) {
-    const { lines } = limitLines(input);
+    // 구성안을 만든 뒤면 cards.json에서 고른 묶음도 봄 (#74). 읽을 수 없으면 입력 기준
+    let data = null;
+    try {
+      data = JSON.parse(fs.readFileSync(paths.product(id, 'cards.json'), 'utf8'));
+    } catch {
+      data = null;
+    }
+    const { lines } = limitLines(input, data);
     console.log(`\n== 카드 글자 수 기준 ==\n${lines.join('\n')}`);
   }
   process.exit(report.errors.length ? 1 : 0);

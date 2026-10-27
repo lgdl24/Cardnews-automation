@@ -8,6 +8,18 @@
   "additionalProperties": false,
   "properties": {
     "spec_version": { "const": "0.1" },
+    "design": {
+      "description": "쓴 디자인 묶음 (#74, 선택 칸). source: input(입력 무드) · cards(구성안에서 고름) · default",
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["id", "version", "source", "selected_by"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "source": { "enum": ["input", "cards", "default"] },
+        "selected_by": { "enum": ["claude", "human", null] }
+      }
+    },
     "run_id": { "type": "string", "pattern": "^eval-[a-z0-9-]+--v[0-9]+(-[a-z0-9-]+)?--r[0-9]+$" },
     "batch": { "type": "string", "pattern": "^[a-z0-9-]+$" },
     "input_id": { "type": "string", "pattern": "^eval-[a-z0-9-]+$" },

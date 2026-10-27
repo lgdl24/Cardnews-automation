@@ -2,18 +2,18 @@
 // 웹에 공개해도 되는 값만 옮긴다: input.md 전체·입력 이미지 원본·토큰·비용·지시문 형태 원문 문장은 넣지 않음
 const fs = require('fs');
 const path = require('path');
-const { paths, readJson, loadConfig, loadInput, normalize, countChars } = require('./common');
+const { paths, readJson, loadConfig, loadInput, normalize, countChars, designRecord } = require('./common');
 const { readEvents } = require('./events');
 const { summarize, PHASES } = require('./analysis');
 const { findCautions, round } = require('./metrics');
 const { pad } = require('./card-html');
 
-const SPEC_VERSION = '0.3';
+const SPEC_VERSION = '1.0';
 const KINDS = { production: '실제 제작', example: '예시', eval: '평가 실행' };
 const STAGE_LABELS = { plan: '구성안', copy: '문구', approved: '승인 완료' };
 const ROLE_LABELS = { cover: '표지', feature: '특징', usage: '사용법', detail: '상세', closing: '마무리' };
 // timeline.json에 옮기는 이벤트 필드 (나머지는 공개하지 않음)
-const EVENT_FIELDS = ['ts', 'event', 'job_id', 'kind', 'ok', 'error_code', 'check', 'error_codes', 'cards_with_errors', 'stage', 'cards', 'types', 'memo', 'rendered_cards'];
+const EVENT_FIELDS = ['ts', 'event', 'job_id', 'kind', 'ok', 'error_code', 'check', 'error_codes', 'cards_with_errors', 'stage', 'cards', 'types', 'memo', 'rendered_cards', 'design', 'from', 'by'];
 
 // 화면 공통 이름표: 원본은 config/와 검증 코드
 function buildLabels() {
@@ -47,6 +47,7 @@ function latestLayout(id) {
 }
 
 // 출력에 쓴 카드 색 (render-report.json의 colors, #38). 가장 최근 보고서의 값. 색 기록이 없는 옛 출력이면 null
+const COLOR_KEYS = ['bg', 'surface', 'text', 'muted', 'primary', 'accent', 'on-primary'];
 function latestColors(id) {
   const dir = paths.product(id, 'output');
   if (!fs.existsSync(dir)) return null;
@@ -62,7 +63,8 @@ function latestColors(id) {
     source: c.source,
     image: c.image ?? null,
     representative: c.representative ?? null,
-    color: c.color,
+    // 묶음 고유 추가 색(accent-2 등, 장식용)은 내보내지 않음 — 웹 데이터 규격은 색 7개 (#74)
+    color: Object.fromEntries(Object.entries(c.color).filter(([k]) => COLOR_KEYS.includes(k))),
     adjustments: (c.adjustments || []).map(({ key, from, to }) => ({ key, from, to })),
     note: c.note ?? null,
   };
@@ -118,7 +120,7 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
   const broken = data.cards.filter((c) => !layout.get(c.no).ok);
   if (broken.length) return { ok: false, reason: 'LAYOUT_ERROR', detail: `레이아웃 오류: ${broken.map((c) => c.no).join(', ')}번 카드` };
 
-  const { templates, caution } = loadConfig(input);
+  const { templates, caution } = loadConfig(input, data);
   const q = quality(result);
   const events = readEvents(id);
   const cautions = findCautions(data, normalize(input.productText), caution);
@@ -166,6 +168,7 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
     cards,
     plan_revisions: revisions.filter((r) => r.stage === 'plan').map(revisionOf),
     colors: latestColors(id),
+    design: designRecord({ input, data }),
     quality: {
       ...qualityRest,
       coverage_detail: {
@@ -185,7 +188,6 @@ function buildProject(id, { kind = 'production', label = null, evalInfo = null }
       complete: s.complete,
       total_minutes: s.total_minutes,
       ai_minutes: s.ai_minutes,
-      human_minutes: s.human_minutes,
       phases: s.phases,
       plan_revisions: s.plan_revisions,
       revision_rounds: s.revision_rounds,

@@ -123,19 +123,22 @@ function paletteFromColor(hex) {
 }
 
 // ── 3) 대비 검사 · 자동 조정
-function checkContrast(color, min = MIN_CONTRAST) {
+// pairMin: 묶음이 자리별로 정한 최소 대비 { 'on-primary/primary': 3 } (#74). 큰 글자(제목·40px 이상 굵게)만 놓이는 자리는 3.0,
+// 그 묶음이 글자를 놓지 않는 자리는 1(검사 안 함). 정하지 않은 자리는 min(4.5)
+function checkContrast(color, min = MIN_CONTRAST, pairMin = {}) {
   return PAIRS.map((p) => {
     const ratio = contrast(color[p.fg], color[p.bg]);
-    return { fg: p.fg, bg: p.bg, where: p.where, ratio: round(ratio), ok: ratio >= min };
+    const need = pairMin[`${p.fg}/${p.bg}`] ?? min;
+    return { fg: p.fg, bg: p.bg, where: p.where, ratio: round(ratio), min: need, ok: ratio >= need };
   });
 }
 
 // 모자란 곳의 글자 색(뱃지는 배경)을 HSL 밝기 1%씩 낮춤. 반환: { color, adjustments: [{ key, from, to }], checks, ok }
-function adjustContrast(input, min = MIN_CONTRAST) {
+function adjustContrast(input, min = MIN_CONTRAST, pairMin = {}) {
   const color = { ...input };
   const original = { ...input };
   for (let guard = 0; guard < 200; guard++) {
-    const bad = checkContrast(color, min).find((c) => !c.ok);
+    const bad = checkContrast(color, min, pairMin).find((c) => !c.ok);
     if (!bad) break;
     const key = ADJUSTABLE[bad.fg];
     const [h, s, l] = rgbToHsl(hexToRgb(color[key]));
@@ -145,7 +148,7 @@ function adjustContrast(input, min = MIN_CONTRAST) {
   const adjustments = Object.keys(color)
     .filter((k) => color[k] !== original[k])
     .map((k) => ({ key: k, from: original[k], to: color[k], lightness_from: round(rgbToHsl(hexToRgb(original[k]))[2]), lightness_to: round(rgbToHsl(hexToRgb(color[k]))[2]) }));
-  const checks = checkContrast(color, min);
+  const checks = checkContrast(color, min, pairMin);
   return { color, adjustments, checks, ok: checks.every((c) => c.ok) };
 }
 
@@ -159,7 +162,7 @@ function adjustContrast(input, min = MIN_CONTRAST) {
  * @param {string|null} o.readError  사진을 읽다 난 오류 (기본 색으로 대신함)
  * @returns {{ mode, source, image, representative, colored_ratio, color, adjustments, checks, ok, note }}
  */
-function decideColors({ mode = '기본', baseColor, pixels = null, image = null, readError = null }) {
+function decideColors({ mode = '기본', baseColor, pixels = null, image = null, readError = null, pairMin = {} }) {
   let source = 'theme';
   let representative = null;
   let coloredRatio = null;
@@ -179,7 +182,7 @@ function decideColors({ mode = '기본', baseColor, pixels = null, image = null,
       }
     }
   }
-  const adjusted = adjustContrast(base);
+  const adjusted = adjustContrast(base, MIN_CONTRAST, pairMin);
   return {
     mode,
     source,
@@ -193,17 +196,18 @@ function decideColors({ mode = '기본', baseColor, pixels = null, image = null,
 
 // 카드 색 설정값 읽기 (입력 양식 '제작 조건 > 카드 색')
 const COLOR_MODES = ['기본', '제품 색'];
-function colorModeOf(input) {
+// data(cards.json)를 주면 구성안에서 고른 묶음의 기본 색도 봄 (#74)
+function colorModeOf(input, data = null) {
   const v = ((input && input.cond && input.cond['카드 색']) || '').split('\n')[0].trim();
   if (v) return COLOR_MODES.includes(v) ? v : '기본';
   // 비우면 무드의 기본 색(_designs.<무드>._defaults.colorMode). 무드 설정이 필요할 때 loadConfig를 불러옴
   const { loadConfig } = require('./common');
-  return loadConfig(input).templates._defaults?.colorMode || '기본';
+  return loadConfig(input, data).templates._defaults?.colorMode || '기본';
 }
 
-// 대표 색을 읽을 사진: 카드에 쓰인 첫 이미지 → 없으면 입력의 첫 이미지 (사용 가능 여부 '불가'는 제외)
+// 대표 색을 읽을 사진: 카드에 쓰인 첫 이미지 → 없으면 입력의 첫 제품 사진 (사용 가능 여부 '불가'와 용도가 제형·배경인 사진은 제외)
 function pickProductImage({ data, input, imageDir }) {
-  const blocked = new Set((input.images || []).filter((i) => i.usage === '불가').map((i) => i.file));
+  const blocked = new Set((input.images || []).filter((i) => i.usage === '불가' || (i.kind && i.kind !== '제품')).map((i) => i.file));
   const candidates = [
     ...(data.cards || []).map((c) => c.image).filter(Boolean),
     ...(input.images || []).map((i) => i.file).filter(Boolean),
