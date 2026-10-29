@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-10-29 | Claude | `feat/figma-render-test` (이슈 없음) | **피그마 출력 시험(대안 2) 1단계 — 출력 방식은 그대로**: `scripts/figma-spec.js`가 `cards.json` → `output/figma/spec.json`·카드별 `use_figma` 채움 코드를 만듦(기본 디자인 cover만). 피그마 시험 파일(Practice 팀)에 기본 표지형을 컴포넌트로 옮겨 퍼플 1·5번을 채워 HTML 출력과 비교. 배치·사진은 거의 같음, **글꼴(Pretendard 없음)·한글 줄바꿈(글자 단위)·인스턴스 크기 변경 불가**가 제약. 결과·순서: `docs/research/figma-render-test.md`. `tests/figma-spec.test.js`를 `npm test`에 추가. 규칙·템플릿·config 안 바꿈 |
 | 2026-10-26 | Claude | #72 · `feat/72-demo-backup` | **시연 백업 결과 웹 추가**: 웹 모드로 처음부터 끝까지 만든 가상 제품 `demo-cleansing-oil`(무드 프리미엄·제품 색, 입력은 예전 `디자인:` 칸 → #69 호환으로 읽힘)을 `config/export.json`(`example`)에 넣고 `--only`로 내보냄. 처리 시간: 구성안 2분 41초, 문구·출력 13분(그중 11분 40초 진행 표시 없음 — Claude가 문구를 한 번에 쓰며 글자 수를 직접 셈, 규칙 개선은 별도 결정), 카드 1장 수정(다른 제품) 1분 15초. 출력 PNG는 `.gitignore`라 웹 데이터에만 있음 |
 | 2026-10-27 | Claude | `feat/job-queue` | **작업실 대기열·작업 중 표시** (이규동: 한 제품 작업 중 다른 제품이 안 돌아감): 작업은 여전히 한 번에 하나지만 다른 제품 작업을 누르면 거절(409) 대신 대기열에 넣고 앞 작업이 끝나면 자동 시작. 제품마다 하나만, 대기 취소 `DELETE /api/studio/products/:id/queue`, 전체 현황 `GET /api/studio/jobs`(`/status`·`/job`에도 `jobs`). `actions.running`은 이제 이 제품이 작업·대기 중일 때만(다른 제품이 돌아도 버튼이 꺼지지 않음), `job_state`·`wait_ahead` 추가. 수정 요청 기록(`revision_requested`)은 작업이 실제로 시작할 때 남김(대기 취소하면 안 남음). 화면: 작업실 모든 화면 위 진행 띠(진행 중 작업·경과 시간·대기 목록), 제품 화면 대기 패널(순서·앞 작업·취소), 시작하면 기다릴 때 안내, 목록 '대기 N번째'. **버그 수정**: 제품 화면에서 다른 제품으로 넘어가면 새 데이터가 올 때까지 이전 제품 내용(지표 포함)이 남아 보이던 것(`key={id}`) — 이용석이 본 "세럼에 선크림 지표"의 후보 중 하나. 대기열은 서버 메모리라 `npm run studio`를 끄면 사라짐 |
 | 2026-10-27 | Claude | `fix/ai-time-metrics` | **시간 지표를 AI 작업 시간만으로** (이규동 결정; 이용석이 선크림·세럼을 같이 돌렸더니 "세럼에 선크림 지표가 들어간다"고 한 것 — 웹 모드는 작업마다 Claude를 새로 띄우고 그 제품 폴더만 보여서 내용·품질 지표는 섞이지 않지만, 다른 제품을 다루거나 기다린 시간이 이 제품의 사람 검토 시간·총 제작 시간에 들어가던 것): `analysis.js`에서 입력·구성안 확인·최종 검토 시간과 `human_minutes` 삭제, `total_minutes` = `ai_minutes` = 작업 시간 합(잰 작업이 없으면 null). `npm run log --summary`·`compare`(열 이름 'AI 작업(분)')·결과 웹 V2 제작 과정('제작 시간 (AI 작업)', 작업별 막대)·웹 데이터 **v1.0**(필드 삭제·뜻 변경이라 주 버전, 스키마·타입·예시 다시 내보냄)·`event-log-spec` v0.3. 기록 이벤트는 그대로. `tests/analysis.test.js` 추가. 병합(#76) 때 #73 시연 백업(`demo-cleansing-oil`) 웹 데이터도 v1.0으로 옮김 — 제품 폴더에 PNG가 없어 다시 내보내지 않고 JSON만 고침(사람 시간 삭제, 총 제작 시간 84.7→18.2분), PNG는 그대로. **이용석 확인 필요**: V3 대시보드·V4 비교가 `human_minutes`·사람 단계를 쓰는지 (저장소 코드에는 없음) |
@@ -26,6 +27,14 @@
 | 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
+
+## 현재 작업 (이규동, 2026-10-29 — 피그마 출력 시험)
+
+- 확인일·작성 도구: 2026-10-29 · Claude (클라우드). 브랜치 `feat/figma-render-test` · 기준 `main`(`904e672`). 이슈 미생성(이 세션은 GitHub 쓰기 권한 없음 → 이규동이 이슈 만들고 push)
+- 목표: 디자인을 피그마에서 다듬을 때 출력 방식(대안 1 HTML 옮김 / 대안 2 피그마 직접 출력) 판단. 1단계 = 기본 표지형으로 대안 2 재현성 확인 → **완료**
+- 변경: `scripts/figma-spec.js`, `tests/figma-spec.test.js`, `package.json`(test 목록), `docs/research/figma-render-test.md`·`figma-render-test/`(비교 이미지), 이 문서
+- 검증: `npm test` 177개 통과. 피그마 채움 2장 `issues` 0, HTML 출력 레이아웃 점검 오류 0
+- 다음: ① 프로젝트 글꼴 결정(Pretendard 유지 vs 피그마·HTML 공통 글꼴) ② 줄바꿈 미리 정하기 시험 ③ 이미지형·설명형 옮겨 5장 비교. 노션 갱신 필요
 
 ## 현재 작업 (이용석, 2026-10-26)
 
