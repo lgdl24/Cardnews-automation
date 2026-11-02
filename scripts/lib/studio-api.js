@@ -99,6 +99,7 @@ function createStudio({
   webIndexFile = path.join(root, 'web', 'public', 'data', 'index.json'),
   exportFn,
   figmaExportFn,
+  renderFn,
   figmaCode = crypto.randomBytes(3).toString('hex').toUpperCase(),
   figmaConfigFile = path.join(root, 'config', 'figma.json'),
 } = {}) {
@@ -261,6 +262,7 @@ function createStudio({
       can_approve_final: !running && stage === 'copy',
       can_revise_final: !running && stage === 'copy',
       can_export: !running && stage === 'approved',
+      can_render: !running && (stage === 'copy' || stage === 'approved'),
     };
   }
 
@@ -715,12 +717,25 @@ function createStudio({
         if (!detail().pngs.length) throw new HttpError(409, '카드를 출력한 뒤에 피그마로 보낼 수 있어요');
         if (detail().actions.running) throw new HttpError(409, '작업이 끝난 뒤에 피그마로 보낼 수 있어요');
         const result = prepareFigma(id);
-        return send(res, result.ok ? 200 : 422, { figma_export: result, product: detail() });
+        return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `피그마용 카드를 만들지 못했어요: ${(result.output || []).slice(-1).join('') || '스크립트 오류'}` }), figma_export: result, product: detail() });
+      }
+      // 카드 이미지 다시 만들기: 승인된 문구 그대로 HTML·PNG만 다시 출력 (Claude 안 씀, 제작 기록에 안 남김). 새 폴더·다른 컴퓨터는 output/이 git에 없어 필요
+      if (method === 'POST' && parts[2] === 'render' && parts.length === 3) {
+        if (!detail().actions.can_render) throw new HttpError(409, '문구를 만든 뒤, 작업이 없을 때 다시 출력할 수 있어요');
+        const result = renderFn ? renderFn(id) : (() => {
+          const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'render.js'), id, '--no-log'], { encoding: 'utf8', env: scriptEnv() });
+          return { ok: r.status === 0, output: `${r.stdout || ''}${r.stderr || ''}`.trim().split('\n').slice(-4) };
+        })();
+        return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `카드를 출력하지 못했어요: ${(result.output || []).slice(-1).join('') || '스크립트 오류'}` }), render: result, product: detail() });
       }
       if (method === 'POST' && parts[2] === 'export' && parts.length === 3) {
         if (!detail().actions.can_export) throw new HttpError(409, '최종 승인한 뒤에 내보낼 수 있어요');
         const result = exportProduct(id);
-        return send(res, result.ok ? 200 : 422, { export: result, product: detail() });
+        // 실패 이유를 화면에 그대로 (예: PNG가 없음 → 카드 이미지 다시 만들기)
+        const why = result.excluded && result.excluded.length
+          ? result.excluded.map((x) => x.split('|').slice(1).map((t) => t.trim()).join(' — ')).join(' / ')
+          : (result.output || []).slice(-1).join('');
+        return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `내보내지 못했어요: ${why || '내보내기 스크립트 오류'}` }), export: result, product: detail() });
       }
     }
     if (method === 'GET' && parts[0] === 'job' && parts.length === 1) {

@@ -40,6 +40,8 @@ async function start() {
   fs.copyFileSync(path.join(ROOT, 'products', SRC, 'cards.json'), path.join(productsDir, id, 'cards.json'));
   fs.writeFileSync(path.join(productsDir, id, 'output', 'png', 'card-01.png'), PNG);
   const prepared = [];
+  const rendered = [];
+  fs.writeFileSync(path.join(dir, 'export.json'), JSON.stringify({ out_dir: path.join(dir, 'web'), projects: [] }));
   const figmaConfigFile = path.join(dir, 'figma.json');
   fs.writeFileSync(figmaConfigFile, JSON.stringify({ file_url: 'https://www.figma.com/design/TESTKEY' }));
   const studio = createStudio({
@@ -49,6 +51,8 @@ async function start() {
     webIndexFile: path.join(dir, 'web', 'index.json'),
     figmaCode: CODE,
     figmaConfigFile,
+    exportFn: () => ({ ok: false, output: [], excluded: [`${'figma-test'} | PNG_MISSING | PNG가 없어요: 2번 카드 (npm run render)`] }),
+    renderFn: (pid) => { rendered.push(pid); return { ok: true, output: [] }; },
     figmaExportFn: (pid) => {
       prepared.push(pid);
       const out = path.join(productsDir, pid, 'output', 'figma-export');
@@ -69,7 +73,7 @@ async function start() {
     const type = res.headers.get('content-type') || '';
     return { status: res.status, headers: res.headers, body: type.includes('json') ? await res.json() : Buffer.from(await res.arrayBuffer()) };
   };
-  return { dir, id, prepared, call, close: () => new Promise((r) => server.close(r)) };
+  return { dir, id, prepared, rendered, call, close: () => new Promise((r) => server.close(r)) };
 }
 
 test('작업실 → 피그마 플러그인 → 작업실: 준비, 가져오기, 돌려보내기(문구 비교)', async () => {
@@ -172,4 +176,22 @@ test('프레임 만드는 함수: 가짜 피그마로 카드 2장, 이미지 없
   assert.deepEqual(r.missing, ['fake__c02__L1']);
   assert.equal(r.fonts['Pretendard 800'], 'Gothic A1 ExtraBold', 'Pretendard 없으면 대체 글꼴');
   assert.equal(page.name, '시험 제품 (fake)');
+});
+
+test('작업실: 내보내기 실패 이유를 그대로 알려주고, 카드 이미지만 다시 만들 수 있음', async () => {
+  const s = await start();
+  try {
+    const w = { 'x-studio': '1', 'content-type': 'application/json' };
+    // 시험 제품 cards.json은 approved (toneup-sunscreen-r1)
+    let r = await s.call('POST', `/products/${s.id}/export`, { headers: w });
+    assert.equal(r.status, 422);
+    assert.match(r.body.error, /내보내지 못했어요: PNG_MISSING — PNG가 없어요: 2번 카드/);
+    r = await s.call('GET', `/products/${s.id}`);
+    assert.equal(r.body.actions.can_render, true);
+    r = await s.call('POST', `/products/${s.id}/render`, { headers: w });
+    assert.equal(r.status, 200);
+    assert.deepEqual(s.rendered, [s.id]);
+  } finally {
+    await s.close();
+  }
 });
