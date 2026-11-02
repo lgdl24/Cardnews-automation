@@ -151,6 +151,16 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
             </div>
           )}
           {a.can_revise_final && <RevisionForm stage="final" revisionTypes={revisionTypes} cardCount={p.cards.cards.length} busy={busy} onSubmit={(b) => act(`/products/${id}/revisions`, b)} />}
+          {p.pngs.length === 0 && (
+            <div className="notice notice-warn" role="status">
+              <p>카드 이미지(PNG)가 이 컴퓨터에 없어요. 카드 이미지는 git에 올라가지 않아서 새 폴더나 다른 컴퓨터에서는 다시 만들어야 해요. 문구는 그대로 두고 이미지만 다시 만들어요.</p>
+              <div className="action-bar">
+                <button className="btn btn-primary" disabled={busy || !a.can_render} onClick={() => act(`/products/${id}/render`)}>
+                  카드 이미지 다시 만들기
+                </button>
+              </div>
+            </div>
+          )}
           {p.figma && p.pngs.length > 0 && (
             <FigmaPanel
               detail={p}

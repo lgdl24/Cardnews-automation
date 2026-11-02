@@ -126,6 +126,8 @@ export interface Actions {
   wait_ahead?: number;
   last_job_ok: boolean | null;
   can_edit_input: boolean;
+  /** 승인된 문구 그대로 카드 이미지만 다시 출력 (output/이 없는 새 폴더·다른 컴퓨터) */
+  can_render?: boolean;
   can_plan: boolean;
   can_approve_plan: boolean;
   can_revise_plan: boolean;
