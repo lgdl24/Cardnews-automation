@@ -37,7 +37,7 @@
   <button id="push" disabled>고친 카드를 웹으로 보내기</button>
 </div>
 <div id="status" class="status">작업실 연결 코드를 넣고 연결을 눌러 주세요.</div>
-<p class="hint">가져오기: 제품 페이지에 card-01~ 프레임을 만들어요(같은 이름은 다시 만듦). 보내기: 그 페이지의 card-NN 프레임을 1080px PNG와 글자 내용으로 작업실에 보내요.</p>
+<p class="hint">가져오기: 가져올 때마다 '제품명 (ID) · 날짜 시각' 새 페이지에 card-01~ 프레임을 만들어요. 이전에 고친 페이지는 그대로 남아요.<br>보내기: 지금 보고 있는 페이지가 그 제품 페이지면 그 페이지를, 아니면 그 제품의 가장 최근 페이지를 1080px PNG와 글자 내용으로 작업실에 보내요.</p>
 <script>
 const $ = (id) => document.getElementById(id);
 const statusEl = $('status');
@@ -113,13 +113,13 @@ function toBase64(bytes) {
   return btoa(s);
 }
 
-async function send(id, cards) {
+async function send(id, page, cards) {
   try {
-    say(`작업실로 보내는 중… (${cards.length}장)`);
-    const body = JSON.stringify({ cards: cards.map((c) => ({ file: c.file, png: toBase64(c.png), texts: c.texts })) });
+    say(`'${page}' 페이지를 작업실로 보내는 중… (${cards.length}장)`);
+    const body = JSON.stringify({ page, cards: cards.map((c) => ({ file: c.file, png: toBase64(c.png), texts: c.texts })) });
     const r = await (await api(`/products/${encodeURIComponent(id)}/edited`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body })).json();
     const changed = r.cards.filter((c) => c.changed.length);
-    say(`보냈어요: ${r.cards.length}장.` + (changed.length ? `\n[주의] 문구가 바뀐 카드 ${changed.map((c) => c.file).join(', ')} — 작업실에서 확인해 주세요.` : '\n문구는 승인본과 같아요.'));
+    say(`보냈어요: '${page}' ${r.cards.length}장.` + (changed.length ? `\n[주의] 문구가 바뀐 카드 ${changed.map((c) => c.file).join(', ')} — 작업실에서 확인해 주세요.` : '\n문구는 승인본과 같아요.'));
   } catch (e) { say(e.message, true); }
   busy(false);
 }
@@ -132,10 +132,10 @@ window.onmessage = (ev) => {
     if (m.saved.code) { $('code').value = m.saved.code; connect(m.saved.product); }
   } else if (m.type === 'built') {
     const fonts = Object.entries(m.fonts).filter(([a, b]) => !b.startsWith(a.split(' ')[0])).map(([a, b]) => `${a} → ${b}`);
-    say(`카드 ${m.frames}장을 만들었어요.` + (m.missing.length ? `\n받지 못한 이미지: ${m.missing.length}개` : '') + (fonts.length ? `\n글꼴 대체: ${fonts.join(', ')}` : ''), m.missing.length > 0);
+    say(`'${m.page}' 페이지에 카드 ${m.frames}장을 만들었어요.` + (m.missing.length ? `\n받지 못한 이미지: ${m.missing.length}개` : '') + (fonts.length ? `\n글꼴 대체: ${fonts.join(', ')}` : ''), m.missing.length > 0);
     busy(false);
   } else if (m.type === 'collected') {
-    send(m.id, m.cards);
+    send(m.id, m.page, m.cards);
   } else if (m.type === 'error') {
     say(m.message, true);
     busy(false);

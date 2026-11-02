@@ -621,17 +621,20 @@ function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: 
             <button type="button" className="figma-code" onClick={copy} title="눌러서 복사">
               {f.code}
             </button>
-            {copied && <span className="muted"> 복사했어요</span>}를 넣고 연결 → <strong>{detail.name}</strong> 고르고 <strong>피그마로 가져오기</strong>.
+            {copied && <span className="muted"> 복사했어요</span>}를 넣고 연결 → <strong>{detail.name}</strong> 고르고 <strong>피그마로 가져오기</strong>. 가져올 때마다 날짜·시각이 붙은 새 페이지가 생겨서 이전에 고친 페이지는 그대로 남아요.
           </li>
           <li>
-            다 고쳤으면 플러그인의 <strong>고친 카드를 웹으로 보내기</strong>를 누르면 아래에 나와요.
+            다 고쳤으면 그 페이지를 연 채로 플러그인의 <strong>고친 카드를 웹으로 보내기</strong>를 누르면 아래에 나와요 (다른 페이지를 보고 있으면 이 제품의 가장 최근 페이지를 보내요).
           </li>
         </ol>
       )}
       {f.prepared_at && <p className="muted">준비한 시각 {formatDateTime(f.prepared_at)} · 작업실을 다시 켜면 연결 코드가 바뀌어요.</p>}
       {edited && (
         <div className="figma-edited">
-          <h4 className="panel-subtitle">피그마에서 고친 카드 · {formatDateTime(edited.received_at)}</h4>
+          <h4 className="panel-subtitle">
+            피그마에서 고친 카드 · {formatDateTime(edited.received_at)}
+            {edited.page && <span className="muted"> · 페이지 '{edited.page}'</span>}
+          </h4>
           {changedCards.length > 0 ? (
             <div className="notice notice-warn" role="status">
               <p>[주의] 피그마에서 문구가 바뀐 카드가 있어요. 이 문구는 원문 근거 검증을 거치지 않았어요. 문구를 바꾸려면 작업실의 수정 요청으로 고치는 게 원칙이에요 (근거 검증을 거침).</p>

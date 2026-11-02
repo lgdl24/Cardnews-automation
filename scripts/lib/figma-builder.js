@@ -2,11 +2,13 @@
 // use_figma 코드(scripts/figma-export.js)와 피그마 플러그인(figma-plugin/code.js)이 같은 함수를 씀.
 // 이 함수는 피그마 안(플러그인 API)에서 실행되므로 require·Node API·바깥 변수를 쓰면 안 됨 → 소스를 문자열로 넣어 씀.
 //
-// buildCardFrames(figma, cards, { imageHash, fallback })
+// buildCardFrames(figma, cards, { imageHash, fallback, newPage, pageName })
 //   cards     : [{ file, no, page, width, height, layers: [...] }] — 같은 제품 페이지
 //   imageHash : (layer, card, page) => 이미지 해시 또는 null (사진·장식 이미지 레이어)
 //   fallback  : 원래 글꼴이 없을 때 차례로 쓸 글꼴 (Pretendard가 있는 피그마 데스크톱이면 그대로 씀)
-//   결과      : { pageId, frames: [id], fonts: {원래 → 쓴 글꼴}, missing: [이미지 이름] }
+//   newPage   : true면 항상 새 페이지(pageName, 없으면 cards[0].page)에 만듦 — 플러그인 가져오기
+//               false면 cards[0].page 이름의 페이지를 다시 쓰고 같은 이름 프레임만 바꿈 — use_figma 내보내기·카드 1장 다시 넣기
+//   결과      : { pageId, pageName, frames: [id], fonts: {원래 → 쓴 글꼴}, missing: [이미지 이름] }
 async function buildCardFrames(figma, cards, opts) {
   const FALLBACK = opts.fallback || ['Pretendard', 'Gothic A1', 'Noto Sans KR'];
   const STYLE = { 100: 'Thin', 200: 'ExtraLight', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold', 800: 'ExtraBold', 900: 'Black' };
@@ -24,9 +26,17 @@ async function buildCardFrames(figma, cards, opts) {
     return { family: 'Inter', style: 'Regular' };
   };
 
-  const pageName = cards[0].page;
-  let page = figma.root.children.find((p) => p.name === pageName);
-  if (!page) { page = figma.createPage(); page.name = pageName; }
+  let page;
+  if (opts.newPage) {
+    // 가져올 때마다 새 페이지 (사람이 고친 이전 페이지를 덮어쓰지 않음). 같은 이름이 있으면 #2, #3…
+    const base = opts.pageName || cards[0].page;
+    let name = base;
+    for (let i = 2; figma.root.children.some((p) => p.name === name); i++) name = `${base} #${i}`;
+    page = figma.createPage(); page.name = name;
+  } else {
+    page = figma.root.children.find((p) => p.name === cards[0].page);
+    if (!page) { page = figma.createPage(); page.name = cards[0].page; }
+  }
   await figma.setCurrentPageAsync(page);
 
   const fonts = new Map();
@@ -98,7 +108,7 @@ async function buildCardFrames(figma, cards, opts) {
     }
     frames.push(frame.id);
   }
-  return { pageId: page.id, frames, fonts: fontUsed, missing };
+  return { pageId: page.id, pageName: page.name, frames, fonts: fontUsed, missing };
 }
 
 const FONT_FALLBACK = ['Pretendard', 'Gothic A1', 'Noto Sans KR'];

@@ -199,6 +199,7 @@ export interface FigmaInfo {
   prepared_at: string | null;
   edited: {
     received_at: string;
+    page: string | null;
     cards: { file: string; png: string; v: number; changed: { name: string; before: string | null; after: string | null }[] }[];
   } | null;
 }
