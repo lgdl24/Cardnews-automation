@@ -2,7 +2,7 @@
 
 > 2026-11-02 이어서: 웹 작업실 버튼 + 피그마 플러그인으로 연결, 고친 카드를 웹으로 돌려받기 → [figma-plugin.md](figma-plugin.md)
 
-- 상태: **시험 완료·기록** (2026-11-02, 이규동 요청 · Claude). 브랜치 `feat/figma-export` (`feat/claude-design-test` 위). 제작 규칙·템플릿·출력(`npm run render`)은 안 바꿈
+- 상태: **시험 완료·기록** (2026-11-02, 이규동 요청 · Claude). 브랜치 `feat/figma-link` (`main` 위). 제작 규칙·템플릿·출력(`npm run render`)은 안 바꿈
 - 피그마: [카드뉴스 피그마 출력 시험](https://www.figma.com/design/6VyvHt5Q6SN6swpeSq3fqp) → 페이지 `워터풀 톤업 선크림(퍼플) (dalba-toneup-purple)`, `카모마일 순한 클렌징 오일 (demo-cleansing-oil)`
 
 ![비교](figma-export/compare-purple.jpg)
@@ -47,9 +47,9 @@ npm run figma-export -- <제품ID>    # output/figma-export/: layers.json, image
 
 - `::before/::after`로 그린 번호(1·2·3, STEP 1)는 상자와 함께 이미지가 됨 → 번호 글자는 피그마에서 바로 못 고침
 - 그라데이션 배경 카드는 배경 전체가 이미지 한 장(프리미엄 표지) → 색 바꾸기는 이미지 교체로
-- 피그마에서 고친 내용은 저장소로 돌아오지 않음. 고친 결과는 피그마에서 PNG로 내보내 쓰는 용도(최종 손질). 문구를 고쳤다면 `cards.json`과 달라지므로 원문 근거 검증은 다시 안 됨 → 문구 수정은 웹 작업실 '수정 요청'으로 하는 게 원칙
+- 피그마에서 고친 카드는 플러그인으로 작업실에 돌려보냄([작업실 ↔ 피그마 플러그인](figma-plugin.md)). `output/figma-edited/`에만 저장하고 최종본(`output/png`)·`cards.json`은 안 바꿈(최종 손질용). 문구를 고쳤다면 `cards.json`과 달라지므로 원문 근거 검증은 다시 안 됨 → 문구 수정은 웹 작업실 '수정 요청'으로 하는 게 원칙
 
 ## 캔바
 
-- **Claude 디자인 캔버스 → 캔바**: Claude 디자인 내보내기에 'Send to Canva'가 있음(클릭 한 번, 편집 가능하게 넘어감). [Claude 디자인 시험](claude-design-test.md) 캔버스도 가능
+- **Claude 디자인 캔버스 → 캔바**: Claude 디자인 내보내기에 'Send to Canva'가 있음(클릭 한 번, 편집 가능하게 넘어감). Claude 디자인 연결 시험은 별도 브랜치 `feat/claude-design-test`(이 PR에 없음)
 - **우리 출력 카드 → 캔바**: 이 세션에는 캔바 연결이 없어 시험 못 함. 피그마로 옮긴 카드를 캔바로 가져오거나(캔바의 피그마 가져오기), 캔바 연결을 추가한 뒤 같은 방식(글자·이미지 레이어)으로 만들 수 있음 — 필요하면 다음 단계
