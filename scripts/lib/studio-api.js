@@ -485,6 +485,7 @@ function createStudio({
       edited: edited
         ? {
             received_at: edited.received_at,
+            page: edited.page || null,
             cards: edited.cards.map((c) => {
               const f = path.join(editedDir(id), `${c.file}.png`);
               return { ...c, png: `${c.file}.png`, v: fs.existsSync(f) ? Math.round(fs.statSync(f).mtimeMs) : 0 };
@@ -533,7 +534,9 @@ function createStudio({
     fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
     for (const [file, png] of pngs) fs.writeFileSync(path.join(dir, `${file}.png`), png);
-    const record = { received_at: new Date().toISOString(), cards: out };
+    // 어느 피그마 페이지에서 보냈는지 (가져올 때마다 새 페이지가 생기므로 사람이 확인할 수 있게)
+    const page = typeof body.page === 'string' ? body.page.replace(/[\u0000-\u001f]/g, '').slice(0, 120) || null : null;
+    const record = { received_at: new Date().toISOString(), page, cards: out };
     fs.writeFileSync(path.join(dir, 'edited.json'), JSON.stringify(record, null, 2) + '\n');
     return record;
   }

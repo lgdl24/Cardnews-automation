@@ -113,7 +113,7 @@ test('작업실 → 피그마 플러그인 → 작업실: 준비, 가져오기, 
 
     // 돌려보내기: 플러그인처럼 text/plain 본문 (미리 요청 없이). 1번은 문구 그대로, 2번은 제목을 고침
     const png = PNG.toString('base64');
-    const body = JSON.stringify({ cards: [
+    const body = JSON.stringify({ page: '시험 제품 (x) · 11.02 16:30', cards: [
       { file: 'card-01', png, texts: [{ name: 'title (글자)', text: '제목 1 둘째 줄' }, { name: 'item (글자)', text: '항목 하나' }, { name: 'item (글자)', text: '항목 둘' }] },
       { file: 'card-02', png, texts: [{ name: 'title (글자)', text: '바꾼 제목' }, { name: 'item (글자)', text: '항목 하나' }, { name: 'item (글자)', text: '항목 둘 고침' }, { name: '새 글자', text: '추가' }] },
     ] });
@@ -130,6 +130,7 @@ test('작업실 → 피그마 플러그인 → 작업실: 준비, 가져오기, 
     // 웹 화면에 돌려받은 카드가 보이고, 파일로 받을 수 있음
     r = await s.call('GET', `/products/${s.id}`);
     assert.deepEqual(r.body.figma.edited.cards.map((c) => c.png), ['card-01.png', 'card-02.png']);
+    assert.equal(r.body.figma.edited.page, '시험 제품 (x) · 11.02 16:30', '어느 피그마 페이지에서 보냈는지 기록');
     r = await s.call('GET', `/products/${s.id}/files/figma-edited/card-02.png`);
     assert.equal(r.status, 200);
 
@@ -176,6 +177,50 @@ test('프레임 만드는 함수: 가짜 피그마로 카드 2장, 이미지 없
   assert.deepEqual(r.missing, ['fake__c02__L1']);
   assert.equal(r.fonts['Pretendard 800'], 'Gothic A1 ExtraBold', 'Pretendard 없으면 대체 글꼴');
   assert.equal(page.name, '시험 제품 (fake)');
+});
+
+test('프레임 만드는 함수: newPage면 기존 페이지를 두고 새 페이지를 만들고, 이름이 겹치면 #2', async () => {
+  const pages = [];
+  const node = (type) => ({ type, id: `${type}-${Math.random()}`, children: [], width: 100, height: 20, fills: [], resize(w, h) { this.width = w; this.height = h; }, appendChild(c) { this.children.push(c); }, remove() { throw new Error('지우면 안 됨'); } });
+  const figma = {
+    root: { children: pages },
+    createPage() { const p = { name: '', children: [], appendChild(c) { this.children.push(c); }, id: `P${pages.length + 1}` }; pages.push(p); return p; },
+    async setCurrentPageAsync() {},
+    async listAvailableFontsAsync() { return [{ fontName: { family: 'Gothic A1', style: 'Regular' } }]; },
+    async loadFontAsync() {},
+    createFrame: () => node('FRAME'),
+    createRectangle: () => node('RECTANGLE'),
+    createText: () => Object.assign(node('TEXT'), { setRangeFontName() {}, setRangeFontSize() {}, setRangeFills() {} }),
+  };
+  const data = layersFor('fake');
+  const opts = { imageHash: () => 'HASH', newPage: true, pageName: '시험 제품 (fake) · 11.02 16:30' };
+  const a = await buildCardFrames(figma, data.cards, opts);
+  const b = await buildCardFrames(figma, data.cards, opts);
+  assert.deepEqual(pages.map((p) => p.name), ['시험 제품 (fake) · 11.02 16:30', '시험 제품 (fake) · 11.02 16:30 #2']);
+  assert.equal(b.pageName, '시험 제품 (fake) · 11.02 16:30 #2');
+  assert.equal(pages[0].children.length, 2, '처음 페이지 카드는 그대로');
+  assert.equal(a.frames.length, 2);
+});
+
+test('플러그인 보내기: 지금 페이지가 그 제품이면 그 페이지, 아니면 가장 최근 페이지', async () => {
+  const vm = require('node:vm');
+  const frame = (name) => ({ type: 'FRAME', name, width: 1080, async exportAsync() { return new Uint8Array([1]); }, findAll() { return []; } });
+  const page = (name) => ({ name, children: [frame('card-01')], async loadAsync() {} });
+  const pages = [page('사용법'), page('시험 제품 (fake) · 11.01 10:00'), page('다른 제품 (other) · 11.02 09:00'), page('시험 제품 (fake) · 11.02 16:30')];
+  const posted = [];
+  const figma = {
+    root: { children: pages }, currentPage: pages[1],
+    showUI() {}, ui: { postMessage: (m) => posted.push(m) },
+    clientStorage: { async getAsync() { return {}; }, async setAsync() {} },
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'figma-plugin', 'code.js'), 'utf8'), { figma, __html__: '', console });
+  await figma.ui.onmessage({ type: 'collect', id: 'fake' });
+  assert.equal(posted.at(-1).page, '시험 제품 (fake) · 11.01 10:00', '보고 있는 페이지');
+  figma.currentPage = pages[0];
+  await figma.ui.onmessage({ type: 'collect', id: 'fake' });
+  assert.equal(posted.at(-1).page, '시험 제품 (fake) · 11.02 16:30', '다른 페이지를 보면 가장 아래(최근) 페이지');
+  await figma.ui.onmessage({ type: 'collect', id: 'none' });
+  assert.equal(posted.at(-1).type, 'error');
 });
 
 test('작업실: 내보내기 실패 이유를 그대로 알려주고, 카드 이미지만 다시 만들 수 있음', async () => {
