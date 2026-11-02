@@ -187,6 +187,18 @@ export interface ProductDetail extends ProductSummary {
   export: { listed: boolean; exported_at: string | null };
   actions: Actions;
   design?: DesignInfo;
+  figma?: FigmaInfo;
+}
+
+/** 피그마에서 직접 고치기: 연결 코드, 피그마 파일, 준비 시각, 피그마에서 돌려받은 카드 */
+export interface FigmaInfo {
+  code: string;
+  file_url: string | null;
+  prepared_at: string | null;
+  edited: {
+    received_at: string;
+    cards: { file: string; png: string; v: number; changed: { name: string; before: string | null; after: string | null }[] }[];
+  } | null;
 }
 
 export class StudioError extends Error {
@@ -213,6 +225,7 @@ export async function studioFetch<T>(path: string, init: { method?: string; body
 }
 
 export const pngUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/png/${file}${v ? `?v=${v}` : ''}`;
+export const figmaEditedUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/figma-edited/${file}${v ? `?v=${v}` : ''}`;
 export const imageUrl = (id: string, file: string) => `${BASE}/products/${encodeURIComponent(id)}/files/images/${encodeURIComponent(file)}`;
 
 // ── 로컬 제작 API가 켜져 있는지 (한 번만 확인, 화면 여러 곳에서 공유)
