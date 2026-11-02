@@ -1,5 +1,7 @@
 # 출력 카드 → 피그마 (사람이 직접 고치기)
 
+> 2026-11-02 이어서: 웹 작업실 버튼 + 피그마 플러그인으로 연결, 고친 카드를 웹으로 돌려받기 → [figma-plugin.md](figma-plugin.md)
+
 - 상태: **시험 완료·기록** (2026-11-02, 이규동 요청 · Claude). 브랜치 `feat/figma-export` (`feat/claude-design-test` 위). 제작 규칙·템플릿·출력(`npm run render`)은 안 바꿈
 - 피그마: [카드뉴스 피그마 출력 시험](https://www.figma.com/design/6VyvHt5Q6SN6swpeSq3fqp) → 페이지 `워터풀 톤업 선크림(퍼플) (dalba-toneup-purple)`, `카모마일 순한 클렌징 오일 (demo-cleansing-oil)`
 
