@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>card-01 표지</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Pretendard";font-weight:400;src:url(/_blob/8edaca1c3942998ed1de8f7b5971d594) format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:600;src:url(/_blob/02f2c5365d4fb92ae3a4306cbd68cae7) format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:800;src:url(/_blob/b8a106b408cbf8836b8a521a99323cca) format("woff2")}
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1080px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #F6F3F8; font-family: Pretendard, 'Apple SD Gothic Neo', sans-serif; color: #241E2E; word-break: keep-all">
+  <div style="position: absolute; left: 88px; right: 88px; top: 80px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 22px; border-bottom: 1px solid #CFC4DC; font-size: 17px; font-weight: 600; letter-spacing: 0.22em; color: #6B6278">
+    <span>D'ALBA · WATERFULL TONE-UP</span>
+    <span data-field="page">01 / 05</span>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 248px; text-align: center; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 400; font-size: 300px; line-height: 1; letter-spacing: -0.02em; color: #E1D7EC">Tone-up</div>
+  <img data-field="image" src="/_blob/c7cf11fecb0a2c5f4fc4aa9ad58fea82" alt="워터풀 톤업 선크림(퍼플) 제품" style="position: absolute; left: 50%; top: 176px; width: 241px; height: 540px; margin-left: -120px; object-fit: contain">
+  <div style="position: absolute; left: 88px; right: 88px; bottom: 96px; display: flex; flex-direction: column; gap: 18px">
+    <span data-field="badge" style="font-size: 20px; font-weight: 600; letter-spacing: 0.16em; color: {{accent}}">SPF50+</span>
+    <h1 data-field="title" style="margin: 0; font-size: 64px; font-weight: 800; line-height: 1.24; letter-spacing: -0.03em; white-space: pre-line">노란 톤은 잡고
+<span style="color: {{accent}}">화사한 쿨톤으로</span></h1>
+    <p data-field="subtitle" style="margin: 0; font-size: 26px; font-weight: 400; line-height: 1.45; color: #5E5470">3중 기능성 워터풀 톤업 선크림(퍼플)</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#55357A","options":["#55357A","#7A4FB0","#3B2556"]},"$preview":{"width":1080,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#55357A' };
+  }
+}
+</script>
+</body>
+</html>

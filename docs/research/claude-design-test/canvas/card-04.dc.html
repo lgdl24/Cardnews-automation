@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>card-04 사용법</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Pretendard";font-weight:400;src:url(/_blob/8edaca1c3942998ed1de8f7b5971d594) format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:600;src:url(/_blob/02f2c5365d4fb92ae3a4306cbd68cae7) format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:800;src:url(/_blob/b8a106b408cbf8836b8a521a99323cca) format("woff2")}
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1080px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: {{deep}}; font-family: Pretendard, 'Apple SD Gothic Neo', sans-serif; color: #FFFFFF; word-break: keep-all">
+  <div style="position: absolute; left: 88px; right: 88px; top: 80px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.28); font-size: 17px; font-weight: 600; letter-spacing: 0.22em; color: #D3C7E3">
+    <span>D'ALBA · WATERFULL TONE-UP</span>
+    <span data-field="page">04 / 05</span>
+  </div>
+  <div style="position: absolute; left: 88px; right: 88px; top: 196px; display: flex; flex-direction: column; gap: 22px">
+    <span style="font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 30px; color: #D3C7E3">How to use</span>
+    <h2 data-field="title" style="margin: 0; font-size: 64px; font-weight: 800; line-height: 1.22; letter-spacing: -0.03em; white-space: pre-line">이렇게 발라 주세요</h2>
+  </div>
+  <ol data-field="items" style="position: absolute; left: 88px; right: 88px; bottom: 112px; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+    <li style="display: flex; flex-direction: column; gap: 22px; padding-top: 26px; border-top: 2px solid #FFFFFF">
+      <span aria-hidden="true" style="font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 26px; color: #D3C7E3">Step 1</span>
+      <span style="font-size: 30px; font-weight: 600; line-height: 1.45">스킨케어 마지막 단계에 골고루 펴 발라요</span>
+    </li>
+    <li style="display: flex; flex-direction: column; gap: 22px; padding-top: 26px; border-top: 2px solid #FFFFFF">
+      <span aria-hidden="true" style="font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 26px; color: #D3C7E3">Step 2</span>
+      <span style="font-size: 30px; font-weight: 600; line-height: 1.45">쌀 한 톨 양을 이마·볼·턱·코에 나눠 얇게</span>
+    </li>
+    <li style="display: flex; flex-direction: column; gap: 22px; padding-top: 26px; border-top: 2px solid rgba(255, 255, 255, 0.5)">
+      <span aria-hidden="true" style="font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 26px; color: #D3C7E3">Caution</span>
+      <span style="font-size: 30px; font-weight: 600; line-height: 1.45">상처가 있는 부위에는 사용을 자제해요</span>
+    </li>
+  </ol>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"deep":{"editor":"color","default":"#3B2556","options":["#3B2556","#2A2236","#55357A"]},"$preview":{"width":1080,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { deep: this.props.deep ?? '#3B2556' };
+  }
+}
+</script>
+</body>
+</html>

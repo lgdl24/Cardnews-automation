@@ -1,0 +1,65 @@
+{
+  "product_id": "dalba-toneup-purple",
+  "product": "워터풀 톤업 선크림(퍼플)",
+  "cards": [
+    {
+      "no": 1,
+      "role": "cover",
+      "template": "cover",
+      "image": "images/main.png",
+      "copy": {
+        "badge": "SPF50+",
+        "title": "노란 톤은 잡고\n화사한 쿨톤으로",
+        "subtitle": "3중 기능성 워터풀 톤업 선크림(퍼플)"
+      }
+    },
+    {
+      "no": 2,
+      "role": "feature",
+      "template": "image",
+      "image": "images/main.png",
+      "copy": {
+        "title": "3중 기능성\n톤업 선크림",
+        "caption": "미백·주름개선·자외선차단 SPF50+/PA++++ 기능성이에요"
+      }
+    },
+    {
+      "no": 3,
+      "role": "feature",
+      "template": "description",
+      "image": null,
+      "copy": {
+        "title": "노란 톤은 잡고, 산뜻하게",
+        "items": [
+          "보라빛 보색으로 노란 톤을 잡는 쿨톤 보정",
+          "하얗게 들뜨는 백탁 없이 노란기를 잡아요",
+          "세미 매트 제형으로 번들거림 없이 보송하게"
+        ]
+      }
+    },
+    {
+      "no": 4,
+      "role": "usage",
+      "template": "description",
+      "image": null,
+      "copy": {
+        "title": "이렇게 발라 주세요",
+        "items": [
+          "스킨케어 마지막 단계에 골고루 펴 발라요",
+          "쌀 한 톨 양을 이마·볼·턱·코에 나눠 얇게",
+          "상처가 있는 부위에는 사용을 자제해요"
+        ]
+      }
+    },
+    {
+      "no": 5,
+      "role": "closing",
+      "template": "cover",
+      "image": "images/main.png",
+      "copy": {
+        "title": "매일 부담 없이\n데일리 UV 케어",
+        "subtitle": "저자극 인체적용시험 완료 · V-LABEL 비건 인증"
+      }
+    }
+  ]
+}

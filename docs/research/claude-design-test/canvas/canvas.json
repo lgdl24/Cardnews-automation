@@ -1,0 +1,19 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-02T09:00:00Z" },
+  "title": "달바 퍼플 카드뉴스 — Claude 디자인 시험",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1080, "h": 1080, "title": "card-01 · 표지" },
+    "card-02.dc.html": { "x": 1160, "y": 0, "w": 1080, "h": 1080, "title": "card-02 · 특징 (이미지형)" },
+    "card-03.dc.html": { "x": 2320, "y": 0, "w": 1080, "h": 1080, "title": "card-03 · 특징 (설명형)" },
+    "card-04.dc.html": { "x": 3480, "y": 0, "w": 1080, "h": 1080, "title": "card-04 · 사용법" },
+    "card-05.dc.html": { "x": 4640, "y": 0, "w": 1080, "h": 1080, "title": "card-05 · 마무리" }
+  },
+  "order": ["Main.dc.html", "card-02.dc.html", "card-03.dc.html", "card-04.dc.html", "card-05.dc.html"],
+  "notes": {
+    "set-title": { "x": 0, "y": -300, "text": "달바 퍼플 · 에디토리얼 세트 (Pretendard + 실제 제품 사진)", "kind": "title1", "maxW": 5720 }
+  },
+  "designSystems": []
+}

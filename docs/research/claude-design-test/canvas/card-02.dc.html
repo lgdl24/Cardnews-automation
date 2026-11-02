@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>card-02 특징 이미지형</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Pretendard";font-weight:400;src:url(/_blob/8edaca1c3942998ed1de8f7b5971d594) format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:600;src:url(/_blob/02f2c5365d4fb92ae3a4306cbd68cae7) format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:800;src:url(/_blob/b8a106b408cbf8836b8a521a99323cca) format("woff2")}
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1080px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #F6F3F8; font-family: Pretendard, 'Apple SD Gothic Neo', sans-serif; color: #241E2E; word-break: keep-all">
+  <div aria-hidden="true" style="position: absolute; right: 0; top: 0; bottom: 0; width: 448px; background: #ECE5F3"></div>
+  <div style="position: absolute; left: 88px; right: 88px; top: 80px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 22px; border-bottom: 1px solid #CFC4DC; font-size: 17px; font-weight: 600; letter-spacing: 0.22em; color: #6B6278">
+    <span>D'ALBA · WATERFULL TONE-UP</span>
+    <span data-field="page">02 / 05</span>
+  </div>
+  <div aria-hidden="true" style="position: absolute; right: 54px; top: 150px; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 360px; line-height: 1; color: #DCD0EA">3</div>
+  <img data-field="image" src="/_blob/c7cf11fecb0a2c5f4fc4aa9ad58fea82" alt="워터풀 톤업 선크림(퍼플) 제품" style="position: absolute; right: 120px; top: 300px; width: 251px; height: 562px; object-fit: contain">
+  <div style="position: absolute; left: 88px; top: 0; bottom: 0; width: 470px; display: flex; flex-direction: column; justify-content: center; gap: 28px">
+    <span style="font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 30px; color: {{accent}}">Point 01</span>
+    <h2 data-field="title" style="margin: 0; font-size: 72px; font-weight: 800; line-height: 1.2; letter-spacing: -0.03em; white-space: pre-line">3중 기능성
+톤업 선크림</h2>
+    <div aria-hidden="true" style="width: 48px; height: 2px; background: {{accent}}"></div>
+    <p data-field="caption" style="margin: 0; font-size: 28px; font-weight: 400; line-height: 1.55; color: #5E5470">미백·주름개선·자외선차단 SPF50+/PA++++ 기능성이에요</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#55357A","options":["#55357A","#7A4FB0","#3B2556"]},"$preview":{"width":1080,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#55357A' };
+  }
+}
+</script>
+</body>
+</html>
