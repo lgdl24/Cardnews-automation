@@ -264,10 +264,18 @@ function verifyJob({ jobDir, wsProduct, productId, kind, revisionStage }) {
     const outDir = path.join(wsProduct, 'output');
     const reports = fs.existsSync(outDir) ? fs.readdirSync(outDir).filter((f) => /^render-report(-card-\d+)?\.json$/.test(f)) : [];
     if (!reports.length) out.reasons.push('출력 결과(render-report)가 없어요');
+    // 카드별 최신 결과만 봄: 전체 출력 뒤 고친 카드만 다시 출력(--card N)했으면 그 카드는 새 결과로 판단
+    const latest = new Map(); // 카드 번호 → { at, issues, file }
     for (const f of reports) {
       const r = readJson(path.join(outDir, f));
-      if ((r.results || []).some((x) => (x.issues || []).length)) out.reasons.push(`레이아웃 오류 (${f})`);
+      const at = Date.parse(r.rendered_at || '') || fs.statSync(path.join(outDir, f)).mtimeMs;
+      for (const x of r.results || []) {
+        const prev = latest.get(x.no);
+        if (!prev || at >= prev.at) latest.set(x.no, { at, issues: x.issues || [], file: f });
+      }
     }
+    const bad = [...latest.entries()].filter(([, v]) => v.issues.length).sort((a, b) => a[0] - b[0]);
+    if (bad.length) out.reasons.push(`레이아웃 오류 (${bad.map(([no, v]) => `${no}번 ${v.file}`).join(', ')})`);
   }
   out.ok = out.reasons.length === 0;
   return out;
@@ -311,6 +319,8 @@ function errorCodeOf({ report, result, crash, verify }) {
   if (crash) return 'RUN_ERROR';
   if (!result) return 'NO_RESULT';
   if (result.subtype && result.subtype !== 'success') return result.subtype.toUpperCase();
+  // 사용량 한도: Claude가 일을 시작하지 못하고 한도 안내만 돌려줌 (is_error 없이 오기도 해서 한 턴 끝도 함께 봄)
+  if ((result.is_error || (result.num_turns || 0) <= 1) && /usage limit|rate limit|limit reached|hit your .*limit|limit will reset|한도/i.test(result.text || '')) return 'USAGE_LIMIT';
   if (result.is_error) return 'RUN_ERROR';
   if (/중단/.test(report.결과 || '')) return 'STOPPED';
   if (!verify.ok) return 'VERIFY_FAILED';
@@ -382,7 +392,7 @@ async function runJob({
     error_code: errorCode,
     crash: run.crash || null,
     exit_code: run.exit_code ?? 0,
-    result: run.result ? { subtype: run.result.subtype, num_turns: run.result.num_turns, duration_ms: run.result.duration_ms, permission_denials: run.result.permission_denials } : null,
+    result: run.result ? { subtype: run.result.subtype, num_turns: run.result.num_turns, duration_ms: run.result.duration_ms, permission_denials: run.result.permission_denials, ...(run.result.is_error || (run.result.num_turns || 0) <= 1 ? { is_error: Boolean(run.result.is_error), text: truncate(run.result.text || '') } : {}) } : null,
     report,
     verify,
     applied,

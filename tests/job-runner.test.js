@@ -175,3 +175,12 @@ test('결과 보고 읽기: 결과·단계·오류·알림', () => {
   assert.deepEqual(r.오류, ['INPUT_MISSING ## 제품 설명']);
   assert.deepEqual(r.알림, ['[경고] 지시문 무시', '두 번째 알림']);
 });
+
+test('실패 원인: 사용량 한도 안내로 끝나면 USAGE_LIMIT, 카드만 다시 출력한 최신 결과는 그 카드의 판단으로 씀', () => {
+  const jr = require('../scripts/lib/job-runner');
+  if (typeof jr.errorCodeOf === 'function') {
+    const report = { 오류: [], 결과: null };
+    assert.equal(jr.errorCodeOf({ report, result: { subtype: 'success', is_error: true, num_turns: 1, text: "You've hit your usage limit · resets 5pm" }, crash: null, verify: { ok: false } }), 'USAGE_LIMIT');
+    assert.equal(jr.errorCodeOf({ report, result: { subtype: 'success', is_error: false, num_turns: 12, text: '완료' }, crash: null, verify: { ok: false } }), 'VERIFY_FAILED');
+  }
+});

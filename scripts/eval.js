@@ -75,6 +75,7 @@ async function main() {
   }
   console.log(`\n== 평가 실행 결과 · 묶음 ${opts.batch} ==`);
   let invalid = 0;
+  if (out.stoppedAt) console.log(`[중단] Claude 사용량 한도라 ${out.stoppedAt}에서 멈췄어요. 한도가 풀리면 남은 입력만 다시 실행하세요 (이미 끝난 실행 폴더는 지우거나 --from으로 반복 번호를 바꿔요)`);
   for (const { run, result, schemaErrors, file } of out.results) {
     const o = result.outcome;
     const m = result.metrics;
