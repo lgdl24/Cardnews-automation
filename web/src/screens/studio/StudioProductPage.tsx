@@ -4,7 +4,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import {
-  JOB_LABEL, STAGE_LABEL, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
+  JOB_LABEL, STAGE_LABEL, aiCardUrl, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
   type ProductDetail, type Report, type RevisionType, type StudioJob,
 } from '../../studio/api';
 import { useIndex } from '../../data/load';
@@ -29,7 +29,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   const { status } = useStudioStatus();
   const index = useIndex();
   const labels = index.status === 'ready' ? index.data.labels : undefined;
-  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && d.actions.running ? 2000 : null));
+  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && (d.actions.running || d.ai_card?.running || d.figma?.push?.running) ? 2000 : null));
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -160,6 +160,9 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
                 </button>
               </div>
             </div>
+          )}
+          {p.ai_card && (
+            <AiCardPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-card`, card ? { card } : {})} />
           )}
           {p.figma && p.pngs.length > 0 && (
             <FigmaPanel
@@ -570,6 +573,79 @@ function RevisionForm({
 }
 
 // ── 피그마에서 편집 (사람이 직접 고치기)
+// AI 디자인 카드: 문구·출력 작업이 끝나면 첫·마지막 카드를 GPT 이미지로 자동으로 만들어 최종 카드에 넣음 (제품은 원본 사진 잠금)
+function AiCardPanel({ detail, busy, onMake }: { detail: ProductDetail; busy: boolean; onMake: (card?: number) => void }) {
+  const ai = detail.ai_card!;
+  const can = Boolean(detail.actions.can_ai_card) && !busy;
+  const nos = ai.targets;
+  const missing = nos.filter((n) => !ai.applied.includes(n));
+  return (
+    <div className="panel ai-card-panel">
+      <h3 className="panel-title">AI 디자인 카드 · {nos.join('·')}번</h3>
+      <p className="muted">
+        문구·출력 작업이 끝나면 첫 카드와 마지막 카드를 GPT 이미지(내 컴퓨터의 Codex)로 자동으로 만들어 최종 카드에 넣어요. 제품은 원본 사진 그대로예요. 문구를 고치면 그 카드만 다시 만들어요.
+      </p>
+      {ai.running && (
+        <p className="notice" role="status">
+          AI 디자인 카드를 만드는 중이에요 ({ai.run?.card ? `${ai.run.card}번` : `${nos.join('·')}번`}, 한 장에 1~2분). 끝날 때까지 최종 승인·내보내기·피그마는 잠시 기다려요.
+        </p>
+      )}
+      {ai.run && (ai.running || ai.run.ok === false) && ai.run.progress.length > 0 && (
+        <pre className={`ai-card-log${ai.run.ok === false ? ' is-error' : ''}`}>{ai.run.progress.join('\n')}</pre>
+      )}
+      {!ai.running && missing.length > 0 && (
+        <div className="action-bar">
+          <button className="btn btn-primary" disabled={!can} onClick={() => onMake()}>
+            {missing.join('·')}번 AI 디자인 카드 만들기
+          </button>
+          <span className="muted">{ai.cards.length ? '문구가 바뀌었거나 만들지 못한 카드예요.' : '이 제품은 아직 AI 디자인 카드가 없어요.'}</span>
+        </div>
+      )}
+      {ai.cards.length > 0 && (
+        <>
+          {ai.applied.length > 0 && (
+            <div className="notice notice-warn" role="status">
+              <p>[주의] {ai.applied.join('·')}번 최종 카드는 AI가 그린 문구예요. 승인 문구와 같은지 확인해 주세요.</p>
+            </div>
+          )}
+          <div className="ai-card-grid">
+            {nos.map((no) => {
+              const r = ai.cards.find((x) => x.no === no);
+              const last = r?.tries[r.tries.length - 1];
+              return (
+                <div className="ai-card-item" key={no}>
+                  <div className="ai-card-pair">
+                    <figure>
+                      {r?.template ? <img src={aiCardUrl(detail.id, r.template.file, r.template.v)} alt={`${no}번 템플릿 카드`} loading="lazy" /> : <div className="ai-card-empty">템플릿</div>}
+                      <figcaption>템플릿</figcaption>
+                    </figure>
+                    <figure>
+                      {r?.ok && r.file ? <img src={aiCardUrl(detail.id, r.file, r.v)} alt={`${no}번 AI 디자인 카드`} loading="lazy" /> : <div className="ai-card-empty">{r ? '만들지 못했어요' : '아직 없음'}</div>}
+                      <figcaption>AI 디자인{r?.applied ? ' · 최종 카드에 사용 중' : r?.stale ? ' · 문구가 바뀜' : ''}</figcaption>
+                    </figure>
+                  </div>
+                  <div className="ai-card-meta">
+                    <strong>{no}번</strong>
+                    {r && (
+                      <span className="muted">
+                        시도 {r.tries.length}번{last?.diff != null ? ` · 제품 차이 ${last.diff}` : ''}
+                        {last?.error ? ` · ${last.error}` : ''}
+                      </span>
+                    )}
+                    <button className="btn btn-small" disabled={!can} onClick={() => onMake(no)}>
+                      이 카드 다시 만들기
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: boolean; onPrepare: () => void }) {
   const f = detail.figma!;
   const [copied, setCopied] = useState(false);
@@ -599,19 +675,48 @@ function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: 
     <div className="panel figma-panel">
       <h3 className="panel-title">피그마에서 편집</h3>
       <p className="muted">
-        카드를 피그마 레이어(글자·도형·사진)로 보내 직접 고칠 수 있어요. 고친 카드는 피그마 플러그인에서 다시 이 화면으로 보내요.
+        {f.auto_push
+          ? '누르면 최종 카드 1~5번을 피그마 파일의 새 페이지(제품명 · 날짜 시각)에 바로 넣어요. 2~4번은 글자·도형·사진 레이어, AI 디자인 카드는 완성 이미지로 들어가요. 1~3분 걸려요.'
+          : '카드를 피그마 레이어(글자·도형·사진)로 보내 직접 고칠 수 있어요. 고친 카드는 피그마 플러그인에서 다시 이 화면으로 보내요.'}
       </p>
       <div className="action-bar">
-        <button className="btn btn-primary" disabled={busy} onClick={onPrepare}>
-          {f.prepared_at ? '피그마용 카드 다시 준비' : '피그마에서 편집'}
+        <button className="btn btn-primary" disabled={busy || Boolean(f.push?.running)} onClick={onPrepare}>
+          {f.push?.running ? '피그마에 넣는 중…' : f.prepared_at ? '피그마에 다시 넣기 (새 페이지)' : '피그마에서 편집'}
         </button>
+        {f.push?.ok && f.push.page_url && (
+          <a className="btn" href={f.push.page_url} target="_blank" rel="noreferrer">
+            넣은 페이지 열기
+          </a>
+        )}
         {f.file_url && (
           <a className="btn" href={f.file_url} target="_blank" rel="noreferrer">
             피그마 파일 열기
           </a>
         )}
       </div>
-      {f.prepared_at && (
+      {f.push && (
+        <div className={`notice${f.push.ok === false ? ' notice-error' : ''}`} role="status">
+          {f.push.running && <p>피그마에 카드를 넣는 중이에요 · 페이지 '{f.push.page_name}' (1~3분). 피그마 파일을 열어 두면 카드가 생기는 걸 바로 볼 수 있어요.</p>}
+          {f.push.ok && <p>피그마에 넣었어요 · 페이지 '{f.push.page_name}' · {formatDateTime(f.push.finished_at ?? f.push.started_at)}</p>}
+          {f.push.ok === false && <p>피그마에 넣지 못했어요: {f.push.error} — 다시 누르거나, 아래 플러그인으로 가져올 수 있어요.</p>}
+        </div>
+      )}
+      {f.prepared_at && f.auto_push && (
+        <details className="figma-manual">
+          <summary>플러그인으로 직접 가져오기·고친 카드 보내기 (피그마 데스크톱)</summary>
+          <ol className="figma-steps">
+            <li>플러그인 › 개발 › 카드뉴스 작업실 연결 실행 (처음 한 번은 <code>figma-plugin/manifest.json</code> 등록)</li>
+            <li>
+              연결 코드{' '}
+              <button type="button" className="figma-code" onClick={copy} title="눌러서 복사">
+                {f.code}
+              </button>
+              {copied && <span className="muted"> 복사했어요</span>} → 연결 → <strong>{detail.name}</strong> → 가져오기 또는 고친 카드를 웹으로 보내기
+            </li>
+          </ol>
+        </details>
+      )}
+      {f.prepared_at && !f.auto_push && (
         <ol className="figma-steps">
           <li>
             피그마 데스크톱에서 <strong>플러그인 › 개발 › 카드뉴스 작업실 연결</strong>을 실행해요 (처음 한 번은 <code>figma-plugin/manifest.json</code>을 불러와 등록).
@@ -628,7 +733,7 @@ function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: 
           </li>
         </ol>
       )}
-      {f.prepared_at && <p className="muted">준비한 시각 {formatDateTime(f.prepared_at)} · 작업실을 다시 켜면 연결 코드가 바뀌어요.</p>}
+      {f.prepared_at && !f.auto_push && <p className="muted">준비한 시각 {formatDateTime(f.prepared_at)} · 작업실을 다시 켜면 연결 코드가 바뀌어요.</p>}
       {edited && (
         <div className="figma-edited">
           <h4 className="panel-subtitle">

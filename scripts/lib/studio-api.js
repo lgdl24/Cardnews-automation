@@ -8,7 +8,9 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
+const aiCards = require('./ai-cards');
+const figmaPush = require('../figma-push');
 const { ROOT, readJson, parseInput, resolveDesign, designCatalog, moodInputOf } = require('./common');
 const { loadForm, renderInputMd } = require('./input-form');
 const { summarize } = require('./analysis');
@@ -88,6 +90,7 @@ function readEventsFrom(file) {
  * @param {string} [o.productsDir]  제품 폴더들 (기본 <root>/products)
  * @param {string} [o.bin]          claude 실행 파일 (기본 CARDNEWS_CLAUDE_BIN 또는 claude)
  * @param {Function} [o.runJob]     작업 실행 함수 (테스트용 교체)
+ * @param {Function} [o.aiCardFn]   AI 디자인 카드 실행 함수 (테스트용 교체): (id, { card, onLine }) => Promise<{ ok, code }>
  */
 function createStudio({
   root = ROOT,
@@ -100,6 +103,12 @@ function createStudio({
   exportFn,
   figmaExportFn,
   renderFn,
+  aiCardFn,
+  // 문구·출력 작업이 끝나면 첫·마지막 카드를 GPT 이미지로 자동으로 만듦 (CARDNEWS_AI_CARD=off 로 끔)
+  aiAuto = process.env.CARDNEWS_AI_CARD !== 'off',
+  // '피그마에서 편집'을 누르면 로컬 Claude Code의 피그마 연결로 카드를 새 페이지에 바로 넣음 (CARDNEWS_FIGMA_PUSH=off 로 끔 → 플러그인으로 가져오기)
+  figmaPushFn,
+  figmaAutoPush = process.env.CARDNEWS_FIGMA_PUSH !== 'off',
   figmaCode = crypto.randomBytes(3).toString('hex').toUpperCase(),
   figmaConfigFile = path.join(root, 'config', 'figma.json'),
 } = {}) {
@@ -109,6 +118,8 @@ function createStudio({
   // 대기열: 작업 중에 다른 제품 작업을 누르면 거절하지 않고 차례를 기다림. 제품마다 하나만, 서버를 끄면 사라짐
   const queue = []; // { product_id, kind, revision, queued_at, beforeStart }
   const lastJobs = new Map(); // 제품ID → 마지막 작업 요약
+  const figmaRuns = new Map(); // 제품ID → { running, page_name, page_id, ok, error, started_at, finished_at, lines }
+  const aiRuns = new Map(); // 제품ID → { card, auto, started_at, finished_at, running, ok, lines: [] }
   const isRunning = () => Boolean(current && current.status === 'running');
   const queueIndex = (id) => queue.findIndex((q) => q.product_id === id);
   // 이 제품의 작업 상태: 'running' | 'queued' | null
@@ -247,7 +258,10 @@ function createStudio({
     const lastPlanJob = [...events].reverse().find((e) => e.event === 'job_finished' && e.ok && (e.kind === 'plan' || (e.kind === 'revise' && stage === 'plan')));
     const approvedCurrentPlan = planApproved && lastPlanApproval && (!lastPlanJob || lastPlanApproval.ts > lastPlanJob.ts);
     const lastOk = lastFinish ? lastFinish.ok : null;
+    // AI 디자인 카드를 만드는 중이면 최종 카드(1·마지막)가 아직 바뀌는 중 → 승인·내보내기·피그마는 기다림
+    const aiBusy = Boolean((aiRuns.get(id) || {}).running);
     return {
+      ai_busy: aiBusy,
       running,
       job_state: state,
       // 지금 작업을 누르면 앞에 기다릴 작업 수 (0이면 바로 시작)
@@ -259,10 +273,11 @@ function createStudio({
       can_revise_plan: !running && stage === 'plan' && !approvedCurrentPlan,
       can_select_design: !running && stage === 'plan' && !approvedCurrentPlan,
       can_copy: !running && stage === 'plan' && Boolean(approvedCurrentPlan),
-      can_approve_final: !running && stage === 'copy',
-      can_revise_final: !running && stage === 'copy',
-      can_export: !running && stage === 'approved',
+      can_approve_final: !running && !aiBusy && stage === 'copy',
+      can_revise_final: !running && !aiBusy && stage === 'copy',
+      can_export: !running && !aiBusy && stage === 'approved',
       can_render: !running && (stage === 'copy' || stage === 'approved'),
+      can_ai_card: !running && (stage === 'copy' || stage === 'approved') && !(aiRuns.get(id) || {}).running,
     };
   }
 
@@ -303,6 +318,7 @@ function createStudio({
       },
       actions: nextActions(id, { cards, events, check }),
       figma: figmaInfo(id),
+      ai_card: aiCardInfo(id),
     };
   }
 
@@ -404,6 +420,7 @@ function createStudio({
         job.status = 'done';
         job.summary = summary;
         lastJobs.set(id, { ...publicSummary(summary), status: 'done' });
+        if (summary && summary.ok && (kind === 'copy' || kind === 'revise')) autoAiCard(id);
       })
       .catch((e) => {
         job.status = 'done';
@@ -478,9 +495,19 @@ function createStudio({
     const layersFile = path.join(figmaDir(id), 'layers.json');
     const edited = readJsonSafe(path.join(editedDir(id), 'edited.json'));
     const cfg = readJsonSafe(figmaConfigFile) || {};
+    const push = figmaRuns.get(id) || null;
+    const fileKey = figmaPush.fileKeyOf(cfg.file_url);
     return {
       code: figmaCode,
       file_url: cfg.file_url || null,
+      auto_push: Boolean(figmaAutoPush && fileKey),
+      push: push
+        ? {
+            running: push.running, ok: push.ok, page_name: push.page_name, page_id: push.page_id, error: push.error,
+            started_at: push.started_at, finished_at: push.finished_at, progress: push.lines.slice(-4),
+            page_url: push.page_id && cfg.file_url ? `${cfg.file_url}?node-id=${push.page_id.replace(':', '-')}` : null,
+          }
+        : null,
       prepared_at: fs.existsSync(layersFile) ? fs.statSync(layersFile).mtime.toISOString() : null,
       edited: edited
         ? {
@@ -494,9 +521,98 @@ function createStudio({
         : null,
     };
   }
-  function prepareFigma(id) {
-    if (figmaExportFn) return figmaExportFn(id);
-    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'figma-export.js'), id], { encoding: 'utf8', env: scriptEnv() });
+  // AI 디자인 카드 (scripts/ai-card.js): 첫·마지막 카드를 GPT 이미지(로컬 Codex)로. 몇 분 걸려서 따로 돌리고 상태만 보여줌
+  const aiDir = (id) => path.join(productDir(id), 'output', 'ai-card');
+  function aiCardInfo(id) {
+    const run = aiRuns.get(id) || null;
+    const report = readJsonSafe(path.join(aiDir(id), 'ai-card.json'));
+    const data = readJsonSafe(path.join(productDir(id), 'cards.json'));
+    const list = (data && data.cards) || [];
+    const applied = aiCards.appliedNumbers(productDir(id), list);
+    const stale = aiCards.staleTargets(productDir(id), list);
+    const fileV = (f) => (fs.existsSync(f) ? Math.round(fs.statSync(f).mtimeMs) : 0);
+    return {
+      auto: aiAuto,
+      running: Boolean(run && run.running),
+      run: run ? { card: run.card, auto: Boolean(run.auto), started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
+      made_at: report ? report.made_at : null,
+      targets: aiCards.aiTargets(list),
+      applied,
+      stale,
+      cards: report && Array.isArray(report.cards)
+        ? report.cards.map((c) => {
+          const tpl = `template-card-${String(c.no).padStart(2, '0')}.png`;
+          return { ...c, v: c.file ? fileV(path.join(aiDir(id), c.file)) : 0, applied: applied.includes(c.no), stale: stale.includes(c.no), template: fileV(path.join(aiDir(id), tpl)) ? { file: tpl, v: fileV(path.join(aiDir(id), tpl)) } : null };
+        })
+        : [],
+    };
+  }
+  function startAiCard(id, card, { stale = false } = {}) {
+    const run = { card: card || null, auto: stale, started_at: new Date().toISOString(), finished_at: null, running: true, ok: null, lines: [] };
+    aiRuns.set(id, run);
+    const onLine = (line) => { if (line.trim()) run.lines.push(line.trim()); if (run.lines.length > 50) run.lines.shift(); };
+    const done = (r) => Object.assign(run, { running: false, ok: Boolean(r && r.ok), finished_at: new Date().toISOString() });
+    const exec = aiCardFn || ((pid, { card: c, stale: st }) => new Promise((resolve) => {
+      const args = [path.join(root, 'scripts', 'ai-card.js'), pid, ...(c ? ['--card', String(c)] : []), ...(st ? ['--stale'] : [])];
+      const child = spawn(process.execPath, args, { env: scriptEnv() });
+      let buf = '';
+      const feed = (d) => { buf += d; const parts = buf.split('\n'); buf = parts.pop(); parts.forEach(onLine); };
+      child.stdout.on('data', feed);
+      child.stderr.on('data', feed);
+      child.on('error', (e) => { onLine(`[오류] ${e.message}`); resolve({ ok: false }); });
+      child.on('close', (code) => { if (buf) onLine(buf); resolve({ ok: code === 0, code }); });
+    }));
+    Promise.resolve(exec(id, { card, stale, onLine })).then(done, (e) => { onLine(`[오류] ${e.message}`); done({ ok: false }); });
+  }
+  // 문구·출력 작업이 성공하면: 아직 없거나 문구가 바뀐 첫·마지막 카드를 GPT로 (뒤에서). 문구가 그대로면 아무것도 안 함
+  function autoAiCard(id) {
+    if (!aiAuto || (aiRuns.get(id) || {}).running) return;
+    const cards = readJsonSafe(path.join(productDir(id), 'cards.json'));
+    if (!cards || cards.stage !== 'copy' || !Array.isArray(cards.cards)) return;
+    if (!aiCards.staleTargets(productDir(id), cards.cards).length) return;
+    startAiCard(id, null, { stale: true });
+  }
+  // 피그마 자동 보내기: claude -p 가 피그마 연결(MCP)로 새 페이지 → 이미지 올리기 → 카드 프레임 만들기 (scripts/figma-push.js 지시문)
+  function startFigmaPush(id, pageName) {
+    const cfg = readJsonSafe(figmaConfigFile) || {};
+    const fileKey = figmaPush.fileKeyOf(cfg.file_url);
+    const run = { running: true, ok: null, page_name: pageName, page_id: null, error: null, started_at: new Date().toISOString(), finished_at: null, lines: [] };
+    figmaRuns.set(id, run);
+    const done = (r) => Object.assign(run, { running: false, finished_at: new Date().toISOString(), ok: Boolean(r && r.ok), page_id: (r && r.pageId) || null, error: r && !r.ok ? r.error || '피그마에 넣지 못했어요' : null });
+    const exec = figmaPushFn || ((pid) => new Promise((resolve) => {
+      let info;
+      try { info = figmaPush.exportInfo(pid); } catch (e) { resolve({ ok: false, error: `피그마용 카드가 없어요: ${e.message}` }); return; }
+      const prompt = figmaPush.buildPushPrompt({ id: pid, fileKey, info });
+      const tools = [...figmaPush.FIGMA_TOOLS, 'Read', 'Bash(node scripts/figma-push.js upload:*)'].join(',');
+      const [cmd, args] = jobRunner.claudeCommand(bin, ['-p', prompt, '--output-format', 'json', '--max-turns', '30', '--allowedTools', tools]);
+      const child = spawn(cmd, args, { cwd: root, env: scriptEnv(), stdio: ['ignore', 'pipe', 'pipe'] });
+      let out = '';
+      let err = '';
+      run.lines.push('Claude가 피그마에 카드를 넣는 중… (1~3분)');
+      child.stdout.on('data', (d) => { out += d; });
+      child.stderr.on('data', (d) => { err += d; });
+      const timer = setTimeout(() => child.kill('SIGTERM'), 10 * 60 * 1000);
+      child.on('error', (e) => { clearTimeout(timer); resolve({ ok: false, error: `claude를 실행하지 못했어요: ${e.message}` }); });
+      child.on('close', () => {
+        clearTimeout(timer);
+        let result = '';
+        try { result = JSON.parse(out).result || ''; } catch { result = out; }
+        const m = String(result).match(/\{[^{}]*"ok"[^{}]*\}/);
+        let r = null;
+        try { r = m ? JSON.parse(m[0]) : null; } catch { r = null; }
+        resolve(r && typeof r.ok === 'boolean' ? r : { ok: false, error: (String(result || err).trim().split('\n').pop() || '결과를 알 수 없어요').slice(0, 300) });
+      });
+    }));
+    Promise.resolve(exec(id, { pageName, fileKey })).then(done, (e) => done({ ok: false, error: e.message }));
+  }
+  const stampNow = () => {
+    const d = new Date();
+    const p2 = (n) => String(n).padStart(2, '0');
+    return `${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  };
+  function prepareFigma(id, pageName = null) {
+    if (figmaExportFn) return figmaExportFn(id, pageName);
+    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'figma-export.js'), id, ...(pageName ? ['--page-name', pageName] : [])], { encoding: 'utf8', env: scriptEnv() });
     return { ok: r.status === 0, output: `${r.stdout || ''}${r.stderr || ''}`.trim().split('\n').slice(-4) };
   }
   // 고친 카드 받기: PNG 저장 + 글자 레이어 내용을 내보낼 때(승인 문구)와 비교
@@ -619,7 +735,8 @@ function createStudio({
         const [, , , folder, file] = parts;
         const base = folder === 'png' ? path.join(productDir(id), 'output', 'png')
           : folder === 'images' ? path.join(productDir(id), 'images')
-          : folder === 'figma-edited' ? editedDir(id) : null;
+          : folder === 'figma-edited' ? editedDir(id)
+            : folder === 'ai-card' ? aiDir(id) : null;
         if (!base || !FILE_RE.test(file)) throw new HttpError(404, '파일이 없어요');
         const full = path.join(base, file);
         if (!fs.existsSync(full)) throw new HttpError(404, '파일이 없어요');
@@ -715,11 +832,29 @@ function createStudio({
         cancelQueued(id);
         return send(res, 200, detail());
       }
+      // AI 디자인 카드 만들기: 첫·마지막 카드(또는 고른 카드 하나)를 GPT 이미지로. 바로 202를 주고 뒤에서 돌림 (화면이 상태를 다시 읽음)
+      if (method === 'POST' && parts[2] === 'ai-card' && parts.length === 3) {
+        const body = await readBody(req);
+        if (!detail().actions.can_ai_card) throw new HttpError(409, (aiRuns.get(id) || {}).running ? 'AI 디자인 카드를 만드는 중이에요' : '문구를 만든 뒤, 작업이 없을 때 만들 수 있어요');
+        const n = body && body.card != null ? Number(body.card) : null;
+        const cards = (readJsonSafe(path.join(productDir(id), 'cards.json')) || {}).cards || [];
+        const allowed = [cards[0], cards[cards.length - 1]].filter(Boolean).map((c) => c.no);
+        if (n != null && !allowed.includes(n)) throw new HttpError(400, `AI 디자인 카드는 첫·마지막 카드(${allowed.join('·')}번)만 만들 수 있어요`);
+        startAiCard(id, n);
+        return send(res, 202, detail());
+      }
       // 피그마에서 편집: 출력한 카드를 피그마 레이어 파일로 준비 (플러그인이 가져감)
       if (method === 'POST' && parts[2] === 'figma' && parts.length === 3) {
         if (!detail().pngs.length) throw new HttpError(409, '카드를 출력한 뒤에 피그마로 보낼 수 있어요');
         if (detail().actions.running) throw new HttpError(409, '작업이 끝난 뒤에 피그마로 보낼 수 있어요');
-        const result = prepareFigma(id);
+        if (detail().actions.ai_busy) throw new HttpError(409, 'AI 디자인 카드(첫·마지막)를 만드는 중이에요. 끝난 뒤에 피그마로 보내요');
+        if ((figmaRuns.get(id) || {}).running) throw new HttpError(409, '피그마에 카드를 넣는 중이에요');
+        const cfg = readJsonSafe(figmaConfigFile) || {};
+        const push = figmaAutoPush && figmaPush.fileKeyOf(cfg.file_url);
+        // 자동 보내기면 '제품명 (ID) · 월.일 시:분' 새 페이지 (사람이 고친 이전 페이지를 덮어쓰지 않음)
+        const pageName = push ? `${nameOf(id)} (${id}) · ${stampNow()}` : null;
+        const result = prepareFigma(id, pageName);
+        if (result.ok && push) startFigmaPush(id, pageName);
         return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `피그마용 카드를 만들지 못했어요: ${(result.output || []).slice(-1).join('') || '스크립트 오류'}` }), figma_export: result, product: detail() });
       }
       // 카드 이미지 다시 만들기: 승인된 문구 그대로 HTML·PNG만 다시 출력 (Claude 안 씀, 제작 기록에 안 남김). 새 폴더·다른 컴퓨터는 output/이 git에 없어 필요

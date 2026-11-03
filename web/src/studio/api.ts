@@ -128,6 +128,8 @@ export interface Actions {
   can_edit_input: boolean;
   /** 승인된 문구 그대로 카드 이미지만 다시 출력 (output/이 없는 새 폴더·다른 컴퓨터) */
   can_render?: boolean;
+  can_ai_card?: boolean;
+  ai_busy?: boolean;
   can_plan: boolean;
   can_approve_plan: boolean;
   can_revise_plan: boolean;
@@ -190,18 +192,63 @@ export interface ProductDetail extends ProductSummary {
   actions: Actions;
   design?: DesignInfo;
   figma?: FigmaInfo;
+  ai_card?: AiCardInfo;
 }
 
 /** 피그마에서 직접 고치기: 연결 코드, 피그마 파일, 준비 시각, 피그마에서 돌려받은 카드 */
 export interface FigmaInfo {
   code: string;
   file_url: string | null;
+  /** 로컬 Claude Code의 피그마 연결로 바로 넣기 (꺼져 있으면 플러그인으로 가져오기) */
+  auto_push?: boolean;
+  push?: {
+    running: boolean;
+    ok: boolean | null;
+    page_name: string | null;
+    page_id: string | null;
+    error: string | null;
+    started_at: string;
+    finished_at: string | null;
+    progress: string[];
+    page_url: string | null;
+  } | null;
   prepared_at: string | null;
   edited: {
     received_at: string;
     page: string | null;
     cards: { file: string; png: string; v: number; changed: { name: string; before: string | null; after: string | null }[] }[];
   } | null;
+}
+
+/** AI 디자인 카드(첫·마지막 카드, GPT 이미지 + 원본 제품 잠금): 실행 상태와 카드별 결과 */
+export interface AiCardTry {
+  try: number;
+  sec: number;
+  ok?: boolean;
+  diff?: number;
+  shift?: [number, number];
+  error?: string;
+}
+export interface AiCardInfo {
+  auto: boolean;
+  running: boolean;
+  run: { card: number | null; auto: boolean; started_at: string; finished_at: string | null; ok: boolean | null; progress: string[] } | null;
+  made_at: string | null;
+  targets: number[];
+  applied: number[];
+  stale: number[];
+  cards: {
+    no: number;
+    kind: 'cover' | 'closing';
+    ok: boolean;
+    file: string | null;
+    text_checked: boolean;
+    tries: AiCardTry[];
+    v: number;
+    applied: boolean;
+    stale: boolean;
+    template: { file: string; v: number } | null;
+  }[];
 }
 
 export class StudioError extends Error {
@@ -228,6 +275,7 @@ export async function studioFetch<T>(path: string, init: { method?: string; body
 }
 
 export const pngUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/png/${file}${v ? `?v=${v}` : ''}`;
+export const aiCardUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/ai-card/${file}${v ? `?v=${v}` : ''}`;
 export const figmaEditedUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/figma-edited/${file}${v ? `?v=${v}` : ''}`;
 export const imageUrl = (id: string, file: string) => `${BASE}/products/${encodeURIComponent(id)}/files/images/${encodeURIComponent(file)}`;
 

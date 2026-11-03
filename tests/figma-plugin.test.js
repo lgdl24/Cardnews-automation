@@ -50,6 +50,7 @@ async function start() {
     exportConfigFile: path.join(dir, 'export.json'),
     webIndexFile: path.join(dir, 'web', 'index.json'),
     figmaCode: CODE,
+    aiAuto: false,
     figmaConfigFile,
     exportFn: () => ({ ok: false, output: [], excluded: [`${'figma-test'} | PNG_MISSING | PNG가 없어요: 2번 카드 (npm run render)`] }),
     renderFn: (pid) => { rendered.push(pid); return { ok: true, output: [] }; },
@@ -238,5 +239,60 @@ test('작업실: 내보내기 실패 이유를 그대로 알려주고, 카드 �
     assert.deepEqual(s.rendered, [s.id]);
   } finally {
     await s.close();
+  }
+});
+
+test('피그마 자동 보내기: 지시문은 받은 순서·파일만 쓰게 하고, 업로드 주소는 피그마 주소만 받음', async () => {
+  const { buildPushPrompt, upload, fileKeyOf } = require('../scripts/figma-push');
+  assert.equal(fileKeyOf('https://www.figma.com/design/t74dm7iP9LUQ199EdPy4e1'), 't74dm7iP9LUQ199EdPy4e1');
+  assert.equal(fileKeyOf('https://www.figma.com/design/TESTKEY'), null);
+  const p = buildPushPrompt({ id: 'x-1', fileKey: 't74dm7iP9LUQ199EdPy4e1', info: { page: '제품 (x-1) · 11.03 10:00', images: ['a.png', 'b.png'], builds: ['products/x-1/output/figma-export/build-1.js'] } });
+  assert.match(p, /count=2/);
+  assert.match(p, /node scripts\/figma-push\.js upload x-1 <페이지 ID>/);
+  assert.match(p, /"제품 \(x-1\) · 11\.03 10:00"/);
+  assert.match(p, /build-1\.js/);
+  // 형식 검사는 이미지 목록보다 먼저 막히지 않도록 실제 제품 폴더 없이 확인
+  await assert.rejects(() => upload('no-such-product', '7:2', ['https://evil.example/x']), /./);
+});
+
+test('작업실: 피그마에서 편집 → 새 페이지 이름으로 준비하고 자동으로 피그마에 넣음 (가짜 claude)', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-push-'));
+  const productsDir = path.join(dir, 'products');
+  const id = 'push-test';
+  fs.mkdirSync(path.join(productsDir, id, 'output', 'png'), { recursive: true });
+  for (const f of ['input.md', 'cards.json']) fs.copyFileSync(path.join(ROOT, 'products', SRC, f), path.join(productsDir, id, f));
+  fs.writeFileSync(path.join(productsDir, id, 'output', 'png', 'card-01.png'), PNG);
+  fs.writeFileSync(path.join(dir, 'export.json'), JSON.stringify({ out_dir: path.join(dir, 'web'), projects: [] }));
+  const figmaConfigFile = path.join(dir, 'figma.json');
+  fs.writeFileSync(figmaConfigFile, JSON.stringify({ file_url: 'https://www.figma.com/design/t74dm7iP9LUQ199EdPy4e1' }));
+  const prepared = [];
+  let finish;
+  const studio = createStudio({
+    productsDir, reportsDir: path.join(dir, 'reports'), exportConfigFile: path.join(dir, 'export.json'), webIndexFile: path.join(dir, 'web', 'index.json'),
+    figmaConfigFile, aiAuto: false,
+    figmaExportFn: (pid, pageName) => { prepared.push(pageName); return { ok: true, output: [] }; },
+    figmaPushFn: () => new Promise((resolve) => { finish = resolve; }),
+  });
+  const server = http.createServer(async (req, res) => { if (!(await studio.handle(req, res))) { res.statusCode = 404; res.end(); } });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}/api/studio`;
+  const call = async (method, p) => {
+    const res = await fetch(base + p, { method, headers: { 'x-studio': '1', 'content-type': 'application/json' } });
+    return { status: res.status, body: await res.json() };
+  };
+  try {
+    let r = await call('POST', `/products/${id}/figma`);
+    assert.equal(r.status, 200);
+    assert.match(prepared[0], new RegExp(`\\(${id}\\) · \\d{2}\\.\\d{2} \\d{2}:\\d{2}$`));
+    assert.equal(r.body.product.figma.push.running, true);
+    r = await call('POST', `/products/${id}/figma`);
+    assert.equal(r.status, 409, '넣는 중에는 다시 못 누름');
+    finish({ ok: true, pageId: '12:3' });
+    await new Promise((res) => setTimeout(res, 20));
+    r = await call('GET', `/products/${id}`);
+    assert.equal(r.body.figma.push.ok, true);
+    assert.equal(r.body.figma.push.page_url, 'https://www.figma.com/design/t74dm7iP9LUQ199EdPy4e1?node-id=12-3');
+  } finally {
+    await new Promise((r) => server.close(r));
   }
 });

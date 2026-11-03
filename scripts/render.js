@@ -12,6 +12,7 @@ const { validate } = require('./validate');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
+const { applyAiCards } = require('./lib/ai-cards');
 
 // 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
 // 제품 색이면 사진 픽셀을 읽으려고 브라우저를 먼저 띄움 (HTML만 만들 때도)
@@ -196,6 +197,9 @@ async function main() {
     JSON.stringify({ product_id: id, rendered_at: new Date().toISOString(), design, colors: colorRecord(colors), results }, null, 2),
   );
   console.log(`PNG ${targets.length}장 저장: ${path.relative(paths.root, pngDir)}`);
+  // 첫·마지막 카드는 AI 디자인 카드가 있고 문구가 그대로면 최종 카드에 다시 넣음 (문구가 바뀌었으면 템플릿 출력 유지 → 작업실이 다시 만듦)
+  const ai = applyAiCards(paths.product(id), data.cards, { only: targets.map((c) => c.no) });
+  if (ai.applied.length) console.log(`AI 디자인 카드 유지: ${ai.applied.join('·')}번`);
   printReport(`레이아웃 점검: ${id}`, report);
   if (log) {
     appendEvent(id, 'validate_result', resultFields('layout', report, {
