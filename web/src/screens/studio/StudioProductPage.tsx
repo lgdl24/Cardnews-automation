@@ -4,10 +4,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import {
-  JOB_LABEL, STAGE_LABEL, describeProgress, pngUrl, studioFetch, usePolling, useStudioStatus,
+  JOB_LABEL, STAGE_LABEL, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
   type ProductDetail, type Report, type RevisionType, type StudioJob,
 } from '../../studio/api';
 import { useIndex } from '../../data/load';
+import { buildZip } from '../../lib/zip';
+import { downloadBlob } from '../../lib/download';
 import { formatDateTime, formatPercent, label } from '../../data/format';
 import type { Labels } from '../../data/types';
 import { ErrorState, Loading } from '../../components/StateView';
@@ -149,6 +151,27 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
             </div>
           )}
           {a.can_revise_final && <RevisionForm stage="final" revisionTypes={revisionTypes} cardCount={p.cards.cards.length} busy={busy} onSubmit={(b) => act(`/products/${id}/revisions`, b)} />}
+          {p.pngs.length === 0 && (
+            <div className="notice notice-warn" role="status">
+              <p>카드 이미지(PNG)가 이 컴퓨터에 없어요. 카드 이미지는 git에 올라가지 않아서 새 폴더나 다른 컴퓨터에서는 다시 만들어야 해요. 문구는 그대로 두고 이미지만 다시 만들어요.</p>
+              <div className="action-bar">
+                <button className="btn btn-primary" disabled={busy || !a.can_render} onClick={() => act(`/products/${id}/render`)}>
+                  카드 이미지 다시 만들기
+                </button>
+              </div>
+            </div>
+          )}
+          {p.figma && p.pngs.length > 0 && (
+            <FigmaPanel
+              detail={p}
+              busy={busy || a.running}
+              onPrepare={() => {
+                // 팝업 차단을 피하려고 클릭하자마자 피그마 파일을 엶 (준비는 그 뒤에 진행)
+                if (p.figma?.file_url) window.open(p.figma.file_url, '_blank', 'noopener');
+                act(`/products/${id}/figma`);
+              }}
+            />
+          )}
           {p.stage === 'approved' && <ExportPanel detail={p} busy={busy} onExport={() => act(`/products/${id}/export`)} />}
         </section>
       )}
@@ -543,6 +566,109 @@ function RevisionForm({
         </button>
       </div>
     </form>
+  );
+}
+
+// ── 피그마에서 편집 (사람이 직접 고치기)
+function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: boolean; onPrepare: () => void }) {
+  const f = detail.figma!;
+  const [copied, setCopied] = useState(false);
+  const [zipping, setZipping] = useState(false);
+  const edited = f.edited;
+  const changedCards = edited ? edited.cards.filter((c) => c.changed.length) : [];
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(f.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* 복사 못 하면 보이는 코드를 직접 입력 */
+    }
+  };
+  const downloadEdited = async () => {
+    if (!edited) return;
+    setZipping(true);
+    try {
+      const blob = await buildZip(edited.cards.map((c) => ({ name: `${detail.id}-figma-${c.png}`, url: figmaEditedUrl(detail.id, c.png, c.v) })));
+      downloadBlob(blob, `${detail.id}-figma.zip`);
+    } finally {
+      setZipping(false);
+    }
+  };
+  return (
+    <div className="panel figma-panel">
+      <h3 className="panel-title">피그마에서 편집</h3>
+      <p className="muted">
+        카드를 피그마 레이어(글자·도형·사진)로 보내 직접 고칠 수 있어요. 고친 카드는 피그마 플러그인에서 다시 이 화면으로 보내요.
+      </p>
+      <div className="action-bar">
+        <button className="btn btn-primary" disabled={busy} onClick={onPrepare}>
+          {f.prepared_at ? '피그마용 카드 다시 준비' : '피그마에서 편집'}
+        </button>
+        {f.file_url && (
+          <a className="btn" href={f.file_url} target="_blank" rel="noreferrer">
+            피그마 파일 열기
+          </a>
+        )}
+      </div>
+      {f.prepared_at && (
+        <ol className="figma-steps">
+          <li>
+            피그마 데스크톱에서 <strong>플러그인 › 개발 › 카드뉴스 작업실 연결</strong>을 실행해요 (처음 한 번은 <code>figma-plugin/manifest.json</code>을 불러와 등록).
+          </li>
+          <li>
+            연결 코드{' '}
+            <button type="button" className="figma-code" onClick={copy} title="눌러서 복사">
+              {f.code}
+            </button>
+            {copied && <span className="muted"> 복사했어요</span>}를 넣고 연결 → <strong>{detail.name}</strong> 고르고 <strong>피그마로 가져오기</strong>. 가져올 때마다 날짜·시각이 붙은 새 페이지가 생겨서 이전에 고친 페이지는 그대로 남아요.
+          </li>
+          <li>
+            다 고쳤으면 그 페이지를 연 채로 플러그인의 <strong>고친 카드를 웹으로 보내기</strong>를 누르면 아래에 나와요 (다른 페이지를 보고 있으면 이 제품의 가장 최근 페이지를 보내요).
+          </li>
+        </ol>
+      )}
+      {f.prepared_at && <p className="muted">준비한 시각 {formatDateTime(f.prepared_at)} · 작업실을 다시 켜면 연결 코드가 바뀌어요.</p>}
+      {edited && (
+        <div className="figma-edited">
+          <h4 className="panel-subtitle">
+            피그마에서 고친 카드 · {formatDateTime(edited.received_at)}
+            {edited.page && <span className="muted"> · 페이지 '{edited.page}'</span>}
+          </h4>
+          {changedCards.length > 0 ? (
+            <div className="notice notice-warn" role="status">
+              <p>[주의] 피그마에서 문구가 바뀐 카드가 있어요. 이 문구는 원문 근거 검증을 거치지 않았어요. 문구를 바꾸려면 작업실의 수정 요청으로 고치는 게 원칙이에요 (근거 검증을 거침).</p>
+              <ul>
+                {changedCards.flatMap((c) =>
+                  c.changed.map((x) => (
+                    <li key={`${c.file}-${x.name}`}>
+                      {c.file} · {x.name.replace(/ \(글자\)$/, '')}: {x.before === null ? '(새 글자)' : `“${x.before.replace(/\n/g, ' ')}”`} → {x.after === null ? '(지움)' : `“${x.after.replace(/\n/g, ' ')}”`}
+                    </li>
+                  )),
+                )}
+              </ul>
+            </div>
+          ) : (
+            <p className="muted">문구는 승인본과 같아요 (디자인만 바뀜).</p>
+          )}
+          <ul className="card-review">
+            {edited.cards.map((c) => (
+              <li key={c.file} className="card-review-item">
+                <a href={figmaEditedUrl(detail.id, c.png, c.v)} target="_blank" rel="noreferrer">
+                  <img src={figmaEditedUrl(detail.id, c.png, c.v)} alt={`피그마에서 고친 ${c.file}`} width={1080} height={1080} loading="lazy" />
+                </a>
+                <p className="card-review-text">{c.file}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="action-bar">
+            <button className="btn" disabled={zipping} onClick={downloadEdited}>
+              {zipping ? 'ZIP 만드는 중…' : '고친 카드 ZIP 받기'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

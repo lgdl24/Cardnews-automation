@@ -603,3 +603,38 @@
 .job-bar-queue a:hover {
   text-decoration: underline;
 }
+
+/* ── 피그마에서 편집 */
+.figma-steps {
+  margin: 14px 0 0;
+  padding-left: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  word-break: keep-all;
+}
+.figma-code {
+  font: 600 0.95rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.figma-edited {
+  margin-top: 18px;
+}
+.figma-edited .notice ul {
+  margin: 6px 0 0;
+  padding-left: 1.2em;
+}
+.figma-edited .card-review {
+  margin-top: 12px;
+}
+.panel-subtitle {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}

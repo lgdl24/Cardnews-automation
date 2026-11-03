@@ -1,0 +1,14 @@
+{
+  "name": "카드뉴스 작업실 연결",
+  "id": "cardnews-studio-link-dev",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "devAllowedDomains": ["http://localhost:5173", "http://127.0.0.1:5173"],
+    "reasoning": "내 컴퓨터에서 켠 카드뉴스 작업실(npm run studio)에서 카드 레이어를 받아오고, 피그마에서 고친 카드를 작업실로 돌려보내요."
+  }
+}
