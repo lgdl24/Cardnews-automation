@@ -65,3 +65,77 @@ test('codex 출력에서 AI 원본 이미지 경로를 찾고, 없으면 out.png
   fs.writeFileSync(path.join(dir, 'out.png'), 'x');
   assert.equal(generatedPath('없음', dir), path.join(dir, 'out.png'));
 });
+
+// 작업실 API: AI 디자인 카드 시작(202) → 상태 → 결과 파일. 실제 Codex 대신 aiCardFn으로 결과를 흉내냄
+test('작업실: AI 디자인 카드를 뒤에서 만들고 상태·결과 카드를 보여줌', async () => {
+  const http = require('http');
+  const { createStudio } = require('../scripts/lib/studio-api');
+  const ROOT = path.join(__dirname, '..');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-ai-'));
+  const productsDir = path.join(dir, 'products');
+  const id = 'ai-test';
+  fs.mkdirSync(path.join(productsDir, id), { recursive: true });
+  for (const f of ['input.md', 'cards.json']) fs.copyFileSync(path.join(ROOT, 'products', 'toneup-sunscreen-r1', f), path.join(productsDir, id, f));
+  fs.writeFileSync(path.join(dir, 'export.json'), JSON.stringify({ out_dir: path.join(dir, 'web'), projects: [] }));
+  const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8cfc0f01f0005000201a3d8b1a40000000049454e44ae426082', 'hex');
+  let release;
+  const calls = [];
+  const studio = createStudio({
+    productsDir,
+    reportsDir: path.join(dir, 'reports'),
+    exportConfigFile: path.join(dir, 'export.json'),
+    webIndexFile: path.join(dir, 'web', 'index.json'),
+    figmaConfigFile: path.join(dir, 'figma.json'),
+    aiCardFn: (pid, { card, onLine }) => {
+      calls.push([pid, card]);
+      onLine('  1번 1차 생성 중… (보통 1~2분)');
+      return new Promise((resolve) => {
+        release = () => {
+          const out = path.join(productsDir, pid, 'output', 'ai-card');
+          fs.mkdirSync(out, { recursive: true });
+          fs.writeFileSync(path.join(out, 'card-01.png'), PNG);
+          fs.writeFileSync(path.join(out, 'ai-card.json'), JSON.stringify({ made_at: 'now', cards: [{ no: 1, kind: 'cover', ok: true, file: 'card-01.png', text_checked: false, tries: [{ try: 1, ok: true, diff: 5, shift: [0, 0] }] }] }));
+          onLine('1번: 완료 → output/ai-card/card-01.png (시도 1번)');
+          resolve({ ok: true });
+        };
+      });
+    },
+  });
+  const server = http.createServer(async (req, res) => { if (!(await studio.handle(req, res))) { res.statusCode = 404; res.end(); } });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}/api/studio`;
+  const call = async (method, p, body) => {
+    const res = await fetch(base + p, { method, headers: { 'x-studio': '1', 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const type = res.headers.get('content-type') || '';
+    return { status: res.status, body: type.includes('json') ? await res.json() : Buffer.from(await res.arrayBuffer()) };
+  };
+  try {
+    let r = await call('GET', `/products/${id}`);
+    assert.equal(r.body.actions.can_ai_card, true);
+    assert.deepEqual(r.body.ai_card.cards, []);
+    r = await call('POST', `/products/${id}/ai-card`, { card: 3 });
+    assert.equal(r.status, 400, '가운데 카드는 안 됨');
+    r = await call('POST', `/products/${id}/ai-card`, {});
+    assert.equal(r.status, 202);
+    assert.equal(r.body.ai_card.running, true);
+    assert.equal(r.body.actions.can_ai_card, false);
+    r = await call('POST', `/products/${id}/ai-card`, {});
+    assert.equal(r.status, 409, '만드는 중에는 다시 못 누름');
+    release();
+    await new Promise((res) => setTimeout(res, 20));
+    r = await call('GET', `/products/${id}`);
+    assert.equal(r.body.ai_card.running, false);
+    assert.equal(r.body.ai_card.run.ok, true);
+    assert.match(r.body.ai_card.run.progress.at(-1), /완료/);
+    assert.equal(r.body.ai_card.cards[0].file, 'card-01.png');
+    assert.ok(r.body.ai_card.cards[0].v > 0);
+    r = await call('GET', `/products/${id}/files/ai-card/card-01.png`);
+    assert.equal(r.status, 200);
+    r = await call('POST', `/products/${id}/ai-card`, { card: 1 });
+    assert.equal(r.status, 202, '한 장만 다시 만들기');
+    assert.deepEqual(calls, [[id, null], [id, 1]]);
+    release();
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});

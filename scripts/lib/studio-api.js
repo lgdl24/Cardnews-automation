@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { ROOT, readJson, parseInput, resolveDesign, designCatalog, moodInputOf } = require('./common');
 const { loadForm, renderInputMd } = require('./input-form');
 const { summarize } = require('./analysis');
@@ -88,6 +88,7 @@ function readEventsFrom(file) {
  * @param {string} [o.productsDir]  제품 폴더들 (기본 <root>/products)
  * @param {string} [o.bin]          claude 실행 파일 (기본 CARDNEWS_CLAUDE_BIN 또는 claude)
  * @param {Function} [o.runJob]     작업 실행 함수 (테스트용 교체)
+ * @param {Function} [o.aiCardFn]   AI 디자인 카드 실행 함수 (테스트용 교체): (id, { card, onLine }) => Promise<{ ok, code }>
  */
 function createStudio({
   root = ROOT,
@@ -100,6 +101,7 @@ function createStudio({
   exportFn,
   figmaExportFn,
   renderFn,
+  aiCardFn,
   figmaCode = crypto.randomBytes(3).toString('hex').toUpperCase(),
   figmaConfigFile = path.join(root, 'config', 'figma.json'),
 } = {}) {
@@ -263,6 +265,7 @@ function createStudio({
       can_revise_final: !running && stage === 'copy',
       can_export: !running && stage === 'approved',
       can_render: !running && (stage === 'copy' || stage === 'approved'),
+      can_ai_card: !running && (stage === 'copy' || stage === 'approved') && !(aiRuns.get(id) || {}).running,
     };
   }
 
@@ -303,6 +306,7 @@ function createStudio({
       },
       actions: nextActions(id, { cards, events, check }),
       figma: figmaInfo(id),
+      ai_card: aiCardInfo(id),
     };
   }
 
@@ -494,6 +498,41 @@ function createStudio({
         : null,
     };
   }
+  // AI 디자인 카드 (scripts/ai-card.js): 첫·마지막 카드를 GPT 이미지(로컬 Codex)로. 몇 분 걸려서 따로 돌리고 상태만 보여줌
+  const aiRuns = new Map(); // 제품ID → { card, started_at, finished_at, running, ok, lines: [] }
+  const aiDir = (id) => path.join(productDir(id), 'output', 'ai-card');
+  function aiCardInfo(id) {
+    const run = aiRuns.get(id) || null;
+    const report = readJsonSafe(path.join(aiDir(id), 'ai-card.json'));
+    return {
+      running: Boolean(run && run.running),
+      run: run ? { card: run.card, started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
+      made_at: report ? report.made_at : null,
+      cards: report && Array.isArray(report.cards)
+        ? report.cards.map((c) => {
+          const f = c.file ? path.join(aiDir(id), c.file) : null;
+          return { ...c, v: f && fs.existsSync(f) ? Math.round(fs.statSync(f).mtimeMs) : 0 };
+        })
+        : [],
+    };
+  }
+  function startAiCard(id, card) {
+    const run = { card: card || null, started_at: new Date().toISOString(), finished_at: null, running: true, ok: null, lines: [] };
+    aiRuns.set(id, run);
+    const onLine = (line) => { if (line.trim()) run.lines.push(line.trim()); if (run.lines.length > 50) run.lines.shift(); };
+    const done = (r) => Object.assign(run, { running: false, ok: Boolean(r && r.ok), finished_at: new Date().toISOString() });
+    const exec = aiCardFn || ((pid, { card: c }) => new Promise((resolve) => {
+      const args = [path.join(root, 'scripts', 'ai-card.js'), pid, ...(c ? ['--card', String(c)] : [])];
+      const child = spawn(process.execPath, args, { env: scriptEnv() });
+      let buf = '';
+      const feed = (d) => { buf += d; const parts = buf.split('\n'); buf = parts.pop(); parts.forEach(onLine); };
+      child.stdout.on('data', feed);
+      child.stderr.on('data', feed);
+      child.on('error', (e) => { onLine(`[오류] ${e.message}`); resolve({ ok: false }); });
+      child.on('close', (code) => { if (buf) onLine(buf); resolve({ ok: code === 0, code }); });
+    }));
+    Promise.resolve(exec(id, { card, onLine })).then(done, (e) => { onLine(`[오류] ${e.message}`); done({ ok: false }); });
+  }
   function prepareFigma(id) {
     if (figmaExportFn) return figmaExportFn(id);
     const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'figma-export.js'), id], { encoding: 'utf8', env: scriptEnv() });
@@ -619,7 +658,8 @@ function createStudio({
         const [, , , folder, file] = parts;
         const base = folder === 'png' ? path.join(productDir(id), 'output', 'png')
           : folder === 'images' ? path.join(productDir(id), 'images')
-          : folder === 'figma-edited' ? editedDir(id) : null;
+          : folder === 'figma-edited' ? editedDir(id)
+            : folder === 'ai-card' ? aiDir(id) : null;
         if (!base || !FILE_RE.test(file)) throw new HttpError(404, '파일이 없어요');
         const full = path.join(base, file);
         if (!fs.existsSync(full)) throw new HttpError(404, '파일이 없어요');
@@ -714,6 +754,17 @@ function createStudio({
       if (method === 'DELETE' && parts[2] === 'queue' && parts.length === 3) {
         cancelQueued(id);
         return send(res, 200, detail());
+      }
+      // AI 디자인 카드 만들기: 첫·마지막 카드(또는 고른 카드 하나)를 GPT 이미지로. 바로 202를 주고 뒤에서 돌림 (화면이 상태를 다시 읽음)
+      if (method === 'POST' && parts[2] === 'ai-card' && parts.length === 3) {
+        const body = await readBody(req);
+        if (!detail().actions.can_ai_card) throw new HttpError(409, (aiRuns.get(id) || {}).running ? 'AI 디자인 카드를 만드는 중이에요' : '문구를 만든 뒤, 작업이 없을 때 만들 수 있어요');
+        const n = body && body.card != null ? Number(body.card) : null;
+        const cards = (readJsonSafe(path.join(productDir(id), 'cards.json')) || {}).cards || [];
+        const allowed = [cards[0], cards[cards.length - 1]].filter(Boolean).map((c) => c.no);
+        if (n != null && !allowed.includes(n)) throw new HttpError(400, `AI 디자인 카드는 첫·마지막 카드(${allowed.join('·')}번)만 만들 수 있어요`);
+        startAiCard(id, n);
+        return send(res, 202, detail());
       }
       // 피그마에서 편집: 출력한 카드를 피그마 레이어 파일로 준비 (플러그인이 가져감)
       if (method === 'POST' && parts[2] === 'figma' && parts.length === 3) {
