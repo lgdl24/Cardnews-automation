@@ -10,6 +10,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const aiCards = require('./ai-cards');
+const figmaPush = require('../figma-push');
 const { ROOT, readJson, parseInput, resolveDesign, designCatalog, moodInputOf } = require('./common');
 const { loadForm, renderInputMd } = require('./input-form');
 const { summarize } = require('./analysis');
@@ -105,6 +106,9 @@ function createStudio({
   aiCardFn,
   // 문구·출력 작업이 끝나면 첫·마지막 카드를 GPT 이미지로 자동으로 만듦 (CARDNEWS_AI_CARD=off 로 끔)
   aiAuto = process.env.CARDNEWS_AI_CARD !== 'off',
+  // '피그마에서 편집'을 누르면 로컬 Claude Code의 피그마 연결로 카드를 새 페이지에 바로 넣음 (CARDNEWS_FIGMA_PUSH=off 로 끔 → 플러그인으로 가져오기)
+  figmaPushFn,
+  figmaAutoPush = process.env.CARDNEWS_FIGMA_PUSH !== 'off',
   figmaCode = crypto.randomBytes(3).toString('hex').toUpperCase(),
   figmaConfigFile = path.join(root, 'config', 'figma.json'),
 } = {}) {
@@ -114,6 +118,7 @@ function createStudio({
   // 대기열: 작업 중에 다른 제품 작업을 누르면 거절하지 않고 차례를 기다림. 제품마다 하나만, 서버를 끄면 사라짐
   const queue = []; // { product_id, kind, revision, queued_at, beforeStart }
   const lastJobs = new Map(); // 제품ID → 마지막 작업 요약
+  const figmaRuns = new Map(); // 제품ID → { running, page_name, page_id, ok, error, started_at, finished_at, lines }
   const aiRuns = new Map(); // 제품ID → { card, auto, started_at, finished_at, running, ok, lines: [] }
   const isRunning = () => Boolean(current && current.status === 'running');
   const queueIndex = (id) => queue.findIndex((q) => q.product_id === id);
@@ -490,9 +495,19 @@ function createStudio({
     const layersFile = path.join(figmaDir(id), 'layers.json');
     const edited = readJsonSafe(path.join(editedDir(id), 'edited.json'));
     const cfg = readJsonSafe(figmaConfigFile) || {};
+    const push = figmaRuns.get(id) || null;
+    const fileKey = figmaPush.fileKeyOf(cfg.file_url);
     return {
       code: figmaCode,
       file_url: cfg.file_url || null,
+      auto_push: Boolean(figmaAutoPush && fileKey),
+      push: push
+        ? {
+            running: push.running, ok: push.ok, page_name: push.page_name, page_id: push.page_id, error: push.error,
+            started_at: push.started_at, finished_at: push.finished_at, progress: push.lines.slice(-4),
+            page_url: push.page_id && cfg.file_url ? `${cfg.file_url}?node-id=${push.page_id.replace(':', '-')}` : null,
+          }
+        : null,
       prepared_at: fs.existsSync(layersFile) ? fs.statSync(layersFile).mtime.toISOString() : null,
       edited: edited
         ? {
@@ -557,9 +572,47 @@ function createStudio({
     if (!aiCards.staleTargets(productDir(id), cards.cards).length) return;
     startAiCard(id, null, { stale: true });
   }
-  function prepareFigma(id) {
-    if (figmaExportFn) return figmaExportFn(id);
-    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'figma-export.js'), id], { encoding: 'utf8', env: scriptEnv() });
+  // 피그마 자동 보내기: claude -p 가 피그마 연결(MCP)로 새 페이지 → 이미지 올리기 → 카드 프레임 만들기 (scripts/figma-push.js 지시문)
+  function startFigmaPush(id, pageName) {
+    const cfg = readJsonSafe(figmaConfigFile) || {};
+    const fileKey = figmaPush.fileKeyOf(cfg.file_url);
+    const run = { running: true, ok: null, page_name: pageName, page_id: null, error: null, started_at: new Date().toISOString(), finished_at: null, lines: [] };
+    figmaRuns.set(id, run);
+    const done = (r) => Object.assign(run, { running: false, finished_at: new Date().toISOString(), ok: Boolean(r && r.ok), page_id: (r && r.pageId) || null, error: r && !r.ok ? r.error || '피그마에 넣지 못했어요' : null });
+    const exec = figmaPushFn || ((pid) => new Promise((resolve) => {
+      let info;
+      try { info = figmaPush.exportInfo(pid); } catch (e) { resolve({ ok: false, error: `피그마용 카드가 없어요: ${e.message}` }); return; }
+      const prompt = figmaPush.buildPushPrompt({ id: pid, fileKey, info });
+      const tools = [...figmaPush.FIGMA_TOOLS, 'Read', 'Bash(node scripts/figma-push.js upload:*)'].join(',');
+      const [cmd, args] = jobRunner.claudeCommand(bin, ['-p', prompt, '--output-format', 'json', '--max-turns', '30', '--allowedTools', tools]);
+      const child = spawn(cmd, args, { cwd: root, env: scriptEnv(), stdio: ['ignore', 'pipe', 'pipe'] });
+      let out = '';
+      let err = '';
+      run.lines.push('Claude가 피그마에 카드를 넣는 중… (1~3분)');
+      child.stdout.on('data', (d) => { out += d; });
+      child.stderr.on('data', (d) => { err += d; });
+      const timer = setTimeout(() => child.kill('SIGTERM'), 10 * 60 * 1000);
+      child.on('error', (e) => { clearTimeout(timer); resolve({ ok: false, error: `claude를 실행하지 못했어요: ${e.message}` }); });
+      child.on('close', () => {
+        clearTimeout(timer);
+        let result = '';
+        try { result = JSON.parse(out).result || ''; } catch { result = out; }
+        const m = String(result).match(/\{[^{}]*"ok"[^{}]*\}/);
+        let r = null;
+        try { r = m ? JSON.parse(m[0]) : null; } catch { r = null; }
+        resolve(r && typeof r.ok === 'boolean' ? r : { ok: false, error: (String(result || err).trim().split('\n').pop() || '결과를 알 수 없어요').slice(0, 300) });
+      });
+    }));
+    Promise.resolve(exec(id, { pageName, fileKey })).then(done, (e) => done({ ok: false, error: e.message }));
+  }
+  const stampNow = () => {
+    const d = new Date();
+    const p2 = (n) => String(n).padStart(2, '0');
+    return `${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  };
+  function prepareFigma(id, pageName = null) {
+    if (figmaExportFn) return figmaExportFn(id, pageName);
+    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'figma-export.js'), id, ...(pageName ? ['--page-name', pageName] : [])], { encoding: 'utf8', env: scriptEnv() });
     return { ok: r.status === 0, output: `${r.stdout || ''}${r.stderr || ''}`.trim().split('\n').slice(-4) };
   }
   // 고친 카드 받기: PNG 저장 + 글자 레이어 내용을 내보낼 때(승인 문구)와 비교
@@ -795,7 +848,13 @@ function createStudio({
         if (!detail().pngs.length) throw new HttpError(409, '카드를 출력한 뒤에 피그마로 보낼 수 있어요');
         if (detail().actions.running) throw new HttpError(409, '작업이 끝난 뒤에 피그마로 보낼 수 있어요');
         if (detail().actions.ai_busy) throw new HttpError(409, 'AI 디자인 카드(첫·마지막)를 만드는 중이에요. 끝난 뒤에 피그마로 보내요');
-        const result = prepareFigma(id);
+        if ((figmaRuns.get(id) || {}).running) throw new HttpError(409, '피그마에 카드를 넣는 중이에요');
+        const cfg = readJsonSafe(figmaConfigFile) || {};
+        const push = figmaAutoPush && figmaPush.fileKeyOf(cfg.file_url);
+        // 자동 보내기면 '제품명 (ID) · 월.일 시:분' 새 페이지 (사람이 고친 이전 페이지를 덮어쓰지 않음)
+        const pageName = push ? `${nameOf(id)} (${id}) · ${stampNow()}` : null;
+        const result = prepareFigma(id, pageName);
+        if (result.ok && push) startFigmaPush(id, pageName);
         return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `피그마용 카드를 만들지 못했어요: ${(result.output || []).slice(-1).join('') || '스크립트 오류'}` }), figma_export: result, product: detail() });
       }
       // 카드 이미지 다시 만들기: 승인된 문구 그대로 HTML·PNG만 다시 출력 (Claude 안 씀, 제작 기록에 안 남김). 새 폴더·다른 컴퓨터는 output/이 git에 없어 필요

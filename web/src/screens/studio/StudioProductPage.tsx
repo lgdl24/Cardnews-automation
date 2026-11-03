@@ -29,7 +29,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   const { status } = useStudioStatus();
   const index = useIndex();
   const labels = index.status === 'ready' ? index.data.labels : undefined;
-  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && (d.actions.running || d.ai_card?.running) ? 2000 : null));
+  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && (d.actions.running || d.ai_card?.running || d.figma?.push?.running) ? 2000 : null));
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -675,19 +675,48 @@ function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: 
     <div className="panel figma-panel">
       <h3 className="panel-title">피그마에서 편집</h3>
       <p className="muted">
-        카드를 피그마 레이어(글자·도형·사진)로 보내 직접 고칠 수 있어요. 고친 카드는 피그마 플러그인에서 다시 이 화면으로 보내요.
+        {f.auto_push
+          ? '누르면 최종 카드 1~5번을 피그마 파일의 새 페이지(제품명 · 날짜 시각)에 바로 넣어요. 2~4번은 글자·도형·사진 레이어, AI 디자인 카드는 완성 이미지로 들어가요. 1~3분 걸려요.'
+          : '카드를 피그마 레이어(글자·도형·사진)로 보내 직접 고칠 수 있어요. 고친 카드는 피그마 플러그인에서 다시 이 화면으로 보내요.'}
       </p>
       <div className="action-bar">
-        <button className="btn btn-primary" disabled={busy} onClick={onPrepare}>
-          {f.prepared_at ? '피그마용 카드 다시 준비' : '피그마에서 편집'}
+        <button className="btn btn-primary" disabled={busy || Boolean(f.push?.running)} onClick={onPrepare}>
+          {f.push?.running ? '피그마에 넣는 중…' : f.prepared_at ? '피그마에 다시 넣기 (새 페이지)' : '피그마에서 편집'}
         </button>
+        {f.push?.ok && f.push.page_url && (
+          <a className="btn" href={f.push.page_url} target="_blank" rel="noreferrer">
+            넣은 페이지 열기
+          </a>
+        )}
         {f.file_url && (
           <a className="btn" href={f.file_url} target="_blank" rel="noreferrer">
             피그마 파일 열기
           </a>
         )}
       </div>
-      {f.prepared_at && (
+      {f.push && (
+        <div className={`notice${f.push.ok === false ? ' notice-error' : ''}`} role="status">
+          {f.push.running && <p>피그마에 카드를 넣는 중이에요 · 페이지 '{f.push.page_name}' (1~3분). 피그마 파일을 열어 두면 카드가 생기는 걸 바로 볼 수 있어요.</p>}
+          {f.push.ok && <p>피그마에 넣었어요 · 페이지 '{f.push.page_name}' · {formatDateTime(f.push.finished_at ?? f.push.started_at)}</p>}
+          {f.push.ok === false && <p>피그마에 넣지 못했어요: {f.push.error} — 다시 누르거나, 아래 플러그인으로 가져올 수 있어요.</p>}
+        </div>
+      )}
+      {f.prepared_at && f.auto_push && (
+        <details className="figma-manual">
+          <summary>플러그인으로 직접 가져오기·고친 카드 보내기 (피그마 데스크톱)</summary>
+          <ol className="figma-steps">
+            <li>플러그인 › 개발 › 카드뉴스 작업실 연결 실행 (처음 한 번은 <code>figma-plugin/manifest.json</code> 등록)</li>
+            <li>
+              연결 코드{' '}
+              <button type="button" className="figma-code" onClick={copy} title="눌러서 복사">
+                {f.code}
+              </button>
+              {copied && <span className="muted"> 복사했어요</span>} → 연결 → <strong>{detail.name}</strong> → 가져오기 또는 고친 카드를 웹으로 보내기
+            </li>
+          </ol>
+        </details>
+      )}
+      {f.prepared_at && !f.auto_push && (
         <ol className="figma-steps">
           <li>
             피그마 데스크톱에서 <strong>플러그인 › 개발 › 카드뉴스 작업실 연결</strong>을 실행해요 (처음 한 번은 <code>figma-plugin/manifest.json</code>을 불러와 등록).
@@ -704,7 +733,7 @@ function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: 
           </li>
         </ol>
       )}
-      {f.prepared_at && <p className="muted">준비한 시각 {formatDateTime(f.prepared_at)} · 작업실을 다시 켜면 연결 코드가 바뀌어요.</p>}
+      {f.prepared_at && !f.auto_push && <p className="muted">준비한 시각 {formatDateTime(f.prepared_at)} · 작업실을 다시 켜면 연결 코드가 바뀌어요.</p>}
       {edited && (
         <div className="figma-edited">
           <h4 className="panel-subtitle">

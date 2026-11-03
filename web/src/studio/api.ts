@@ -199,6 +199,19 @@ export interface ProductDetail extends ProductSummary {
 export interface FigmaInfo {
   code: string;
   file_url: string | null;
+  /** 로컬 Claude Code의 피그마 연결로 바로 넣기 (꺼져 있으면 플러그인으로 가져오기) */
+  auto_push?: boolean;
+  push?: {
+    running: boolean;
+    ok: boolean | null;
+    page_name: string | null;
+    page_id: string | null;
+    error: string | null;
+    started_at: string;
+    finished_at: string | null;
+    progress: string[];
+    page_url: string | null;
+  } | null;
   prepared_at: string | null;
   edited: {
     received_at: string;

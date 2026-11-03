@@ -22,7 +22,7 @@ const { BUILDER_SOURCE, FONT_FALLBACK } = require('./lib/figma-builder');
 function parseArgs(argv) {
   const id = requireProductId(argv);
   const get = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
-  return { id, card: get('--card') ? Number(get('--card')) : null, scale: Number(get('--scale') || 2) };
+  return { id, card: get('--card') ? Number(get('--card')) : null, scale: Number(get('--scale') || 2), pageName: get('--page-name') };
 }
 
 // ── 브라우저 안에서 실행: 카드 DOM → 레이어 목록 ──────────────────────────
@@ -254,7 +254,7 @@ function buildBatches(cards) {
 }
 
 async function main() {
-  const { id, card: onlyCard, scale } = parseArgs(process.argv.slice(2));
+  const { id, card: onlyCard, scale, pageName } = parseArgs(process.argv.slice(2));
   const input = loadInput(id);
   const product = (input.info['제품명'] || id).split('\n')[0];
   const cardsJson = JSON.parse(fs.readFileSync(paths.product(id, 'cards.json'), 'utf8'));
@@ -308,6 +308,8 @@ async function main() {
   } finally {
     await browser.close();
   }
+  // --page-name: 이 이름의 새 페이지에 넣음 (작업실 자동 보내기가 '제품명 (ID) · 월.일 시:분'으로 씀)
+  if (pageName) for (const c of cards) c.page = pageName;
   for (const f of fs.readdirSync(outDir)) if (/^build-.*\.js$/.test(f)) fs.unlinkSync(path.join(outDir, f));
   const batches = buildBatches(cards);
   batches.forEach((b, i) => fs.writeFileSync(path.join(outDir, `build-${i + 1}.js`), b.code));

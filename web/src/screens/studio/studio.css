@@ -702,3 +702,10 @@
   padding: 4px 10px;
   font-size: 0.82rem;
 }
+.figma-manual {
+  margin-top: 12px;
+}
+.figma-manual summary {
+  cursor: pointer;
+  color: var(--color-muted);
+}
