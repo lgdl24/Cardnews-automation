@@ -128,12 +128,12 @@ td .tag {
   color: var(--stage-approved-fg);
 }
 .tag-fail {
-  background: #fbe3e1;
+  background: var(--color-danger-bg);
   color: var(--color-danger);
 }
 .tag-human {
-  background: #e3ecf8;
-  color: #2b5d9b;
+  background: var(--stage-copy-bg);
+  color: var(--stage-copy-fg);
 }
 
 /* ── 이벤트 타임라인 */
@@ -220,7 +220,7 @@ td .tag {
   color: var(--color-muted);
 }
 .event-detail code {
-  background: #fbe3e1;
+  background: var(--color-danger-bg);
   color: var(--color-danger);
   padding: 1px 6px;
   border-radius: 4px;

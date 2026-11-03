@@ -296,8 +296,8 @@
   font-size: 0.85rem;
 }
 .pe-caution-new {
-  background: #fbe3e1;
-  border: 1px solid #f0b8b4;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger);
 }
 .pe-caution-term {
   font-weight: 700;
