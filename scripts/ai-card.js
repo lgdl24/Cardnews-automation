@@ -268,7 +268,7 @@ if (require.main === module) {
       if (!results.length) console.log('새로 만들 AI 카드가 없어요 (문구가 그대로예요).');
       if (applied && applied.applied.length) console.log(`최종 카드에 넣음: ${applied.applied.join('·')}번 (output/png)`);
       for (const r of results) console.log(`${r.no}번: ${r.ok ? `완료 → output/ai-card/${r.file}` : '실패'} (시도 ${r.tries.length}번)`);
-      console.log('[주의] AI가 그린 문구가 cards.json과 같은지 확인해 주세요.');
+      if (results.length) console.log('[주의] AI가 그린 문구가 cards.json과 같은지 확인해 주세요.');
       process.exit(results.every((r) => r.ok) ? 0 : 1);
     })
     .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });

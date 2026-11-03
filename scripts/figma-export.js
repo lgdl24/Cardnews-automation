@@ -16,6 +16,7 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const { paths, loadConfig, loadInput, requireProductId } = require('./lib/common');
 const { pad, launchBrowser, waitForFit } = require('./lib/card-html');
+const { appliedNumbers } = require('./lib/ai-cards');
 const { BUILDER_SOURCE, FONT_FALLBACK } = require('./lib/figma-builder');
 
 function parseArgs(argv) {
@@ -256,7 +257,10 @@ async function main() {
   const { id, card: onlyCard, scale } = parseArgs(process.argv.slice(2));
   const input = loadInput(id);
   const product = (input.info['제품명'] || id).split('\n')[0];
-  loadConfig(input, JSON.parse(fs.readFileSync(paths.product(id, 'cards.json'), 'utf8')));
+  const cardsJson = JSON.parse(fs.readFileSync(paths.product(id, 'cards.json'), 'utf8'));
+  loadConfig(input, cardsJson);
+  // 첫·마지막 카드에 AI 디자인 카드가 들어가 있으면 그 이미지를 그대로 보냄 (문구가 그림 안에 있어 글자 레이어 없음)
+  const aiApplied = appliedNumbers(paths.product(id), cardsJson.cards || []);
   const htmlDir = paths.product(id, 'output', 'html');
   if (!fs.existsSync(htmlDir)) { console.error(`출력 HTML이 없어요. 먼저 npm run render -- ${id}`); process.exit(1); }
   const files = fs.readdirSync(htmlDir).filter((f) => /^card-\d+\.html$/.test(f)).sort()
@@ -274,6 +278,15 @@ async function main() {
     const page = await browser.newPage({ viewport: { width: 1080, height: 1080 }, deviceScaleFactor: scale });
     for (const f of files) {
       const no = Number(f.match(/\d+/)[0]);
+      if (aiApplied.includes(no)) {
+        const upload = `${id}__c${pad(no)}__AI`;
+        fs.copyFileSync(paths.product(id, 'output', 'png', `card-${pad(no)}.png`), path.join(imgDir, `${upload}.png`));
+        cards.push({
+          file: `card-${pad(no)}`, no, page: `${product} (${id})`, width: 1080, height: 1080, ai: true,
+          layers: [{ kind: 'raster', id: 'AI', name: 'AI 디자인 카드 (GPT · 문구 포함 이미지)', box: { x: 0, y: 0, w: 1080, h: 1080 }, upload }],
+        });
+        continue;
+      }
       await page.goto(pathToFileURL(path.join(htmlDir, f)).href, { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);
       await waitForFit(page);
@@ -300,6 +313,7 @@ async function main() {
   batches.forEach((b, i) => fs.writeFileSync(path.join(outDir, `build-${i + 1}.js`), b.code));
   fs.writeFileSync(path.join(outDir, 'layers.json'), JSON.stringify({ product_id: id, product, scale, cards }, null, 2) + '\n');
   const count = (k) => cards.reduce((s, c) => s + c.layers.filter((l) => l.kind === k).length, 0);
+  if (aiApplied.length) console.log(`AI 디자인 카드: ${aiApplied.join('·')}번은 완성 이미지 한 장으로 보냄`);
   console.log(`피그마 내보내기: ${path.relative(paths.root, outDir)} — 카드 ${cards.length}장, 글자 ${count('text')} · 도형 ${count('rect')} · 이미지 ${count('raster')}`);
   console.log(`  1) images/ ${count('raster')}개를 upload_assets로 올림 (파일 이름 = 레이어 이름)  2) use_figma에 build-*.js ${batches.length}개 (${batches.map((b) => b.cards.join('·')).join(' / ')})`);
 }

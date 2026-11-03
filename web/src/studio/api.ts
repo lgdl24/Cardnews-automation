@@ -129,6 +129,7 @@ export interface Actions {
   /** 승인된 문구 그대로 카드 이미지만 다시 출력 (output/이 없는 새 폴더·다른 컴퓨터) */
   can_render?: boolean;
   can_ai_card?: boolean;
+  ai_busy?: boolean;
   can_plan: boolean;
   can_approve_plan: boolean;
   can_revise_plan: boolean;
@@ -216,10 +217,25 @@ export interface AiCardTry {
   error?: string;
 }
 export interface AiCardInfo {
+  auto: boolean;
   running: boolean;
-  run: { card: number | null; started_at: string; finished_at: string | null; ok: boolean | null; progress: string[] } | null;
+  run: { card: number | null; auto: boolean; started_at: string; finished_at: string | null; ok: boolean | null; progress: string[] } | null;
   made_at: string | null;
-  cards: { no: number; kind: 'cover' | 'closing'; ok: boolean; file: string | null; text_checked: boolean; tries: AiCardTry[]; v: number }[];
+  targets: number[];
+  applied: number[];
+  stale: number[];
+  cards: {
+    no: number;
+    kind: 'cover' | 'closing';
+    ok: boolean;
+    file: string | null;
+    text_checked: boolean;
+    tries: AiCardTry[];
+    v: number;
+    applied: boolean;
+    stale: boolean;
+    template: { file: string; v: number } | null;
+  }[];
 }
 
 export class StudioError extends Error {

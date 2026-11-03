@@ -511,14 +511,23 @@ function createStudio({
   function aiCardInfo(id) {
     const run = aiRuns.get(id) || null;
     const report = readJsonSafe(path.join(aiDir(id), 'ai-card.json'));
+    const data = readJsonSafe(path.join(productDir(id), 'cards.json'));
+    const list = (data && data.cards) || [];
+    const applied = aiCards.appliedNumbers(productDir(id), list);
+    const stale = aiCards.staleTargets(productDir(id), list);
+    const fileV = (f) => (fs.existsSync(f) ? Math.round(fs.statSync(f).mtimeMs) : 0);
     return {
+      auto: aiAuto,
       running: Boolean(run && run.running),
       run: run ? { card: run.card, auto: Boolean(run.auto), started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
       made_at: report ? report.made_at : null,
+      targets: aiCards.aiTargets(list),
+      applied,
+      stale,
       cards: report && Array.isArray(report.cards)
         ? report.cards.map((c) => {
-          const f = c.file ? path.join(aiDir(id), c.file) : null;
-          return { ...c, v: f && fs.existsSync(f) ? Math.round(fs.statSync(f).mtimeMs) : 0 };
+          const tpl = `template-card-${String(c.no).padStart(2, '0')}.png`;
+          return { ...c, v: c.file ? fileV(path.join(aiDir(id), c.file)) : 0, applied: applied.includes(c.no), stale: stale.includes(c.no), template: fileV(path.join(aiDir(id), tpl)) ? { file: tpl, v: fileV(path.join(aiDir(id), tpl)) } : null };
         })
         : [],
     };

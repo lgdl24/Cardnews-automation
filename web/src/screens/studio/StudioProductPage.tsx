@@ -573,66 +573,68 @@ function RevisionForm({
 }
 
 // ── 피그마에서 편집 (사람이 직접 고치기)
-// AI 디자인 카드: 첫·마지막 카드를 GPT 이미지로 (배경·문구는 AI, 제품은 원본 사진 잠금). 템플릿 카드와 나란히 비교
+// AI 디자인 카드: 문구·출력 작업이 끝나면 첫·마지막 카드를 GPT 이미지로 자동으로 만들어 최종 카드에 넣음 (제품은 원본 사진 잠금)
 function AiCardPanel({ detail, busy, onMake }: { detail: ProductDetail; busy: boolean; onMake: (card?: number) => void }) {
   const ai = detail.ai_card!;
-  const cards = detail.cards?.cards ?? [];
-  const targets = [cards[0], cards[cards.length - 1]].filter((c, i, arr): c is NonNullable<typeof c> => Boolean(c) && arr.indexOf(c) === i);
   const can = Boolean(detail.actions.can_ai_card) && !busy;
-  const tpl = (no: number) => detail.pngs.find((x) => x.file === `card-${String(no).padStart(2, '0')}.png`);
+  const nos = ai.targets;
+  const missing = nos.filter((n) => !ai.applied.includes(n));
   return (
     <div className="panel ai-card-panel">
-      <h3 className="panel-title">AI 디자인 카드 (첫·마지막 카드)</h3>
+      <h3 className="panel-title">AI 디자인 카드 · {nos.join('·')}번</h3>
       <p className="muted">
-        GPT 이미지(내 컴퓨터의 Codex, ChatGPT 로그인)가 배경과 문구를 만들고, 제품은 원본 사진을 그대로 써요. 제품이 옮겨지거나 바뀌면 자동으로 다시 만들어요. 한 장에 1~2분 걸려요.
+        문구·출력 작업이 끝나면 첫 카드와 마지막 카드를 GPT 이미지(내 컴퓨터의 Codex)로 자동으로 만들어 최종 카드에 넣어요. 제품은 원본 사진 그대로예요. 문구를 고치면 그 카드만 다시 만들어요.
       </p>
-      <div className="action-bar">
-        <button className="btn btn-primary" disabled={!can} onClick={() => onMake()}>
-          {ai.cards.length ? 'AI 디자인 카드 모두 다시 만들기' : 'AI 디자인 카드 만들기'}
-        </button>
-        {ai.running && <span className="muted">만드는 중… {ai.run?.card ? `${ai.run.card}번` : `${targets.map((c) => c.no).join('·')}번`}</span>}
-      </div>
+      {ai.running && (
+        <p className="notice" role="status">
+          AI 디자인 카드를 만드는 중이에요 ({ai.run?.card ? `${ai.run.card}번` : `${nos.join('·')}번`}, 한 장에 1~2분). 끝날 때까지 최종 승인·내보내기·피그마는 잠시 기다려요.
+        </p>
+      )}
       {ai.run && (ai.running || ai.run.ok === false) && ai.run.progress.length > 0 && (
         <pre className={`ai-card-log${ai.run.ok === false ? ' is-error' : ''}`}>{ai.run.progress.join('\n')}</pre>
       )}
+      {!ai.running && missing.length > 0 && (
+        <div className="action-bar">
+          <button className="btn btn-primary" disabled={!can} onClick={() => onMake()}>
+            {missing.join('·')}번 AI 디자인 카드 만들기
+          </button>
+          <span className="muted">{ai.cards.length ? '문구가 바뀌었거나 만들지 못한 카드예요.' : '이 제품은 아직 AI 디자인 카드가 없어요.'}</span>
+        </div>
+      )}
       {ai.cards.length > 0 && (
         <>
-          <div className="notice notice-warn" role="status">
-            <p>[주의] AI가 그린 문구가 승인 문구와 같은지 꼭 확인해 주세요. 제품은 원본 사진이라 바뀌지 않아요.</p>
-          </div>
+          {ai.applied.length > 0 && (
+            <div className="notice notice-warn" role="status">
+              <p>[주의] {ai.applied.join('·')}번 최종 카드는 AI가 그린 문구예요. 승인 문구와 같은지 확인해 주세요.</p>
+            </div>
+          )}
           <div className="ai-card-grid">
-            {targets.map((c) => {
-              const r = ai.cards.find((x) => x.no === c.no);
-              const t = tpl(c.no);
+            {nos.map((no) => {
+              const r = ai.cards.find((x) => x.no === no);
               const last = r?.tries[r.tries.length - 1];
               return (
-                <div className="ai-card-item" key={c.no}>
+                <div className="ai-card-item" key={no}>
                   <div className="ai-card-pair">
                     <figure>
-                      {t ? <img src={pngUrl(detail.id, t.file, t.v)} alt={`${c.no}번 템플릿 카드`} loading="lazy" /> : <div className="ai-card-empty">템플릿 카드 없음</div>}
+                      {r?.template ? <img src={aiCardUrl(detail.id, r.template.file, r.template.v)} alt={`${no}번 템플릿 카드`} loading="lazy" /> : <div className="ai-card-empty">템플릿</div>}
                       <figcaption>템플릿</figcaption>
                     </figure>
                     <figure>
-                      {r?.ok && r.file ? <img src={aiCardUrl(detail.id, r.file, r.v)} alt={`${c.no}번 AI 디자인 카드`} loading="lazy" /> : <div className="ai-card-empty">{r ? '만들지 못했어요' : '아직 없음'}</div>}
-                      <figcaption>AI 디자인</figcaption>
+                      {r?.ok && r.file ? <img src={aiCardUrl(detail.id, r.file, r.v)} alt={`${no}번 AI 디자인 카드`} loading="lazy" /> : <div className="ai-card-empty">{r ? '만들지 못했어요' : '아직 없음'}</div>}
+                      <figcaption>AI 디자인{r?.applied ? ' · 최종 카드에 사용 중' : r?.stale ? ' · 문구가 바뀜' : ''}</figcaption>
                     </figure>
                   </div>
                   <div className="ai-card-meta">
-                    <strong>{c.no}번</strong>
+                    <strong>{no}번</strong>
                     {r && (
                       <span className="muted">
                         시도 {r.tries.length}번{last?.diff != null ? ` · 제품 차이 ${last.diff}` : ''}
                         {last?.error ? ` · ${last.error}` : ''}
                       </span>
                     )}
-                    <button className="btn btn-small" disabled={!can} onClick={() => onMake(c.no)}>
+                    <button className="btn btn-small" disabled={!can} onClick={() => onMake(no)}>
                       이 카드 다시 만들기
                     </button>
-                    {r?.ok && r.file && (
-                      <a className="btn btn-small" href={aiCardUrl(detail.id, r.file, r.v)} download={`${detail.id}-ai-${r.file}`}>
-                        PNG 받기
-                      </a>
-                    )}
                   </div>
                 </div>
               );
