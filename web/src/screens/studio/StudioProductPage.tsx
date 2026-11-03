@@ -4,7 +4,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import {
-  JOB_LABEL, STAGE_LABEL, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
+  JOB_LABEL, STAGE_LABEL, aiCardUrl, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
   type ProductDetail, type Report, type RevisionType, type StudioJob,
 } from '../../studio/api';
 import { useIndex } from '../../data/load';
@@ -29,7 +29,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   const { status } = useStudioStatus();
   const index = useIndex();
   const labels = index.status === 'ready' ? index.data.labels : undefined;
-  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && d.actions.running ? 2000 : null));
+  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && (d.actions.running || d.ai_card?.running) ? 2000 : null));
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -160,6 +160,9 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
                 </button>
               </div>
             </div>
+          )}
+          {p.ai_card && (
+            <AiCardPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-card`, card ? { card } : {})} />
           )}
           {p.figma && p.pngs.length > 0 && (
             <FigmaPanel
@@ -570,6 +573,77 @@ function RevisionForm({
 }
 
 // ── 피그마에서 편집 (사람이 직접 고치기)
+// AI 디자인 카드: 첫·마지막 카드를 GPT 이미지로 (배경·문구는 AI, 제품은 원본 사진 잠금). 템플릿 카드와 나란히 비교
+function AiCardPanel({ detail, busy, onMake }: { detail: ProductDetail; busy: boolean; onMake: (card?: number) => void }) {
+  const ai = detail.ai_card!;
+  const cards = detail.cards?.cards ?? [];
+  const targets = [cards[0], cards[cards.length - 1]].filter((c, i, arr): c is NonNullable<typeof c> => Boolean(c) && arr.indexOf(c) === i);
+  const can = Boolean(detail.actions.can_ai_card) && !busy;
+  const tpl = (no: number) => detail.pngs.find((x) => x.file === `card-${String(no).padStart(2, '0')}.png`);
+  return (
+    <div className="panel ai-card-panel">
+      <h3 className="panel-title">AI 디자인 카드 (첫·마지막 카드)</h3>
+      <p className="muted">
+        GPT 이미지(내 컴퓨터의 Codex, ChatGPT 로그인)가 배경과 문구를 만들고, 제품은 원본 사진을 그대로 써요. 제품이 옮겨지거나 바뀌면 자동으로 다시 만들어요. 한 장에 1~2분 걸려요.
+      </p>
+      <div className="action-bar">
+        <button className="btn btn-primary" disabled={!can} onClick={() => onMake()}>
+          {ai.cards.length ? 'AI 디자인 카드 모두 다시 만들기' : 'AI 디자인 카드 만들기'}
+        </button>
+        {ai.running && <span className="muted">만드는 중… {ai.run?.card ? `${ai.run.card}번` : `${targets.map((c) => c.no).join('·')}번`}</span>}
+      </div>
+      {ai.run && (ai.running || ai.run.ok === false) && ai.run.progress.length > 0 && (
+        <pre className={`ai-card-log${ai.run.ok === false ? ' is-error' : ''}`}>{ai.run.progress.join('\n')}</pre>
+      )}
+      {ai.cards.length > 0 && (
+        <>
+          <div className="notice notice-warn" role="status">
+            <p>[주의] AI가 그린 문구가 승인 문구와 같은지 꼭 확인해 주세요. 제품은 원본 사진이라 바뀌지 않아요.</p>
+          </div>
+          <div className="ai-card-grid">
+            {targets.map((c) => {
+              const r = ai.cards.find((x) => x.no === c.no);
+              const t = tpl(c.no);
+              const last = r?.tries[r.tries.length - 1];
+              return (
+                <div className="ai-card-item" key={c.no}>
+                  <div className="ai-card-pair">
+                    <figure>
+                      {t ? <img src={pngUrl(detail.id, t.file, t.v)} alt={`${c.no}번 템플릿 카드`} loading="lazy" /> : <div className="ai-card-empty">템플릿 카드 없음</div>}
+                      <figcaption>템플릿</figcaption>
+                    </figure>
+                    <figure>
+                      {r?.ok && r.file ? <img src={aiCardUrl(detail.id, r.file, r.v)} alt={`${c.no}번 AI 디자인 카드`} loading="lazy" /> : <div className="ai-card-empty">{r ? '만들지 못했어요' : '아직 없음'}</div>}
+                      <figcaption>AI 디자인</figcaption>
+                    </figure>
+                  </div>
+                  <div className="ai-card-meta">
+                    <strong>{c.no}번</strong>
+                    {r && (
+                      <span className="muted">
+                        시도 {r.tries.length}번{last?.diff != null ? ` · 제품 차이 ${last.diff}` : ''}
+                        {last?.error ? ` · ${last.error}` : ''}
+                      </span>
+                    )}
+                    <button className="btn btn-small" disabled={!can} onClick={() => onMake(c.no)}>
+                      이 카드 다시 만들기
+                    </button>
+                    {r?.ok && r.file && (
+                      <a className="btn btn-small" href={aiCardUrl(detail.id, r.file, r.v)} download={`${detail.id}-ai-${r.file}`}>
+                        PNG 받기
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: boolean; onPrepare: () => void }) {
   const f = detail.figma!;
   const [copied, setCopied] = useState(false);

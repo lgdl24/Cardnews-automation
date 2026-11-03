@@ -638,3 +638,67 @@
   margin: 0 0 8px;
   font-size: 0.95rem;
 }
+
+/* AI 디자인 카드 (첫·마지막 카드): 템플릿 카드와 나란히 */
+.ai-card-log {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 160px;
+  overflow: auto;
+}
+.ai-card-log.is-error {
+  color: var(--color-danger);
+}
+.ai-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.ai-card-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ai-card-pair figure {
+  margin: 0;
+}
+.ai-card-pair img,
+.ai-card-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+}
+.ai-card-empty {
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  background: var(--color-surface);
+}
+.ai-card-pair figcaption {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  opacity: 0.75;
+}
+.ai-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-small {
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
