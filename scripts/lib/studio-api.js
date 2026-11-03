@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
+const aiCards = require('./ai-cards');
 const { ROOT, readJson, parseInput, resolveDesign, designCatalog, moodInputOf } = require('./common');
 const { loadForm, renderInputMd } = require('./input-form');
 const { summarize } = require('./analysis');
@@ -102,6 +103,8 @@ function createStudio({
   figmaExportFn,
   renderFn,
   aiCardFn,
+  // 문구·출력 작업이 끝나면 첫·마지막 카드를 GPT 이미지로 자동으로 만듦 (CARDNEWS_AI_CARD=off 로 끔)
+  aiAuto = process.env.CARDNEWS_AI_CARD !== 'off',
   figmaCode = crypto.randomBytes(3).toString('hex').toUpperCase(),
   figmaConfigFile = path.join(root, 'config', 'figma.json'),
 } = {}) {
@@ -111,6 +114,7 @@ function createStudio({
   // 대기열: 작업 중에 다른 제품 작업을 누르면 거절하지 않고 차례를 기다림. 제품마다 하나만, 서버를 끄면 사라짐
   const queue = []; // { product_id, kind, revision, queued_at, beforeStart }
   const lastJobs = new Map(); // 제품ID → 마지막 작업 요약
+  const aiRuns = new Map(); // 제품ID → { card, auto, started_at, finished_at, running, ok, lines: [] }
   const isRunning = () => Boolean(current && current.status === 'running');
   const queueIndex = (id) => queue.findIndex((q) => q.product_id === id);
   // 이 제품의 작업 상태: 'running' | 'queued' | null
@@ -249,7 +253,10 @@ function createStudio({
     const lastPlanJob = [...events].reverse().find((e) => e.event === 'job_finished' && e.ok && (e.kind === 'plan' || (e.kind === 'revise' && stage === 'plan')));
     const approvedCurrentPlan = planApproved && lastPlanApproval && (!lastPlanJob || lastPlanApproval.ts > lastPlanJob.ts);
     const lastOk = lastFinish ? lastFinish.ok : null;
+    // AI 디자인 카드를 만드는 중이면 최종 카드(1·마지막)가 아직 바뀌는 중 → 승인·내보내기·피그마는 기다림
+    const aiBusy = Boolean((aiRuns.get(id) || {}).running);
     return {
+      ai_busy: aiBusy,
       running,
       job_state: state,
       // 지금 작업을 누르면 앞에 기다릴 작업 수 (0이면 바로 시작)
@@ -261,9 +268,9 @@ function createStudio({
       can_revise_plan: !running && stage === 'plan' && !approvedCurrentPlan,
       can_select_design: !running && stage === 'plan' && !approvedCurrentPlan,
       can_copy: !running && stage === 'plan' && Boolean(approvedCurrentPlan),
-      can_approve_final: !running && stage === 'copy',
-      can_revise_final: !running && stage === 'copy',
-      can_export: !running && stage === 'approved',
+      can_approve_final: !running && !aiBusy && stage === 'copy',
+      can_revise_final: !running && !aiBusy && stage === 'copy',
+      can_export: !running && !aiBusy && stage === 'approved',
       can_render: !running && (stage === 'copy' || stage === 'approved'),
       can_ai_card: !running && (stage === 'copy' || stage === 'approved') && !(aiRuns.get(id) || {}).running,
     };
@@ -408,6 +415,7 @@ function createStudio({
         job.status = 'done';
         job.summary = summary;
         lastJobs.set(id, { ...publicSummary(summary), status: 'done' });
+        if (summary && summary.ok && (kind === 'copy' || kind === 'revise')) autoAiCard(id);
       })
       .catch((e) => {
         job.status = 'done';
@@ -499,14 +507,13 @@ function createStudio({
     };
   }
   // AI 디자인 카드 (scripts/ai-card.js): 첫·마지막 카드를 GPT 이미지(로컬 Codex)로. 몇 분 걸려서 따로 돌리고 상태만 보여줌
-  const aiRuns = new Map(); // 제품ID → { card, started_at, finished_at, running, ok, lines: [] }
   const aiDir = (id) => path.join(productDir(id), 'output', 'ai-card');
   function aiCardInfo(id) {
     const run = aiRuns.get(id) || null;
     const report = readJsonSafe(path.join(aiDir(id), 'ai-card.json'));
     return {
       running: Boolean(run && run.running),
-      run: run ? { card: run.card, started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
+      run: run ? { card: run.card, auto: Boolean(run.auto), started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
       made_at: report ? report.made_at : null,
       cards: report && Array.isArray(report.cards)
         ? report.cards.map((c) => {
@@ -516,13 +523,13 @@ function createStudio({
         : [],
     };
   }
-  function startAiCard(id, card) {
-    const run = { card: card || null, started_at: new Date().toISOString(), finished_at: null, running: true, ok: null, lines: [] };
+  function startAiCard(id, card, { stale = false } = {}) {
+    const run = { card: card || null, auto: stale, started_at: new Date().toISOString(), finished_at: null, running: true, ok: null, lines: [] };
     aiRuns.set(id, run);
     const onLine = (line) => { if (line.trim()) run.lines.push(line.trim()); if (run.lines.length > 50) run.lines.shift(); };
     const done = (r) => Object.assign(run, { running: false, ok: Boolean(r && r.ok), finished_at: new Date().toISOString() });
-    const exec = aiCardFn || ((pid, { card: c }) => new Promise((resolve) => {
-      const args = [path.join(root, 'scripts', 'ai-card.js'), pid, ...(c ? ['--card', String(c)] : [])];
+    const exec = aiCardFn || ((pid, { card: c, stale: st }) => new Promise((resolve) => {
+      const args = [path.join(root, 'scripts', 'ai-card.js'), pid, ...(c ? ['--card', String(c)] : []), ...(st ? ['--stale'] : [])];
       const child = spawn(process.execPath, args, { env: scriptEnv() });
       let buf = '';
       const feed = (d) => { buf += d; const parts = buf.split('\n'); buf = parts.pop(); parts.forEach(onLine); };
@@ -531,7 +538,15 @@ function createStudio({
       child.on('error', (e) => { onLine(`[오류] ${e.message}`); resolve({ ok: false }); });
       child.on('close', (code) => { if (buf) onLine(buf); resolve({ ok: code === 0, code }); });
     }));
-    Promise.resolve(exec(id, { card, onLine })).then(done, (e) => { onLine(`[오류] ${e.message}`); done({ ok: false }); });
+    Promise.resolve(exec(id, { card, stale, onLine })).then(done, (e) => { onLine(`[오류] ${e.message}`); done({ ok: false }); });
+  }
+  // 문구·출력 작업이 성공하면: 아직 없거나 문구가 바뀐 첫·마지막 카드를 GPT로 (뒤에서). 문구가 그대로면 아무것도 안 함
+  function autoAiCard(id) {
+    if (!aiAuto || (aiRuns.get(id) || {}).running) return;
+    const cards = readJsonSafe(path.join(productDir(id), 'cards.json'));
+    if (!cards || cards.stage !== 'copy' || !Array.isArray(cards.cards)) return;
+    if (!aiCards.staleTargets(productDir(id), cards.cards).length) return;
+    startAiCard(id, null, { stale: true });
   }
   function prepareFigma(id) {
     if (figmaExportFn) return figmaExportFn(id);
@@ -770,6 +785,7 @@ function createStudio({
       if (method === 'POST' && parts[2] === 'figma' && parts.length === 3) {
         if (!detail().pngs.length) throw new HttpError(409, '카드를 출력한 뒤에 피그마로 보낼 수 있어요');
         if (detail().actions.running) throw new HttpError(409, '작업이 끝난 뒤에 피그마로 보낼 수 있어요');
+        if (detail().actions.ai_busy) throw new HttpError(409, 'AI 디자인 카드(첫·마지막)를 만드는 중이에요. 끝난 뒤에 피그마로 보내요');
         const result = prepareFigma(id);
         return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `피그마용 카드를 만들지 못했어요: ${(result.output || []).slice(-1).join('') || '스크립트 오류'}` }), figma_export: result, product: detail() });
       }

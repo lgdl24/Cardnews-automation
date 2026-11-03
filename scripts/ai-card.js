@@ -1,12 +1,14 @@
 // AI 디자인 카드 (1번 표지·마지막 마무리 카드): GPT 이미지(Codex CLI)가 배경·문구를 만들고, 제품은 원본 사진을 잠금
-// 사용법: node scripts/ai-card.js <제품ID> [--card N] [--tries 3]   (npm run ai-card -- <제품ID>)
+// 사용법: node scripts/ai-card.js <제품ID> [--card N] [--stale] [--tries 3]   (npm run ai-card -- <제품ID>)
+//   --stale : 아직 없거나 문구가 바뀐 카드만 (작업실이 문구·출력 작업 뒤 자동으로 부름)
 //
 // 흐름 (카드마다)
 //   1. 제품 사진 누끼(투명 PNG면 알파, 아니면 테두리 단색 배경 제거)를 정해진 자리에 놓은 바탕(base.png)과 요청문을 만듦
 //   2. 로컬 Codex CLI로 이미지 편집: `codex exec -i base.png` ($imagegen, ChatGPT 로그인 사용량 — API 키 불필요)
 //   3. 제품 잠금 검사: AI 결과의 제품 자리를 원본과 비교 (색 차이·이동량). 어긋나면 다시 생성 (--tries까지)
 //   4. 원본 제품 픽셀을 같은 자리에 다시 덮어 1080px PNG 저장 → 최종본의 제품은 항상 원본 사진
-// 출력: products/<id>/output/ai-card/card-NN.png, ai-card.json(카드별 시도·점수), work/(바탕·요청문·AI 원본)
+// 출력: products/<id>/output/ai-card/card-NN.png, ai-card.json(카드별 시도·점수·문구 key), work/(바탕·요청문·AI 원본)
+//       성공한 카드는 output/png/card-NN.png(최종 카드)에 넣고, 템플릿 출력은 ai-card/template-card-NN.png로 보관
 // 문구는 cards.json의 승인 문구만 넣음. AI가 그린 글자가 정확한지는 사람(또는 다음 단계 검사)이 확인해야 함 → text_checked=false
 // 환경변수: CODEX_BIN(기본 codex), CHROMIUM_PATH, AI_CARD_TIMEOUT(초, 기본 360)
 const fs = require('fs');
@@ -14,6 +16,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { paths, readJson, requireProductId } = require('./lib/common');
 const { pad, launchBrowser } = require('./lib/card-html');
+const { cardKey, staleTargets, applyAiCards, aiTargets } = require('./lib/ai-cards');
 
 const BASE = 1024; // AI에 주는 바탕 크기
 const FINAL = 1080;
@@ -177,7 +180,7 @@ async function makeCard({ page, id, card, kind, cut, dir, tries, timeoutSec, log
   const box = productBox(kind, cut.w, cut.h);
   const finalBox = scaleBox(box, FINAL / BASE);
   const prompt = buildPrompt(kind, card.copy || {});
-  const record = { no: card.no, kind, ok: false, file: null, text_checked: false, tries: [] };
+  const record = { no: card.no, kind, key: cardKey(card), ok: false, file: null, text_checked: false, tries: [] };
   for (let t = 1; t <= tries; t++) {
     const cwd = path.join(dir, 'work', `card-${pad(card.no)}-try${t}`);
     fs.rmSync(cwd, { recursive: true, force: true });
@@ -215,17 +218,16 @@ async function makeCard({ page, id, card, kind, cut, dir, tries, timeoutSec, log
   return record;
 }
 
-async function run(id, { only = null, tries = 3, log = console.log } = {}) {
+async function run(id, { only = null, staleOnly = false, tries = 3, log = console.log } = {}) {
   const pdir = paths.product(id);
   const data = readJson(path.join(pdir, 'cards.json'));
   if (!['copy', 'approved'].includes(data.stage)) throw new Error(`문구 작업 뒤에 쓸 수 있어요 (지금 단계: ${data.stage})`);
   const cards = data.cards || [];
-  const targets = [];
-  const first = cards[0];
-  const last = cards[cards.length - 1];
-  if (first) targets.push([first, 'cover']);
-  if (last && last !== first) targets.push([last, 'closing']);
-  const list = only ? targets.filter(([c]) => c.no === only) : targets;
+  const nos = aiTargets(cards);
+  const targets = nos.map((no, i) => [cards.find((c) => c.no === no), i === 0 ? 'cover' : 'closing']);
+  let list = only ? targets.filter(([c]) => c.no === only) : targets;
+  if (staleOnly) { const st = staleTargets(pdir, cards); list = list.filter(([c]) => st.includes(c.no)); }
+  if (!list.length && staleOnly) return { report: null, results: [], applied: applyAiCards(pdir, cards) };
   if (!list.length) throw new Error(only ? `${only}번은 AI 카드 대상(첫·마지막 카드)이 아니에요` : '카드가 없어요');
   const dir = path.join(pdir, 'output', 'ai-card');
   fs.mkdirSync(dir, { recursive: true });
@@ -252,15 +254,19 @@ async function run(id, { only = null, tries = 3, log = console.log } = {}) {
   const merged = [...prev.cards.filter((c) => !results.some((r) => r.no === c.no)), ...results].sort((a, b) => a.no - b.no);
   const report = { product_id: id, made_at: new Date().toISOString(), lock: LOCK, cards: merged };
   fs.writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n');
-  return { report, results };
+  // 최종 카드(output/png)에 바로 넣음. 템플릿 출력은 output/ai-card/template-card-NN.png로 보관
+  const applied = applyAiCards(pdir, cards);
+  return { report, results, applied };
 }
 
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const id = requireProductId(argv);
   const opt = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : null; };
-  run(id, { only: opt('--card') ? Number(opt('--card')) : null, tries: Number(opt('--tries') || 3) })
-    .then(({ results }) => {
+  run(id, { only: opt('--card') ? Number(opt('--card')) : null, staleOnly: argv.includes('--stale'), tries: Number(opt('--tries') || 3) })
+    .then(({ results, applied }) => {
+      if (!results.length) console.log('새로 만들 AI 카드가 없어요 (문구가 그대로예요).');
+      if (applied && applied.applied.length) console.log(`최종 카드에 넣음: ${applied.applied.join('·')}번 (output/png)`);
       for (const r of results) console.log(`${r.no}번: ${r.ok ? `완료 → output/ai-card/${r.file}` : '실패'} (시도 ${r.tries.length}번)`);
       console.log('[주의] AI가 그린 문구가 cards.json과 같은지 확인해 주세요.');
       process.exit(results.every((r) => r.ok) ? 0 : 1);

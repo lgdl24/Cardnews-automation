@@ -139,3 +139,33 @@ test('작업실: AI 디자인 카드를 뒤에서 만들고 상태·결과 카�
     await new Promise((r) => server.close(r));
   }
 });
+
+test('최종 카드 반영: 문구가 그대로인 AI 카드만 output/png에 넣고 템플릿은 보관, 문구가 바뀌면 다시 만들 대상', () => {
+  const { cardKey, staleTargets, applyAiCards, appliedNumbers } = require('../scripts/lib/ai-cards');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-apply-'));
+  const png = path.join(dir, 'output', 'png');
+  const ai = path.join(dir, 'output', 'ai-card');
+  fs.mkdirSync(png, { recursive: true });
+  fs.mkdirSync(ai, { recursive: true });
+  const cards = [1, 2, 3].map((no) => ({ no, template: 'cover', image: 'a.png', copy: { title: `제목 ${no}` } }));
+  for (const c of cards) fs.writeFileSync(path.join(png, `card-0${c.no}.png`), `template-${c.no}`);
+  assert.deepEqual(staleTargets(dir, cards), [1, 3], '처음엔 첫·마지막 카드 모두 만들 대상');
+  fs.writeFileSync(path.join(ai, 'card-01.png'), 'ai-1');
+  fs.writeFileSync(path.join(ai, 'card-03.png'), 'ai-3');
+  fs.writeFileSync(path.join(ai, 'ai-card.json'), JSON.stringify({ cards: [
+    { no: 1, ok: true, file: 'card-01.png', key: cardKey(cards[0]) },
+    { no: 3, ok: true, file: 'card-03.png', key: 'old-copy' },
+  ] }));
+  assert.deepEqual(staleTargets(dir, cards), [3], '3번은 문구가 바뀌어 다시 만들 대상');
+  assert.deepEqual(applyAiCards(dir, cards), { applied: [1], stale: [3] });
+  assert.equal(fs.readFileSync(path.join(png, 'card-01.png'), 'utf8'), 'ai-1');
+  assert.equal(fs.readFileSync(path.join(ai, 'template-card-01.png'), 'utf8'), 'template-1');
+  assert.equal(fs.readFileSync(path.join(png, 'card-03.png'), 'utf8'), 'template-3', '오래된 AI 카드는 안 넣음');
+  assert.deepEqual(appliedNumbers(dir, cards), [1]);
+  // 다시 출력(render)해서 템플릿으로 덮여도 다시 넣음, 두 번 넣어도 템플릿 보관본은 그대로
+  fs.writeFileSync(path.join(png, 'card-01.png'), 'template-1b');
+  applyAiCards(dir, cards);
+  applyAiCards(dir, cards);
+  assert.equal(fs.readFileSync(path.join(png, 'card-01.png'), 'utf8'), 'ai-1');
+  assert.equal(fs.readFileSync(path.join(ai, 'template-card-01.png'), 'utf8'), 'template-1b');
+});

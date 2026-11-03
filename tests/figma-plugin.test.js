@@ -50,6 +50,7 @@ async function start() {
     exportConfigFile: path.join(dir, 'export.json'),
     webIndexFile: path.join(dir, 'web', 'index.json'),
     figmaCode: CODE,
+    aiAuto: false,
     figmaConfigFile,
     exportFn: () => ({ ok: false, output: [], excluded: [`${'figma-test'} | PNG_MISSING | PNG가 없어요: 2번 카드 (npm run render)`] }),
     renderFn: (pid) => { rendered.push(pid); return { ok: true, output: [] }; },
