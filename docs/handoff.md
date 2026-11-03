@@ -38,11 +38,11 @@
 - 상태: 사용자 요청으로 PR 게시·병합 진행. 최신 `origin/main`에 UI 커밋을 적용해 피그마 연동·AI 카드·AI 작업 시간 변경을 보존. 별도 이슈 생성은 수행하지 않음.
 - PR 브랜치: `feat/web-ux-main`, 최신 `origin/main`(`efe9be5`) 기반. 원래 폴더 `feat/web-ux-refresh`의 UI 커밋 `3818028`만 옮김. 별도 작업 폴더 `/private/tmp/cardnews-ui-pr`에서 통합·검증. 원래 폴더의 제품·스크립트 미저장 변경은 보존.
 - 주요 변경: `web/src/components/Header.tsx`, 새 `ThemeControl.tsx`·`Icon.tsx`, `styles/global.css`·`workspace.css`, 라이브러리·작업실·입력·검토·평가·비교 화면, 새 `/guide`. `web/README.md`·`docs/web-ux.md`, `tests/workspace-ui.test.js`와 `package.json`의 `test:web` 등록.
-- 검증: 실제 저장소에서 `npm run web:build` 통과, `npm run test:web` 14개 모두 통과(기존 8 + 추가 UX 6). 실제 제작/평가/API 저장은 호출하지 않고 모의 응답으로 검사. 320/390px·1440px, 밝게/어둡게 화면 확인.
+- 검증: 최신 main 통합본에서 `npm test` 190개, `npm run test:web` 14개 모두 통과. `npm run web:build`(타입 검사 포함) 통과. 실제 제작/평가/API 저장은 호출하지 않고 모의 응답으로 검사. 320/390px·1440px, 밝게/어둡게 화면 확인.
 - 시작 전부터 있던 미커밋 변경을 보존: `config/export.json`, `scripts/check-input.js`, `products/test-injection-r1/cards.json`·`log.jsonl`, `web/public/data/index.json` 및 새 제품·내보내기 폴더들. 이번 UI 변경으로 간주하거나 함께 커밋하지 말 것.
 - 실행 중인 미리보기: `npm --prefix web run dev -- --port 5193`, http://127.0.0.1:5193/ (현재 도구 실행 세션 71330). 종료는 해당 실행에서 Ctrl+C. 실제 제작·승인 버튼은 점검 중 누르지 않음.
 - 새 테마 선택은 브라우저 `cardnews-theme`에 저장(카드 PNG 색상에는 영향 없음). 입력 이탈 경고는 자료 자동 저장을 뜻하지 않음. 평가 숫자는 내보낸 평가 결과에 한정하며 전체 실행 성공률로 해석하지 않음.
-- 다음: 최신 main 통합본 검사 후 PR 게시·병합. 평가 집계의 추가 지표는 데이터 규격과 연결된 뒤 보완. 원래 미리보기는 이전 작업 브랜치 기반이며 최신 통합본과 구분.
+- 다음: 검증된 통합본 PR 게시·병합(사용자 요청). 노션 작업 트래커 갱신 필요. 평가 집계의 추가 지표는 데이터 규격과 연결된 뒤 보완. 원래 미리보기는 이전 작업 브랜치 기반이며 최신 통합본과 구분.
 
 ## 현재 작업 (이용석, 2026-10-26)
 
