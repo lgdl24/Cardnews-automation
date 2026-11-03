@@ -1,0 +1,4 @@
+export function Icon({ name, size = 20 }: { name: 'grid' | 'studio' | 'chart' | 'compare' | 'help' | 'sun' | 'moon' | 'arrow' | 'search'; size?: number }) {
+  const paths = { grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', studio: 'M14 3l7 7-11 11H3v-7L14 3z M11 6l7 7 M3 3h4 M5 1v4', chart: 'M4 4v16h17 M9 16v-5 M14 16V6 M19 16v-8', compare: 'M3 5h7v14H3z M14 5h7v14h-7z M12 2v20', help: 'M9 9a3 3 0 116 0c0 2-3 2-3 5 M12 17v.1 M22 12a10 10 0 11-20 0 10 10 0 0120 0', sun: 'M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1 1 M18 18l1 1 M5 19l1-1 M18 6l1-1 M16 12a4 4 0 11-8 0 4 4 0 018 0', moon: 'M21 13a9 9 0 11-10-10 7 7 0 0010 10', arrow: 'M5 12h14 M13 6l6 6-6 6', search: 'M21 21l-5-5 M18 10a8 8 0 11-16 0 8 8 0 0116 0' };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]} /></svg>;
+}

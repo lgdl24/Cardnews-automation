@@ -31,5 +31,5 @@ export function ClaudeStatus({ info }: { info: ClaudeInfo }) {
       </p>
     );
   }
-  return <p className="notice">Claude Code {info.version} · 이 컴퓨터에서 실행 · 작업은 한 번에 하나씩 (나머지는 차례로 대기)</p>;
+  return <p className="page-desc"><span className="online-dot" aria-hidden="true" /> 제작 준비 완료 · 작업이 진행되는 동안 다른 제품도 대기열에 추가할 수 있어요.</p>;
 }

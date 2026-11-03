@@ -1,7 +1,7 @@
 // S2 새 제작 · 입력 고치기 (웹 모드) — 담당 이규동
 // 입력 폼은 config/input-form.json 정의로 그림 → 저장하면 서버가 products/<제품ID>/input.md를 만들고 입력 확인
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useBlocker } from 'react-router';
 import { studioFetch, useStudioStatus, imageUrl, type FormDef, type FormField, type ProductDetail } from '../../studio/api';
 import { ErrorState, Loading } from '../../components/StateView';
 import { StudioOff } from './StudioCommon';
@@ -24,7 +24,7 @@ export function ProductFormPage() {
   const { id } = useParams();
   if (status === undefined) return <div className="page"><Loading /></div>;
   if (status === null) return <StudioOff />;
-  return <ProductForm form={status.form} editId={id} />;
+  return <ProductForm key={id ?? 'new'} form={status.form} editId={id} />;
 }
 
 function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
@@ -32,12 +32,20 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
   const fields = useMemo(() => form.groups.flatMap((g) => g.fields), [form]);
   const imageField = fields.find((f) => f.type === 'images');
   const [productId, setProductId] = useState(editId ?? '');
-  const [values, setValues] = useState<Values>({});
+  const [values, setValues] = useState<Values>(() => Object.fromEntries(fields.filter(f => f.type === 'choice' && f.required && f.options?.length).map(f => [f.key, f.options![0]!])));
   const [images, setImages] = useState<ImageRow[]>([]);
   const [loading, setLoading] = useState(Boolean(editId));
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && !saving && currentLocation.pathname !== nextLocation.pathname);
+  useEffect(() => {
+    if (!dirty || saving) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty, saving]);
 
   // 입력 고치기: 기존 값 불러오기
   useEffect(() => {
@@ -61,21 +69,28 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
 
   const addFiles = async (files: FileList | null) => {
     if (!files) return;
-    const rows = await Promise.all(
-      [...files].map(
-        (f) =>
-          new Promise<ImageRow>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const url = String(reader.result);
-              resolve({ file: safeName(f.name), desc: '', source: '', usage: '가능', kind: '제품', data: url.split(',')[1], preview: url });
-            };
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(f);
-          }),
-      ),
-    );
-    setImages((prev) => [...prev, ...rows]);
+    try {
+      const selected = [...files];
+      if (selected.some(f => !['image/png', 'image/jpeg'].includes(f.type) || f.size > 10 * 1024 * 1024)) throw new Error('PNG 또는 JPG 이미지, 파일당 10MB 이하로 선택해주세요.');
+      const names = [...images.map(i => i.file), ...selected.map(f => safeName(f.name))];
+      if (new Set(names).size !== names.length) throw new Error('같은 이름의 이미지가 있어요. 파일 이름을 바꾼 뒤 다시 추가해주세요.');
+      const rows = await Promise.all(
+        [...files].map(
+          (f) =>
+            new Promise<ImageRow>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const url = String(reader.result);
+                resolve({ file: safeName(f.name), desc: '', source: '', usage: '가능', kind: '제품', data: url.split(',')[1], preview: url });
+              };
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(f);
+            }),
+        ),
+      );
+      setImages((prev) => [...prev, ...rows]);
+      setError(null);
+    } catch (err) { setError((err as Error).message); }
   };
 
   const submit = async (e: FormEvent) => {
@@ -97,6 +112,7 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
     } catch (err) {
       setError((err as Error).message);
       setSaving(false);
+      requestAnimationFrame(() => document.getElementById('form-error')?.scrollIntoView({ block: 'center' }));
     }
   };
 
@@ -111,14 +127,17 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
       <h1 className="page-title">{editId ? '입력 고치기' : '새 제작'}</h1>
       <p className="page-desc">제품 정보는 카드 문구의 원문이 돼요. 원문에 없는 효능·수치는 카드에 쓰지 않아요.</p>
 
-      <form className="studio-form" onSubmit={submit}>
-        <fieldset className="form-group">
+      <nav className="form-outline" aria-label="입력 단계"><a href="#product-id">01 제품 이름표</a>{form.groups.map((g, i) => <a key={g.title} href={`#form-group-${i}`}>{String(i + 2).padStart(2, '0')} {g.title}</a>)}</nav>
+      <p className="page-desc">자료 저장 → 구성안 만들기 → 구성안 승인 → 카드 검토 순서로 진행됩니다. 저장만으로 생성 작업이 시작되지는 않아요.</p>
+      <form className="studio-form" onSubmit={submit} onChangeCapture={() => setDirty(true)}>
+        <fieldset className="form-group" id="product-id">
           <legend>제품ID</legend>
           <label className="field">
             <span className="field-label">
               제품ID <em>필수</em>
             </span>
             <input
+              title="영문 소문자·숫자·하이픈으로 입력해 주세요"
               value={productId}
               onChange={(e) => setProductId(e.target.value.toLowerCase())}
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
@@ -127,12 +146,12 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
               disabled={Boolean(editId)}
               autoComplete="off"
             />
-            <span className="field-guide">영문 소문자·숫자·하이픈만. 폴더 이름(products/제품ID)과 결과 주소에 쓰여요.</span>
+            <span className="field-guide">영문 소문자·숫자·하이픈을 사용해 주세요. 나중에 같은 제품을 찾는 고유 이름이에요.</span>
           </label>
         </fieldset>
 
-        {form.groups.map((g) => (
-          <fieldset key={g.title} className="form-group">
+        {form.groups.map((g, i) => (
+          <fieldset key={g.title} className="form-group" id={`form-group-${i}`}>
             <legend>{g.title}</legend>
             {g.fields.map((f) =>
               f.type === 'images' ? (
@@ -145,17 +164,21 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
         ))}
 
         {error && (
-          <p className="notice notice-error" role="alert">
+          <p className="notice notice-error" role="alert" id="form-error">
             {error}
           </p>
         )}
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={saving || (imageField?.required && images.length === 0)}>
-            {saving ? '저장하는 중…' : editId ? '저장하고 입력 확인' : '만들고 입력 확인'}
+            {saving ? '저장하는 중…' : editId ? '변경사항 저장하고 계속' : '자료 저장하고 계속'}
           </button>
           <span className="muted">저장하면 입력 확인(필수 항목·이미지·지시문 형태 문장)을 바로 해요.</span>
         </div>
       </form>
+      {blocker.state === 'blocked' && <dialog className="leave-dialog" aria-labelledby="leave-title" ref={node => { if (node && !node.open) node.showModal(); }} onCancel={e => { e.preventDefault(); blocker.reset(); }}>
+        <h2 id="leave-title">입력 중인 자료가 있어요</h2><p>아직 저장하지 않은 내용은 사라집니다. 계속 입력할까요?</p>
+        <div className="action-bar"><button className="btn btn-primary" type="button" autoFocus onClick={() => blocker.reset()}>계속 입력하기</button><button className="btn" type="button" onClick={() => blocker.proceed()}>저장하지 않고 나가기</button></div>
+      </dialog>}
     </div>
   );
 }

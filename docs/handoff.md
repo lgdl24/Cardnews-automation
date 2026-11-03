@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-03 | Codex | `feat/web-ux-main` (PR 준비) | 웹 UI·UX 개편: 공통 탐색·검색/상태 필터·다크모드·입력 이탈 방지·카드 집중 검토·실패 메모 보존, 실제 내보내기 데이터 기반 평가/비교, `/guide`. `docs/web-ux.md` 참고. 카드 생성 규칙·API·제품 데이터는 변경하지 않음. |
 | 2026-11-03 | Claude | `feat/ai-card` (이슈 없음, `feat/figma-link` 위) | **AI 디자인 카드 + 피그마 자동 넣기**: 문구·출력 작업이 성공하면 첫·마지막 카드를 로컬 Codex(GPT 이미지)가 자동으로 만들어 최종 카드에 넣음(제품은 원본 사진 잠금·검사, 문구는 승인 문구). 템플릿 출력은 `output/ai-card/template-card-NN.png`. '피그마에서 편집'은 로컬 Claude Code의 피그마 연결로 새 페이지에 최종 1~5번을 바로 넣음(플러그인 불필요). `npm run ai-card`, `scripts/lib/ai-cards.js`, `scripts/figma-push.js`. 문서 `docs/research/ai-card.md` |
 | 2026-11-02 | Claude | `feat/figma-link` | **피그마 파일·페이지 규칙**: 버튼이 여는 파일을 작업용 새 파일 [카드뉴스 작업실 편집](https://www.figma.com/design/t74dm7iP9LUQ199EdPy4e1)로 바꿈(`config/figma.json`). 플러그인 가져오기는 매번 새 페이지 `제품명 (ID) · 월.일 시:분`(겹치면 #2)에 만들어 사람이 고친 페이지를 덮어쓰지 않음. 보내기는 지금 페이지가 그 제품이면 그 페이지, 아니면 가장 최근 페이지 → `edited.json`·화면에 페이지 이름 표시. 실제 피그마 확인, 테스트 추가. 문서 `docs/research/figma-plugin.md` |
 | 2026-11-02 | Claude | `feat/figma-link` | **작업실 ↔ 피그마 플러그인**: 제품 화면 '피그마에서 편집'(`POST /products/:id/figma` → figma-export) + 피그마 데스크톱 개발용 플러그인 `figma-plugin/`(가져오기·고친 카드 보내기). 플러그인용 `/api/studio/figma/*`만 다른 출처 허용 + **연결 코드**(작업실 켤 때마다 새로), 개발 서버 CORS는 끔(`vite.config.ts`). 고친 카드는 `output/figma-edited/`(최종본·cards.json 안 바뀜), 글자 레이어를 승인 문구와 비교해 [주의]. 프레임 함수 `scripts/lib/figma-builder.js`를 use_figma·플러그인이 같이 씀(`npm run figma-plugin`으로 code.js 다시 만듦). `config/figma.json` 피그마 파일 주소. **피그마 데스크톱에서 플러그인 실행은 미확인**(이규동 Mac). 문서 `docs/research/figma-plugin.md` |
@@ -30,6 +31,18 @@
 | 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
+
+## 현재 작업 — 웹 UI·UX 개편 (Codex, 2026-11-03)
+
+- 사용자 요청: 디자인·색상·UX 흐름 개선, 필요한 페이지 구현, 다크모드 추가.
+- 상태: 사용자 요청으로 PR 게시·병합 진행. 최신 `origin/main`에 UI 커밋을 적용해 피그마 연동·AI 카드·AI 작업 시간 변경을 보존. 별도 이슈 생성은 수행하지 않음.
+- PR 브랜치: `feat/web-ux-main`, 최신 `origin/main`(`efe9be5`) 기반. 원래 폴더 `feat/web-ux-refresh`의 UI 커밋 `3818028`만 옮김. 별도 작업 폴더 `/private/tmp/cardnews-ui-pr`에서 통합·검증. 원래 폴더의 제품·스크립트 미저장 변경은 보존.
+- 주요 변경: `web/src/components/Header.tsx`, 새 `ThemeControl.tsx`·`Icon.tsx`, `styles/global.css`·`workspace.css`, 라이브러리·작업실·입력·검토·평가·비교 화면, 새 `/guide`. `web/README.md`·`docs/web-ux.md`, `tests/workspace-ui.test.js`와 `package.json`의 `test:web` 등록.
+- 검증: 최신 main 통합본에서 `npm test` 190개, `npm run test:web` 14개 모두 통과. `npm run web:build`(타입 검사 포함) 통과. 실제 제작/평가/API 저장은 호출하지 않고 모의 응답으로 검사. 320/390px·1440px, 밝게/어둡게 화면 확인.
+- 시작 전부터 있던 미커밋 변경을 보존: `config/export.json`, `scripts/check-input.js`, `products/test-injection-r1/cards.json`·`log.jsonl`, `web/public/data/index.json` 및 새 제품·내보내기 폴더들. 이번 UI 변경으로 간주하거나 함께 커밋하지 말 것.
+- 실행 중인 미리보기: `npm --prefix web run dev -- --port 5193`, http://127.0.0.1:5193/ (현재 도구 실행 세션 71330). 종료는 해당 실행에서 Ctrl+C. 실제 제작·승인 버튼은 점검 중 누르지 않음.
+- 새 테마 선택은 브라우저 `cardnews-theme`에 저장(카드 PNG 색상에는 영향 없음). 입력 이탈 경고는 자료 자동 저장을 뜻하지 않음. 평가 숫자는 내보낸 평가 결과에 한정하며 전체 실행 성공률로 해석하지 않음.
+- 다음: 검증된 통합본 PR 게시·병합(사용자 요청). 노션 작업 트래커 갱신 필요. 평가 집계의 추가 지표는 데이터 규격과 연결된 뒤 보완. 원래 미리보기는 이전 작업 브랜치 기반이며 최신 통합본과 구분.
 
 ## 현재 작업 (이용석, 2026-10-26)
 

@@ -46,8 +46,10 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
       if (r.product) setData(r.product);
       else if (r.id) setData(r as ProductDetail);
       refresh();
+      return true;
     } catch (e) {
       setActionError((e as Error).message);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -69,6 +71,8 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
       </header>
 
       <Steps detail={p} />
+      <div className="next-step"><div><p className="eyebrow">NEXT STEP</p><strong>{a.running ? (a.job_state === 'queued' ? '작업 순서를 기다리고 있어요' : '카드뉴스를 만들고 있어요') : p.stage === 'input' ? '입력 자료를 확인하고 구성안을 만들어주세요' : p.stage === 'plan' ? '구성과 원문 근거를 검토해주세요' : p.stage === 'copy' ? '카드를 살펴보고 최종 승인해주세요' : '완성된 결과를 라이브러리에 내보내세요'}</strong><p>{a.running ? '작업은 계속됩니다. 작업실에서 다른 제품을 확인해도 괜찮아요.' : p.stage === 'approved' ? '내보낸 뒤 개별 PNG와 ZIP 파일을 내려받을 수 있어요.' : '수정이 필요하면 아래에서 요청할 수 있어요. 승인 전에는 다음 단계로 넘어가지 않아요.'}</p></div><a className="btn" href="#current-review">{a.running ? '작업 현황 보기' : '검토 영역으로 이동'} ↓</a></div>
+      <div id="current-review" style={{ scrollMarginTop: 90 }} />
       {status && !status.claude.installed && <ClaudeStatus info={status.claude} />}
       {actionError && (
         <p className="notice notice-error" role="alert">
@@ -459,37 +463,21 @@ function PlanReview({ detail, labels }: { detail: ProductDetail; labels?: Labels
 const COPY_KEY: Record<string, string> = { badge: '배지', title: '제목', subtitle: '부제', caption: '설명', body: '본문', items: '항목', note: '참고', image: '이미지' };
 function CardReview({ detail, labels }: { detail: ProductDetail; labels?: Labels }) {
   const c = detail.cards!;
-  const v = new Map(detail.pngs.map((x) => [x.file, x.v]));
-  return (
-    <ul className="card-review">
-      {c.cards.map((card) => {
-        const file = `card-${String(card.no).padStart(2, '0')}.png`;
-        return (
-          <li key={card.no} className="card-review-item">
-            {v.has(file) ? (
-              <a href={pngUrl(detail.id, file, v.get(file))} target="_blank" rel="noreferrer">
-                <img src={pngUrl(detail.id, file, v.get(file))} alt={`${card.no}번 카드`} width={1080} height={1080} loading="lazy" />
-              </a>
-            ) : (
-              <div className="card-missing">출력 없음</div>
-            )}
-            <div className="card-review-text">
-              <p>
-                <strong>{card.no}</strong> {label(labels?.roles, card.role)}
-                <span className="muted"> · {label(labels?.templates, card.template)}</span>
-              </p>
-              {card.copy &&
-                Object.entries(card.copy).map(([k, val]) => (
-                  <p key={k} className="copy-line">
-                    <span className="muted">{COPY_KEY[k] ?? k}</span> {Array.isArray(val) ? val.join(' / ') : String(val)}
-                  </p>
-                ))}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
+  const [selected, setSelected] = useState(c.cards[0]?.no ?? 1);
+  const card = c.cards.find(x => x.no === selected) ?? c.cards[0];
+  if (!card) return <p className="muted">검토할 카드가 없어요.</p>;
+  const file = `card-${String(card.no).padStart(2, '0')}.png`;
+  const png = detail.pngs.find(x => x.file === file);
+  const evidence = c.sources.filter(s => card.evidence?.includes(s.id));
+  return <div>
+    <div className="review-tabs" aria-label="검토할 카드">{c.cards.map(x => <button type="button" key={x.no} aria-pressed={card.no === x.no} onClick={() => setSelected(x.no)}>{x.no}번 카드</button>)}</div>
+    <div className="review-focus">
+      {png ? <a href={pngUrl(detail.id, file, png.v)} target="_blank" rel="noreferrer" aria-label={`${card.no}번 카드 원본 새 창에서 보기`}><img src={pngUrl(detail.id, file, png.v)} alt={`${card.no}번 카드 미리보기`} width={1080} height={1080} /></a> : <div className="card-missing">아직 출력된 이미지가 없어요</div>}
+      <div className="review-copy"><p className="eyebrow">CARD {String(card.no).padStart(2, '0')} / {String(c.cards.length).padStart(2, '0')}</p><h3>{label(labels?.roles, card.role)} <span className="muted">· {label(labels?.templates, card.template)}</span></h3>
+        {card.copy && Object.entries(card.copy).filter(([k]) => k !== 'image').map(([k, val]) => <p className="copy-line" key={k}><span className="muted">{COPY_KEY[k] ?? k}</span>{Array.isArray(val) ? val.join(' / ') : String(val)}</p>)}
+        <div className="review-evidence"><strong>이 카드의 원문 근거</strong>{evidence.length ? evidence.map(s => <p key={s.id}><span className="chip">{s.id}</span> {s.quote}</p>) : <p className="muted">이 카드에 연결된 원문 인용이 없어요. 내용과 제품 정보를 함께 확인해주세요.</p>}</div></div>
+    </div>
+  </div>;
 }
 
 // ── 수정 요청
@@ -504,16 +492,17 @@ function RevisionForm({
   revisionTypes: RevisionType[];
   cardCount: number;
   busy: boolean;
-  onSubmit: (body: { stage: string; types: string[]; cards: number[]; memo: string }) => void;
+  onSubmit: (body: { stage: string; types: string[]; cards: number[]; memo: string }) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
   const [types, setTypes] = useState<string[]>([]);
   const [cards, setCards] = useState<number[]>([]);
   const [memo, setMemo] = useState('');
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    onSubmit({ stage, types, cards, memo });
+    const ok = await onSubmit({ stage, types, cards, memo });
+    if (!ok) return;
     setOpen(false);
     setTypes([]);
     setCards([]);
