@@ -84,7 +84,7 @@ test('form validates file sizes and required defaults, and protects unsaved inpu
  const page=await open(t,'/studio/new',{width:390,studio:studioMock});
  // All required choices shown on screen must have a non-empty value in React state.
  const required=page.locator('select[required]');for(let i=0;i<await required.count();i++)assert.ok(await required.nth(i).inputValue());
- await page.locator('input[type=file]').setInputFiles({name:'bad.txt',mimeType:'text/plain',buffer:Buffer.from('test')});await page.getByText('PNG 또는 JPG 이미지, 파일당 10MB 이하로 선택해주세요.').waitFor();
+ await page.locator('input[type=file][accept^=".png"]').setInputFiles({name:'bad.txt',mimeType:'text/plain',buffer:Buffer.from('test')});await page.getByText('PNG 또는 JPG 이미지, 파일당 10MB 이하로 선택해주세요.').waitFor();
  await page.getByRole('link',{name:/제품 정보/}).click();await noOverflow(page);await capture(page,'studio-form-mobile');
  await page.getByRole('link',{name:'이용 가이드',exact:true}).click();await page.getByRole('dialog').waitFor();
  await page.getByRole('button',{name:'계속 입력하기'}).click();assert.ok(page.url().includes('/studio/new'));

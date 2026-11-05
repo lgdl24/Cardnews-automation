@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-05 | Claude | #89 · `feat/89-brand-mood` (#84 위) | **브랜드 무드 (A안)** (이용석): 입력 `브랜드 URL`(무드를 비우면 묶음 `브랜드`) → 구성안 작업 전 상세페이지 스냅샷 `brand/`(`npm run brand`, 작업실 자동) → 구성안 작업이 `cards.json` `brand_mood`(색 7개·분위기·배경 장면·근거, 묶음 `브랜드`면 필수) → 문구 작업 뒤 카드별 GPT **배경만** `output/ai-bg/`(`npm run ai-bg`, 작업실 자동, `CARDNEWS_AI_BG=off`로 끔) → 출력이 실제 제품 사진·문구를 얹음. 묶음 `브랜드`는 AI 디자인 카드(GPT 글자)를 안 씀. 작업실 입력 '자료로 채우기'(`POST /api/studio/extract`, PDF·이미지·글 → 제품 정보 초안, 저장은 사람). 입력 양식 v1.4, `cards.schema` `brand_mood`, 템플릿 `templates/brand/`. 평가 입력에는 URL이 없어 v1 기준선 영향 없음. 문서 `docs/research/brand-mood.md` |
 | 2026-11-05 | Claude | #84 · `fix/84-studio-usability` | **최신 main 합침 + AI 디자인 카드 Windows 수정** (이용석): `ai-card.js`의 `defaultCodexBin()` — `CODEX_BIN` → Windows npm 설치 위치의 `codex.js`(node로 실행) → `codex` 순(Windows는 `codex.cmd`라 spawn이 못 찾던 것). 생성 이미지 경로를 `C:\...\generated_images\...`도 찾게 함(기존 테스트가 Windows에서 실패). 피그마 자동 넣기는 #84의 `defaultClaudeBin()`을 그대로 써서 Windows에서도 claude를 찾음. Codex 실제 이미지 생성은 미확인 |
 | 2026-11-03 | Codex | `feat/web-ux-main` (PR 준비) | 웹 UI·UX 개편: 공통 탐색·검색/상태 필터·다크모드·입력 이탈 방지·카드 집중 검토·실패 메모 보존, 실제 내보내기 데이터 기반 평가/비교, `/guide`. `docs/web-ux.md` 참고. 카드 생성 규칙·API·제품 데이터는 변경하지 않음. |
 | 2026-11-03 | Claude | `feat/ai-card` (이슈 없음, `feat/figma-link` 위) | **AI 디자인 카드 + 피그마 자동 넣기**: 문구·출력 작업이 성공하면 첫·마지막 카드를 로컬 Codex(GPT 이미지)가 자동으로 만들어 최종 카드에 넣음(제품은 원본 사진 잠금·검사, 문구는 승인 문구). 템플릿 출력은 `output/ai-card/template-card-NN.png`. '피그마에서 편집'은 로컬 Claude Code의 피그마 연결로 새 페이지에 최종 1~5번을 바로 넣음(플러그인 불필요). `npm run ai-card`, `scripts/lib/ai-cards.js`, `scripts/figma-push.js`. 문서 `docs/research/ai-card.md` |
@@ -33,6 +34,13 @@
 | 2026-10-21 | Codex | #41 · `feat/41-v2-plan-evidence` | V2 구성안·근거 구현과 원문 칩 터치·키보드 열기, 표 선택 시 이동, 빈 상태·이미지 실패·모바일 긴 문구 처리. 기존 테스트 116개·화면 7개·웹 빌드 통과. 이용석 확인·승인 후 push, PR #56에서 이규동 리뷰 대기 |
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
+
+## 현재 작업 — 브랜드 무드 (이용석, 2026-11-05)
+
+- 목표: 카테고리·무드를 고르는 대신 브랜드 URL + 제품 자료만 넣으면 상세페이지 무드를 읽고 GPT가 카드 배경을 만드는 흐름 (A안: GPT는 배경만, 글자는 코드). 이용석·이규동 구두 합의, 제안 #87.
+- 브랜치 `feat/89-brand-mood`: #85(`fix/84-studio-usability`, Windows claude·codex 찾기) 위에 쌓음. #85를 먼저 병합해야 Windows에서 AI 배경이 돌아감.
+- 확인: npm test 203 · test:web 14 · test:render 17 · web:build 통과, `calibrate --design 브랜드 --check` 실패 0. 실제로 확인한 것: biodance.com 스냅샷(화면 4장·색·글꼴), 자료로 채우기(글 파일 → 원문 그대로, 지시문 경고), 구성안 작업의 brand_mood(아래), GPT 배경 1장(Windows codex) → 출력.
+- 미확인·남은 일: GPT 사용량 한도로 배경 5장 중 4장은 못 만듦(한도 풀리면 `npm run ai-bg`). 배경 속 글자 섞임 자동 검사 없음(사람이 확인). 묶음 미리보기 PNG 없음. 노션 트래커 갱신.
 
 ## 현재 작업 — 웹 UI·UX 개편 (Codex, 2026-11-03)
 

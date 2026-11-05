@@ -10,6 +10,7 @@ const {
 } = require('./lib/common');
 const { computeQuality, formatQuality, findCautions } = require('./lib/metrics');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
+const { BRAND_DESIGN, checkBrandMood } = require('./lib/brand');
 
 const STAGES = ['plan', 'copy', 'approved'];
 const ROLES = ['cover', 'feature', 'usage', 'detail', 'closing'];
@@ -68,6 +69,12 @@ function validate(productId) {
     }
   } else if (autoDesign) {
     report.error('SCHEMA_ERROR', 'design', `입력 무드가 '${AUTO_DESIGN}'이면 구성안에서 묶음을 골라 design에 적어야 해요 (npm run check 끝의 '디자인 묶음 목록')`);
+  }
+
+  // ── brand_mood: 무드 '브랜드'면 필수 (구성안 작업이 브랜드 스냅샷·제품 사진을 보고 정함). 다른 무드에선 있어도 출력에 안 씀
+  if (data.brand_mood !== undefined) checkBrandMood(data.brand_mood, report);
+  else if (resolveDesign({ input, data }).id === BRAND_DESIGN) {
+    report.error('SCHEMA_ERROR', 'brand_mood', `무드가 '${BRAND_DESIGN}'이면 구성안 작업에서 brand_mood(색·장면·근거)를 적어야 해요 (products/${productId}/brand/ 스냅샷, 없으면 제품 사진)`);
   }
 
   // ── sources: 원문 근거

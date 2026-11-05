@@ -75,6 +75,15 @@
       "needs": { "product": "required", "background": "optional" },
       "version": "1",
       "preview": "docs/designs/band/preview.png"
+    },
+    "브랜드": {
+      "name": "브랜드 무드",
+      "summary": "입력한 브랜드 공식몰 상세페이지 스냅샷에서 구성안 작업이 정한 브랜드 색(brand_mood)과, 문구 작업 뒤 GPT가 카드마다 만든 글자·제품 없는 배경을 카드 전체에 깔고, 실제 제품 사진과 반투명 면 위 문구를 얹는 카드",
+      "fits": ["브랜드 공식몰 주소가 있는 제품", "브랜드 분위기를 그대로 살리고 싶은 신제품 소개", "배경을 지운(투명) 제품 사진이 있는 제품"],
+      "avoid": ["제품 사진이 없을 때 (배경과 문구만 남음)", "브랜드 주소도 브랜드 사진도 없어 무드를 읽을 자료가 없을 때"],
+      "needs": { "product": "required", "background": "optional" },
+      "version": "1",
+      "preview": null
     }
   },
   "_designs": {
@@ -223,6 +232,41 @@
         "fields": {
           "title": { "required": true, "maxChars": 24, "maxCharsPerLine": 12, "maxLines": 2 },
           "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 24, "maxCharsPerLine": 12, "maxLines": 2 }
+        },
+        "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
+      }
+    },
+    "브랜드": {
+      "_defaults": { "colorMode": "기본" },
+      "_theme": { "color": { "bg": "#F4F1EC", "surface": "#FFFFFF", "text": "#26221F", "muted": "#5E5650", "primary": "#3F3A36", "accent": "#E4DDD3", "on-primary": "#FFFFFF" } },
+      "_notes": [
+        "카드 색은 구성안 작업에서 정한 brand_mood.palette를 써요(없으면 이 묶음 기본 색). 글자 대비 4.5는 출력이 자동으로 맞춰요",
+        "배경은 문구 작업 뒤 GPT가 카드마다 만들어요(글자·제품 없는 장면, npm run ai-bg). 글자는 반투명 면 위에 코드로 얹어요",
+        "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요"
+      ],
+      "_measured": "2026-11-05 · Pretendard · Chromium. 측정 최대(전체/한 줄): cover.title 24/9, cover.subtitle 34/18, cover.badge 14/14, image.title 33/17, image.caption 52/28, description.title 34/18, description.items 49/25(긴 단어로 채우면 32/16까지 통과)",
+      "cover": {
+        "label": "표지형", "file": "templates/brand/cover.html",
+        "fields": {
+          "title": { "required": true, "maxChars": 24, "maxCharsPerLine": 8, "maxLines": 3 },
+          "subtitle": { "required": false, "maxChars": 28, "maxCharsPerLine": 14, "maxLines": 2 },
+          "badge": { "required": false, "maxChars": 8, "maxCharsPerLine": 8, "maxLines": 1 }
+        },
+        "image": "optional", "trimImage": true, "roles": ["cover", "closing"]
+      },
+      "image": {
+        "label": "이미지 강조형", "file": "templates/brand/image.html",
+        "fields": {
+          "title": { "required": true, "maxChars": 26, "maxCharsPerLine": 13, "maxLines": 2 },
+          "caption": { "required": false, "maxChars": 40, "maxCharsPerLine": 20, "maxLines": 2 }
+        },
+        "image": "required", "trimImage": true, "roles": ["feature", "detail", "usage"]
+      },
+      "description": {
+        "label": "설명형", "file": "templates/brand/description.html",
+        "fields": {
+          "title": { "required": true, "maxChars": 26, "maxCharsPerLine": 13, "maxLines": 2 },
+          "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 32, "maxCharsPerLine": 16, "maxLines": 2 }
         },
         "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
       }

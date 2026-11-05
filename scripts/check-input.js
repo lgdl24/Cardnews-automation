@@ -6,6 +6,7 @@ const path = require('path');
 const { paths, loadInput, moodInputOf, createReport, printReport, requireProductId } = require('./lib/common');
 const { loadForm, requiredFields, findField, findInstructionLike } = require('./lib/input-form');
 const { limitLines } = require('./lib/limits');
+const { brandDir, brandUrlOf, checkBrandUrl } = require('./lib/brand');
 
 function checkInput(productId) {
   const report = createReport();
@@ -50,6 +51,16 @@ function checkInput(productId) {
   const moodRule = findField(form, '무드');
   const { key: moodKey, value: moodRaw } = moodInputOf(input);
   if (moodRule && moodRaw && !moodRule.options.includes(moodRaw)) report.warn(`## ${moodKey}`, `${moodRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 묶음으로 만들어요)`);
+
+  // 브랜드 URL (무드 '브랜드'): 형식만 봄. 페이지는 구성안 작업 전에 brand-snapshot이 한 번 찍음
+  const brandUrl = brandUrlOf(input);
+  if (brandUrl) {
+    const u = checkBrandUrl(brandUrl);
+    if (!u.ok) report.warn('## 브랜드 URL', `${u.error}. 브랜드 페이지 없이 제품 사진으로 무드를 정해요`);
+    else if (!fs.existsSync(path.join(brandDir(paths.product(productId)), 'snapshot.json'))) {
+      report.warn('## 브랜드 URL', `아직 브랜드 페이지 스냅샷이 없어요. npm run brand -- ${productId} (작업실은 구성안 작업 전에 자동으로 찍어요)`);
+    }
+  }
 
   const imageRule = findField(form, '이미지');
   for (const img of input.images) {
