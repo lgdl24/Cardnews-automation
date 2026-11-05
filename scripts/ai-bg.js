@@ -1,4 +1,4 @@
-// AI 배경 (무드 '브랜드', A안): GPT 이미지(로컬 Codex CLI)가 카드마다 글자·제품 없는 배경만 만들고, 글자·제품은 출력(render)이 얹음
+// AI 배경 (무드 '브랜드', A안): GPT 이미지(로컬 Codex CLI, 또는 배포용 OpenAI 이미지 API)가 카드마다 글자·제품 없는 배경만 만들고, 글자·제품은 출력(render)이 얹음
 // 사용법: node scripts/ai-bg.js <제품ID> [--card N] [--stale] [--tries 2] [--no-render]   (npm run ai-bg -- <제품ID>)
 //   --stale     : 아직 없거나 무드(brand_mood)·템플릿이 바뀐 카드만 (작업실이 문구·출력 작업 뒤 자동으로 부름)
 //   --no-render : 배경만 만들고 카드는 다시 출력하지 않음
@@ -7,7 +7,8 @@
 // 흐름: cards.json brand_mood(장면·색) + 템플릿별 글자 면 자리 → 요청문(scripts/lib/brand.js bgPrompt) → codex exec → 1080px로 맞춰 저장 → render
 // 출력: products/<id>/output/ai-bg/card-NN.png, ai-bg.json(카드별 key·시도), work/(요청문·AI 원본)
 // 문구는 요청문에 넣지 않음. 카드 글자는 전부 cards.json에서 코드가 얹어 검증을 그대로 거침
-// 환경변수: CODEX_BIN, CHROMIUM_PATH, AI_CARD_TIMEOUT(초, 기본 360)
+// 환경변수: CARDNEWS_IMAGE_BACKEND(codex 기본 | openai), OPENAI_API_KEY·OPENAI_IMAGE_MODEL(openai일 때, 기본 gpt-image-1), CODEX_BIN, CHROMIUM_PATH, AI_CARD_TIMEOUT(초, 기본 360)
+// ChatGPT 채팅창을 프로그램이 조작하는 방식은 쓰지 않음(OpenAI 이용 약관). 한도일 때 채팅은 사람이 직접(--prompts·--import)
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
@@ -39,28 +40,65 @@ function usageLimit(out) {
   return null;
 }
 
-async function makeBg({ page, card, mood, dir, tries, timeoutSec, log }) {
-  const prompt = bgPrompt(mood, card.template);
-  const record = { no: card.no, template: card.template, key: bgKey(mood, card), ok: false, file: null, tries: [] };
+// 이미지 만드는 곳: codex(기본, 로컬 Codex CLI — ChatGPT 요금제 사용량, API 요금 없음) | openai(배포·기업용 OpenAI 이미지 API, 장당 요금)
+// CARDNEWS_IMAGE_BACKEND=openai 이면 OPENAI_API_KEY가 필요 (값은 출력·기록하지 않음)
+function imageBackend(env = process.env) {
+  return env.CARDNEWS_IMAGE_BACKEND === 'openai' ? 'openai' : 'codex';
+}
+
+// OpenAI 이미지 API로 한 장 만들어 cwd/gen.png에 저장. runCodex와 같은 모양({ code, out, sec })을 돌려줌
+async function runOpenAI(cwd, prompt, timeoutSec, { env = process.env, fetchFn = fetch } = {}) {
+  const started = Date.now();
+  const sec = () => Math.round((Date.now() - started) / 1000);
+  if (!env.OPENAI_API_KEY) return { code: -1, out: 'OPENAI_API_KEY가 없어요 (CARDNEWS_IMAGE_BACKEND=openai)', sec: 0 };
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutSec * 1000);
+  try {
+    const res = await fetchFn('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${env.OPENAI_API_KEY}` },
+      body: JSON.stringify({ model: env.OPENAI_IMAGE_MODEL || 'gpt-image-1', prompt, size: '1024x1024', n: 1 }),
+      signal: ctrl.signal,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = (body.error && body.error.message) || `HTTP ${res.status}`;
+      return { code: res.status, out: res.status === 429 ? `usage limit: ${msg}` : msg, sec: sec() };
+    }
+    const b64 = body.data && body.data[0] && body.data[0].b64_json;
+    if (!b64) return { code: 1, out: '응답에 이미지가 없어요', sec: sec() };
+    fs.writeFileSync(path.join(cwd, 'gen.png'), Buffer.from(b64, 'base64'));
+    return { code: 0, out: './gen.png', sec: sec() };
+  } catch (e) {
+    return { code: 1, out: e.name === 'AbortError' ? '시간 초과' : String(e.message || e), sec: sec() };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function makeBg({ page, card, mood, dir, tries, timeoutSec, log, backend = imageBackend() }) {
+  const prompt = backend === 'openai' ? chatPrompt(mood, card.template) : bgPrompt(mood, card.template);
+  const record = { no: card.no, template: card.template, key: bgKey(mood, card), ok: false, file: null, source: backend, tries: [] };
   for (let t = 1; t <= tries; t++) {
     const cwd = path.join(dir, 'work', `card-${pad(card.no)}-try${t}`);
     fs.rmSync(cwd, { recursive: true, force: true });
     fs.mkdirSync(cwd, { recursive: true });
     fs.writeFileSync(path.join(cwd, 'prompt.txt'), prompt);
     log(`  ${card.no}번 배경 ${t}차 생성 중… (보통 1~2분)`);
-    const r = await runCodex(cwd, prompt, timeoutSec, { image: null });
-    const gen = generatedPath(r.out, cwd);
+    const r = backend === 'openai' ? await runOpenAI(cwd, prompt, timeoutSec) : await runCodex(cwd, prompt, timeoutSec, { image: null });
+    const gen = backend === 'openai' ? (r.code === 0 ? path.join(cwd, 'gen.png') : null) : generatedPath(r.out, cwd);
     const attempt = { try: t, sec: r.sec, exit: r.code };
     if (!gen) {
       const limit = usageLimit(r.out);
-      attempt.error = r.code === -1 ? `codex를 실행하지 못했어요: ${r.out}` : limit || '생성된 이미지가 없어요';
+      const name = backend === 'openai' ? 'OpenAI 이미지 API' : 'codex';
+      attempt.error = r.code === -1 ? `${name}를 실행하지 못했어요: ${r.out}` : limit || (backend === 'openai' ? `생성하지 못했어요: ${r.out}` : '생성된 이미지가 없어요');
       record.tries.push(attempt);
       log(`  ${card.no}번 ${t}차: ${attempt.error}`);
       // 실행 파일이 없거나 사용량 한도면 다시 해도 같음 → 남은 카드도 멈춤
       if (r.code === -1 || limit) { record.stop = attempt.error; break; }
       continue;
     }
-    fs.copyFileSync(gen, path.join(cwd, 'gen.png'));
+    if (path.resolve(gen) !== path.resolve(cwd, 'gen.png')) fs.copyFileSync(gen, path.join(cwd, 'gen.png'));
     const src = `data:image/png;base64,${fs.readFileSync(gen).toString('base64')}`;
     const file = `card-${pad(card.no)}.png`;
     fs.writeFileSync(path.join(dir, file), Buffer.from(await page.evaluate(`(${FIT_FN})(${JSON.stringify(src)}, ${FINAL})`), 'base64'));
@@ -195,4 +233,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });
 }
 
-module.exports = { run, importBg, chatPrompts, usageLimit };
+module.exports = { run, importBg, chatPrompts, usageLimit, imageBackend, runOpenAI };

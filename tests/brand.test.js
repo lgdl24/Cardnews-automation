@@ -268,3 +268,30 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
     ws.cleanup();
   }
 });
+
+test('이미지 만드는 곳: 기본은 Codex, CARDNEWS_IMAGE_BACKEND=openai면 OpenAI 이미지 API (키는 출력하지 않음)', async () => {
+  const { imageBackend, runOpenAI } = require('../scripts/ai-bg');
+  assert.equal(imageBackend({}), 'codex');
+  assert.equal(imageBackend({ CARDNEWS_IMAGE_BACKEND: 'openai' }), 'openai');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-openai-'));
+  try {
+    let r = await runOpenAI(dir, 'p', 5, { env: {} });
+    assert.equal(r.code, -1);
+    assert.match(r.out, /OPENAI_API_KEY/);
+    let sent = null;
+    const ok = async (url, init) => { sent = { url, body: JSON.parse(init.body), auth: init.headers.authorization }; return { ok: true, status: 200, json: async () => ({ data: [{ b64_json: Buffer.from('png').toString('base64') }] }) }; };
+    r = await runOpenAI(dir, '배경 요청', 5, { env: { OPENAI_API_KEY: 'sk-test' }, fetchFn: ok });
+    assert.equal(r.code, 0);
+    assert.equal(sent.url, 'https://api.openai.com/v1/images/generations');
+    assert.equal(sent.body.model, 'gpt-image-1');
+    assert.equal(sent.body.prompt, '배경 요청');
+    assert.equal(fs.readFileSync(path.join(dir, 'gen.png'), 'utf8'), 'png');
+    assert.doesNotMatch(JSON.stringify(r), /sk-test/, '결과에 키가 섞이지 않음');
+    const limited = async () => ({ ok: false, status: 429, json: async () => ({ error: { message: 'Rate limit reached' } }) });
+    r = await runOpenAI(dir, 'p', 5, { env: { OPENAI_API_KEY: 'k' }, fetchFn: limited });
+    assert.equal(r.code, 429);
+    assert.match(require('../scripts/ai-bg').usageLimit(r.out), /한도/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

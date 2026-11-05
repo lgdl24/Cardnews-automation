@@ -624,7 +624,7 @@ function AiBgPanel({ detail, busy, onMake, onUpload }: { detail: ProductDetail; 
     <div className="panel ai-card-panel">
       <h3 className="panel-title">AI 배경 · 카드 {bg.cards.length}장</h3>
       <p className="muted">
-        문구·출력 작업이 끝나면 카드마다 GPT 이미지(내 컴퓨터의 Codex)가 브랜드 무드에 맞는 <strong>배경만</strong> 만들어요. 카드 글자와 제품 사진은 그 위에 코드가 얹어서, 문구 검증을 그대로 거쳐요. 무드가 그대로면 문구를 고쳐도 배경은 다시 만들지 않아요.
+        문구·출력 작업이 끝나면 카드마다 GPT 이미지({bg.backend === 'openai' ? 'OpenAI 이미지 API, 장당 요금' : '내 컴퓨터의 Codex, ChatGPT 요금제 사용량'})가 브랜드 무드에 맞는 <strong>배경만</strong> 만들어요. 카드 글자와 제품 사진은 그 위에 코드가 얹어서, 문구 검증을 그대로 거쳐요. 무드가 그대로면 문구를 고쳐도 배경은 다시 만들지 않아요.
       </p>
       <p className="muted">
         자동 생성이 사용량 한도에 걸리면: 카드마다 <strong>요청문 복사</strong> → <a href="https://chatgpt.com/" target="_blank" rel="noreferrer noopener">ChatGPT 채팅</a>에 붙여 넣기 → 받은 이미지를 <strong>이미지 올리기</strong>로 넣으면 같은 방식으로 카드에 들어가요.
@@ -659,7 +659,7 @@ function AiBgPanel({ detail, busy, onMake, onUpload }: { detail: ProductDetail; 
               <div className="ai-card-meta">
                 <strong>{c.no}번</strong>
                 {last?.error && <span className="muted">{last.error}</span>}
-                {c.ok && <span className="muted">{c.source === 'chat' ? 'ChatGPT 채팅' : 'Codex 자동'}</span>}
+                {c.ok && <span className="muted">{c.source === 'chat' ? 'ChatGPT 채팅' : c.source === 'openai' ? 'OpenAI API' : 'Codex 자동'}</span>}
                 <button className="btn btn-small" disabled={!can} onClick={() => onMake(c.no)}>이 배경 다시 만들기</button>
                 {c.prompt && <button type="button" className="btn btn-small" onClick={() => copy(c.no, c.prompt!)}>{copied === c.no ? '복사했어요' : '요청문 복사'}</button>}
                 <label className={`btn btn-small file-btn${can ? '' : ' is-disabled'}`}>

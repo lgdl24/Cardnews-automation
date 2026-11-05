@@ -643,6 +643,8 @@ function createStudio({
     const fileV = (f) => (fs.existsSync(f) ? Math.round(fs.statSync(f).mtimeMs) : 0);
     return {
       auto: aiBgAuto,
+      // 이미지 만드는 곳 (scripts/ai-bg.js imageBackend): codex(로컬, 요금제 사용량) | openai(배포용 이미지 API)
+      backend: process.env.CARDNEWS_IMAGE_BACKEND === 'openai' ? 'openai' : 'codex',
       running: Boolean(run && run.running),
       run: run ? { card: run.card, auto: Boolean(run.auto), started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
       made_at: report ? report.made_at : null,
