@@ -2,6 +2,8 @@
 // 사용법: node scripts/ai-bg.js <제품ID> [--card N] [--stale] [--tries 2] [--no-render]   (npm run ai-bg -- <제품ID>)
 //   --stale     : 아직 없거나 무드(brand_mood)·템플릿이 바뀐 카드만 (작업실이 문구·출력 작업 뒤 자동으로 부름)
 //   --no-render : 배경만 만들고 카드는 다시 출력하지 않음
+//   --prompts   : 자동 생성 대신 ChatGPT 채팅창에 붙여 넣을 카드별 요청문만 출력 (Codex 사용량 한도일 때)
+//   --import N <파일> : ChatGPT 채팅에서 받은 이미지를 N번 배경으로 넣고 다시 출력
 // 흐름: cards.json brand_mood(장면·색) + 템플릿별 글자 면 자리 → 요청문(scripts/lib/brand.js bgPrompt) → codex exec → 1080px로 맞춰 저장 → render
 // 출력: products/<id>/output/ai-bg/card-NN.png, ai-bg.json(카드별 key·시도), work/(요청문·AI 원본)
 // 문구는 요청문에 넣지 않음. 카드 글자는 전부 cards.json에서 코드가 얹어 검증을 그대로 거침
@@ -12,7 +14,7 @@ const { spawnSync } = require('child_process');
 const { paths, readJson, loadInput, requireProductId, designRecord } = require('./lib/common');
 const { pad, launchBrowser } = require('./lib/card-html');
 const { runCodex, generatedPath } = require('./ai-card');
-const { BRAND_DESIGN, aiBgDir, bgPrompt, bgKey, readBgReport, staleBg } = require('./lib/brand');
+const { BRAND_DESIGN, aiBgDir, bgPrompt, chatPrompt, bgKey, readBgReport, staleBg } = require('./lib/brand');
 
 const FINAL = 1080;
 
@@ -71,12 +73,7 @@ async function makeBg({ page, card, mood, dir, tries, timeoutSec, log }) {
 }
 
 async function run(id, { only = null, staleOnly = false, tries = 2, render = true, log = console.log } = {}) {
-  const pdir = paths.product(id);
-  const data = readJson(path.join(pdir, 'cards.json'));
-  if (!['copy', 'approved'].includes(data.stage)) throw new Error(`문구 작업 뒤에 쓸 수 있어요 (지금 단계: ${data.stage})`);
-  const design = designRecord({ input: loadInput(id), data });
-  if (design.id !== BRAND_DESIGN) throw new Error(`무드가 '${BRAND_DESIGN}'일 때만 AI 배경을 만들어요 (지금: ${design.name})`);
-  if (!data.brand_mood) throw new Error('cards.json에 brand_mood가 없어요 (구성안 작업에서 정해요)');
+  const { pdir, data } = loadBrandData(id);
   const cards = data.cards || [];
   let list = only ? cards.filter((c) => c.no === only) : cards;
   if (only && !list.length) throw new Error(`${only}번 카드가 없어요`);
@@ -98,24 +95,91 @@ async function run(id, { only = null, staleOnly = false, tries = 2, render = tru
     } finally {
       await browser.close();
     }
-    const prev = readBgReport(pdir) || { cards: [] };
-    const merged = [...prev.cards.filter((c) => !results.some((r) => r.no === c.no) && cards.some((x) => x.no === c.no)), ...results].sort((a, b) => a.no - b.no);
-    fs.writeFileSync(path.join(dir, 'ai-bg.json'), `${JSON.stringify({ product_id: id, made_at: new Date().toISOString(), cards: merged }, null, 2)}\n`);
+    saveReport(id, pdir, cards, results);
   }
-  let rendered = null;
-  if (render && results.some((r) => r.ok)) {
-    log('배경을 넣어 카드를 다시 출력해요…');
-    const r = spawnSync(process.execPath, [path.join(paths.root, 'scripts', 'render.js'), id, '--no-log'], { encoding: 'utf8', env: process.env });
-    rendered = { ok: r.status === 0, output: `${r.stdout || ''}${r.stderr || ''}`.trim().split('\n').slice(-4) };
-    log(rendered.ok ? '카드 다시 출력 완료' : `[오류] 카드를 다시 출력하지 못했어요: ${rendered.output.slice(-1).join('')}`);
-  }
+  const rendered = render && results.some((r) => r.ok) ? rerender(id, log) : null;
   return { results, rendered };
+}
+
+function loadBrandData(id) {
+  const pdir = paths.product(id);
+  const data = readJson(path.join(pdir, 'cards.json'));
+  if (!['copy', 'approved'].includes(data.stage)) throw new Error(`문구 작업 뒤에 쓸 수 있어요 (지금 단계: ${data.stage})`);
+  const design = designRecord({ input: loadInput(id), data });
+  if (design.id !== BRAND_DESIGN) throw new Error(`무드가 '${BRAND_DESIGN}'일 때만 AI 배경을 만들어요 (지금: ${design.name})`);
+  if (!data.brand_mood) throw new Error('cards.json에 brand_mood가 없어요 (구성안 작업에서 정해요)');
+  return { pdir, data };
+}
+
+function saveReport(id, pdir, cards, results) {
+  const prev = readBgReport(pdir) || { cards: [] };
+  const merged = [...prev.cards.filter((c) => !results.some((r) => r.no === c.no) && cards.some((x) => x.no === c.no)), ...results].sort((a, b) => a.no - b.no);
+  fs.writeFileSync(path.join(aiBgDir(pdir), 'ai-bg.json'), `${JSON.stringify({ product_id: id, made_at: new Date().toISOString(), cards: merged }, null, 2)}\n`);
+}
+
+function rerender(id, log) {
+  log('배경을 넣어 카드를 다시 출력해요…');
+  const r = spawnSync(process.execPath, [path.join(paths.root, 'scripts', 'render.js'), id, '--no-log'], { encoding: 'utf8', env: process.env });
+  const rendered = { ok: r.status === 0, output: `${r.stdout || ''}${r.stderr || ''}`.trim().split('\n').slice(-4) };
+  log(rendered.ok ? '카드 다시 출력 완료' : `[오류] 카드를 다시 출력하지 못했어요: ${rendered.output.slice(-1).join('')}`);
+  return rendered;
+}
+
+// ChatGPT 채팅창용 요청문 (카드별). 사람이 채팅에 붙여 넣고 받은 이미지를 --import로 넣음
+function chatPrompts(id) {
+  const { data } = loadBrandData(id);
+  return (data.cards || []).map((c) => ({ no: c.no, template: c.template, prompt: chatPrompt(data.brand_mood, c.template) }));
+}
+
+// 사람이 ChatGPT 채팅에서 만든 이미지(PNG·JPG)를 N번 카드 배경으로 넣음 → 1080px로 맞춰 저장 → 다시 출력
+async function importBg(id, no, file, { render = true, log = console.log } = {}) {
+  const { pdir, data } = loadBrandData(id);
+  const card = (data.cards || []).find((c) => c.no === no);
+  if (!card) throw new Error(`${no}번 카드가 없어요`);
+  const buf = fs.readFileSync(file);
+  const isPng = buf.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  const isJpg = buf[0] === 0xff && buf[1] === 0xd8;
+  const isWebp = buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP';
+  if (!isPng && !isJpg && !isWebp) throw new Error('PNG·JPG·WEBP 이미지만 넣을 수 있어요');
+  const dir = aiBgDir(pdir);
+  fs.mkdirSync(path.join(dir, 'work'), { recursive: true });
+  fs.copyFileSync(file, path.join(dir, 'work', `card-${pad(no)}-chat${isPng ? '.png' : isJpg ? '.jpg' : '.webp'}`));
+  const mime = isPng ? 'image/png' : isJpg ? 'image/jpeg' : 'image/webp';
+  const browser = await launchBrowser();
+  const out = `card-${pad(no)}.png`;
+  try {
+    const page = await browser.newPage();
+    await page.setContent('<!doctype html><title>ai-bg</title>');
+    const src = `data:${mime};base64,${buf.toString('base64')}`;
+    fs.writeFileSync(path.join(dir, out), Buffer.from(await page.evaluate(`(${FIT_FN})(${JSON.stringify(src)}, ${FINAL})`), 'base64'));
+  } finally {
+    await browser.close();
+  }
+  const record = { no, template: card.template, key: bgKey(data.brand_mood, card), ok: true, file: out, source: 'chat', tries: [{ try: 1, sec: 0, source: 'chat', imported_at: new Date().toISOString() }] };
+  saveReport(id, pdir, data.cards || [], [record]);
+  log(`${no}번 배경을 넣었어요 (ChatGPT 채팅에서 만든 이미지)`);
+  const rendered = render ? rerender(id, log) : null;
+  return { results: [record], rendered };
 }
 
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const id = requireProductId(argv);
   const opt = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : null; };
+  if (argv.includes('--prompts')) {
+    try {
+      for (const p of chatPrompts(id)) console.log(`\n===== ${p.no}번 (${p.template}) — ChatGPT 채팅에 붙여 넣기 =====\n${p.prompt}`);
+      console.log(`\n받은 이미지는: npm run ai-bg -- ${id} --import <카드 번호> <이미지 파일>`);
+      process.exit(0);
+    } catch (e) { console.error(`[오류] ${e.message}`); process.exit(2); }
+  }
+  if (argv.includes('--import')) {
+    const i = argv.indexOf('--import');
+    importBg(id, Number(argv[i + 1]), argv[i + 2], { render: !argv.includes('--no-render') })
+      .then(({ rendered }) => process.exit(!rendered || rendered.ok ? 0 : 1))
+      .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });
+    return;
+  }
   run(id, {
     only: opt('--card') ? Number(opt('--card')) : null,
     staleOnly: argv.includes('--stale'),
@@ -131,4 +195,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });
 }
 
-module.exports = { run, usageLimit };
+module.exports = { run, importBg, chatPrompts, usageLimit };

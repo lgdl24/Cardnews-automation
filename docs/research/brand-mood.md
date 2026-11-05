@@ -15,6 +15,7 @@
 | 5. 구성안 확인 | 사람 | 작업실 '브랜드 무드' 패널에서 화면·색·장면·근거 확인 후 승인 | |
 | 6. 문구·출력 | 문구 작업 (Claude) | 지금과 같음. 브랜드 색으로 출력 | `output/png` |
 | 7. GPT 배경 | 작업실이 문구 작업 뒤 자동 (`npm run ai-bg -- <ID>`) | 카드마다 `brand_mood.scene`·색·글자 면 자리로 요청 → 글자·제품 없는 배경 → 다시 출력 | `output/ai-bg/card-NN.png` |
+| 7'. 채팅으로 대신 (한도일 때) | 사람 | Codex가 ChatGPT 사용량 한도에 걸리면 작업실 'AI 배경'에서 카드별 **요청문 복사** → ChatGPT 채팅에 붙여 넣기 → 받은 이미지를 **이미지 올리기**. CLI는 `npm run ai-bg -- <ID> --prompts`·`--import N <파일>`. 채팅창을 자동으로 조작하지는 않음(약관) | `output/ai-bg/card-NN.png` (`source: chat`) |
 | 8. 최종 승인 | 사람 | 배경에 글자·로고가 섞였는지 눈으로 확인 (섞였으면 그 카드만 다시) | |
 
 ## 보안·법규
@@ -30,7 +31,7 @@
 | 파일 | 내용 |
 |---|---|
 | `scripts/brand-snapshot.js` | 스냅샷 (`npm run brand`) |
-| `scripts/ai-bg.js` | 카드별 GPT 배경 + 다시 출력 (`npm run ai-bg`, `--card N`·`--stale`·`--no-render`) |
+| `scripts/ai-bg.js` | 카드별 GPT 배경 + 다시 출력 (`npm run ai-bg`, `--card N`·`--stale`·`--no-render`, 채팅용 `--prompts`·`--import N <파일>`) |
 | `scripts/lib/brand.js` | 주소 검사, `brand_mood` 검사, 브랜드 색, 배경 요청문·신선도 key |
 | `scripts/lib/extract-input.js` | 자료로 채우기 (`POST /api/studio/extract`) |
 | `templates/brand/*.html` | 묶음 `브랜드`: 카드 전체 배경 + 실제 제품 사진 + 반투명 글자 면 |

@@ -96,6 +96,11 @@ test('배경 요청문: 무드 장면·색·글자 면 자리를 넣고 글자·
   assert.match(p, /No product, bottle/);
   assert.match(p, /No medical/);
   assert.doesNotMatch(brand.bgPrompt(MOOD, 'description'), /upper-left area/);
+  // ChatGPT 채팅용: 같은 내용, Codex 전용 지시($imagegen·파일 저장)는 없음
+  const c = brand.chatPrompt(MOOD, 'cover');
+  assert.match(c, /soft lavender silk/);
+  assert.match(c, /No text, letters, numbers, logos/);
+  assert.doesNotMatch(c, /\$imagegen|out\.png/);
 });
 
 test('배경 신선도: 무드·템플릿이 같으면 그대로 쓰고, 바뀌면 다시 만들 대상', () => {
@@ -195,7 +200,7 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
       return { ok: true, job_id: `j-${kind}`, kind, report: null, verify: null, progress: [] };
     },
     aiCardFn: () => { order.push('ai-card'); return { ok: true }; },
-    aiBgFn: (pid, { stale }) => { order.push(`ai-bg:${stale ? 'stale' : 'manual'}`); return new Promise((resolve) => { releaseBg = () => resolve({ ok: true }); }); },
+    aiBgFn: (pid, { stale, card, importFile }) => { order.push(importFile ? `ai-bg:import:${card}` : `ai-bg:${stale ? 'stale' : 'manual'}`); if (importFile) assert.ok(fs.existsSync(importFile), '올린 이미지를 임시 파일로 넘김'); return new Promise((resolve) => { releaseBg = () => resolve({ ok: true }); }); },
     extractFn: async ({ files }) => ({ values: { 제품명: '자료 제품' }, missing: [], warnings: [], files: files.map((f) => f.name) }),
   });
   const server = http.createServer(async (req, res) => { if (!(await studio.handle(req, res))) { res.statusCode = 404; res.end(); } });
@@ -246,6 +251,17 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
     r = await call('POST', '/products/brand-test/ai-bg', { card: 2 });
     assert.equal(r.status, 202);
     assert.equal(order[order.length - 1], 'ai-bg:manual');
+    releaseBg();
+    await new Promise((x) => setTimeout(x, 20));
+    // ChatGPT 채팅에서 만든 이미지 올리기: 카드별 요청문을 보여주고, 올린 이미지는 --import로 넣음
+    r = await call('GET', '/products/brand-test');
+    assert.match(r.body.ai_bg.cards[0].prompt, /BACKGROUND ONLY/);
+    r = await call('POST', '/products/brand-test/ai-bg/upload', { card: 3, data: Buffer.from('not image').toString('base64') });
+    assert.equal(r.status, 400, '이미지가 아니면 거절');
+    const PNG = '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8cfc0f01f0005000201a3d8b1a40000000049454e44ae426082';
+    r = await call('POST', '/products/brand-test/ai-bg/upload', { card: 3, data: Buffer.from(PNG, 'hex').toString('base64') });
+    assert.equal(r.status, 202);
+    assert.equal(order[order.length - 1], 'ai-bg:import:3');
     releaseBg();
   } finally {
     await new Promise((r) => server.close(r));

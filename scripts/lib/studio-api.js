@@ -650,17 +650,24 @@ function createStudio({
       stale: brand.staleBg(productDir(id), data),
       cards: ((data && data.cards) || []).map((c) => {
         const r = report && (report.cards || []).find((x) => x.no === c.no);
-        return { no: c.no, template: c.template, ok: Boolean(r && r.ok), current: have.has(c.no), file: r && r.file ? r.file : null, v: r && r.file ? fileV(path.join(bgDir(id), r.file)) : 0, tries: r ? r.tries : [] };
+        return {
+          no: c.no, template: c.template, ok: Boolean(r && r.ok), current: have.has(c.no), source: (r && r.source) || (r ? 'codex' : null),
+          file: r && r.file ? r.file : null, v: r && r.file ? fileV(path.join(bgDir(id), r.file)) : 0, tries: r ? r.tries : [],
+          // ChatGPT 채팅창에 붙여 넣을 요청문 (Codex 사용량 한도일 때 사람이 만들어 올림)
+          prompt: data && data.brand_mood ? brand.chatPrompt(data.brand_mood, c.template) : null,
+        };
       }),
     };
   }
-  function startAiBg(id, card, { stale = false } = {}) {
+  function startAiBg(id, card, { stale = false, importFile = null } = {}) {
     const run = { card: card || null, auto: stale, started_at: new Date().toISOString(), finished_at: null, running: true, ok: null, lines: [] };
     bgRuns.set(id, run);
     const onLine = (line) => { if (line.trim()) run.lines.push(line.trim()); if (run.lines.length > 50) run.lines.shift(); };
     const done = (r) => Object.assign(run, { running: false, ok: Boolean(r && r.ok), finished_at: new Date().toISOString() });
-    const exec = aiBgFn || ((pid, { card: c, stale: st }) => new Promise((resolve) => {
-      const args = [path.join(root, 'scripts', 'ai-bg.js'), pid, ...(c ? ['--card', String(c)] : []), ...(st ? ['--stale'] : [])];
+    const exec = aiBgFn || ((pid, { card: c, stale: st, importFile: imp }) => new Promise((resolve) => {
+      const args = imp
+        ? [path.join(root, 'scripts', 'ai-bg.js'), pid, '--import', String(c), imp]
+        : [path.join(root, 'scripts', 'ai-bg.js'), pid, ...(c ? ['--card', String(c)] : []), ...(st ? ['--stale'] : [])];
       const child = spawn(process.execPath, args, { env: scriptEnv() });
       let buf = '';
       const feed = (d) => { buf += d; const parts = buf.split('\n'); buf = parts.pop(); parts.forEach(onLine); };
@@ -669,7 +676,8 @@ function createStudio({
       child.on('error', (e) => { onLine(`[오류] ${e.message}`); resolve({ ok: false }); });
       child.on('close', (code) => { if (buf) onLine(buf); resolve({ ok: code === 0, code }); });
     }));
-    Promise.resolve(exec(id, { card, stale, onLine })).then(done, (e) => { onLine(`[오류] ${e.message}`); done({ ok: false }); });
+    const cleanup = () => { if (importFile) fs.rmSync(importFile, { force: true }); };
+    Promise.resolve(exec(id, { card, stale, importFile, onLine })).then((r) => { cleanup(); done(r); }, (e) => { cleanup(); onLine(`[오류] ${e.message}`); done({ ok: false }); });
   }
   // 문구·출력 작업이 성공하면: 아직 없거나 무드·템플릿이 바뀐 카드 배경만 GPT로 (뒤에서). 문구만 바뀌면 배경은 그대로
   function autoAiBg(id) {
@@ -960,6 +968,26 @@ function createStudio({
         const allowed = [cards[0], cards[cards.length - 1]].filter(Boolean).map((c) => c.no);
         if (n != null && !allowed.includes(n)) throw new HttpError(400, `AI 디자인 카드는 첫·마지막 카드(${allowed.join('·')}번)만 만들 수 있어요`);
         startAiCard(id, n);
+        return send(res, 202, detail());
+      }
+      // AI 배경 올리기: ChatGPT 채팅에서 만든 이미지를 N번 배경으로 (1080px로 맞추고 다시 출력)
+      if (method === 'POST' && parts[2] === 'ai-bg' && parts[3] === 'upload' && parts.length === 4) {
+        const body = await readBody(req);
+        if (!detail().ai_bg) throw new HttpError(409, "무드가 '브랜드'일 때만 배경을 넣어요");
+        if (!detail().actions.can_ai_bg) throw new HttpError(409, (bgRuns.get(id) || {}).running ? 'AI 배경을 만드는 중이에요' : '문구를 만든 뒤, 작업이 없을 때 넣을 수 있어요');
+        const n = Number(body && body.card);
+        const cards = (readJsonSafe(path.join(productDir(id), 'cards.json')) || {}).cards || [];
+        if (!cards.some((c) => c.no === n)) throw new HttpError(400, '카드 번호를 확인해 주세요');
+        const data = Buffer.from(String((body && body.data) || '').replace(/^data:[^,]*,/, ''), 'base64');
+        if (!data.length) throw new HttpError(400, '이미지를 올려 주세요');
+        if (data.length > 20 * 1024 * 1024) throw new HttpError(413, '이미지는 20MB 이하만 올릴 수 있어요');
+        const png = data.subarray(0, 4).equals(PNG_SIG);
+        const jpg = data[0] === 0xff && data[1] === 0xd8;
+        const webp = data.subarray(0, 4).toString('latin1') === 'RIFF' && data.subarray(8, 12).toString('latin1') === 'WEBP';
+        if (!png && !jpg && !webp) throw new HttpError(400, 'PNG·JPG·WEBP 이미지만 올릴 수 있어요');
+        const tmp = path.join(require('os').tmpdir(), `cardnews-bg-${id}-${n}-${Date.now()}.${png ? 'png' : jpg ? 'jpg' : 'webp'}`);
+        fs.writeFileSync(tmp, data);
+        startAiBg(id, n, { importFile: tmp });
         return send(res, 202, detail());
       }
       // AI 배경 (무드 '브랜드'): 전체 또는 한 장 다시 만들기

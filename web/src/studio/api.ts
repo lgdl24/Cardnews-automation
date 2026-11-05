@@ -288,7 +288,7 @@ export interface AiBgInfo {
   made_at: string | null;
   has_mood: boolean;
   stale: number[];
-  cards: { no: number; template: string; ok: boolean; current: boolean; file: string | null; v: number; tries: { try: number; sec: number; error?: string }[] }[];
+  cards: { no: number; template: string; ok: boolean; current: boolean; source: 'codex' | 'chat' | null; file: string | null; v: number; tries: { try: number; sec: number; error?: string }[]; prompt: string | null }[];
 }
 /** 자료로 입력 칸 채우기 결과 (POST /extract) */
 export interface ExtractResult {

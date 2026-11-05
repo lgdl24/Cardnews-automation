@@ -82,11 +82,10 @@ const LAYOUT_HINT = {
   description: 'Keep the lower 70% of the image soft and low-detail: a large text panel will cover it. Leave a small open surface in the upper-right where a small product will stand.',
 };
 
-function bgPrompt(mood, templateKey) {
+// 배경 내용 (Codex·ChatGPT 채팅 공통): 장면·분위기·색·글자 면 자리·금지 사항
+function bgBody(mood, templateKey) {
   const p = mood.palette || {};
-  return `$imagegen Generate one square (1:1) high-resolution background image and save it as ./out.png in the current folder.
-
-It is the BACKGROUND ONLY for a cosmetics card-news card. Text and the real product photo will be added on top later by code.
+  return `It is the BACKGROUND ONLY for a cosmetics card-news card. Text and the real product photo will be added on top later by code.
 Scene: ${mood.scene}
 Mood: ${mood.summary} Photo style: ${mood.photo_style}
 Main colors: ${[p.bg, p.accent, p.primary].filter(Boolean).join(', ')} (use them as the dominant tones).
@@ -96,11 +95,27 @@ STRICT RULES:
 - No text, letters, numbers, logos, watermarks, labels or signs anywhere.
 - No product, bottle, tube, jar, box or any packaging. No people, hands or faces.
 - No medical, clinical, hospital, injection or before/after imagery. No certification badges.
-- Photographic, clean, premium skincare advertising look.
+- Photographic, clean, premium skincare advertising look.`;
+}
+
+// 로컬 Codex CLI용 (ai-bg.js 자동 생성)
+function bgPrompt(mood, templateKey) {
+  return `$imagegen Generate one square (1:1) high-resolution background image and save it as ./out.png in the current folder.
+
+${bgBody(mood, templateKey)}
 
 Use ONLY the built-in image generation tool, in a single generation. Do not write or run any code or scripts and do not post-process the image. Just copy the generated file to ./out.png.
 
 When done, reply with only: ./out.png`;
+}
+
+// ChatGPT 채팅창에 붙여 넣는 요청문 (사람이 만든 이미지를 받아 작업실에 올림)
+function chatPrompt(mood, templateKey) {
+  return `Create one square (1:1) high-resolution image.
+
+${bgBody(mood, templateKey)}
+
+Reply with the image only.`;
 }
 
 // 배경이 지금 문구·무드와 맞는지 보는 key: 무드의 장면·색과 카드 템플릿이 같으면 다시 만들 필요 없음 (문구는 코드가 얹으므로 넣지 않음)
@@ -140,5 +155,5 @@ function staleBg(productDir, data) {
 
 module.exports = {
   BRAND_DESIGN, PALETTE_KEYS, MOOD_SOURCES, LAYOUT_HINT,
-  brandDir, aiBgDir, brandUrlOf, checkBrandUrl, checkBrandMood, brandPalette, bgPrompt, bgKey, readBgReport, bgFiles, staleBg,
+  brandDir, aiBgDir, brandUrlOf, checkBrandUrl, checkBrandMood, brandPalette, bgPrompt, chatPrompt, bgKey, readBgReport, bgFiles, staleBg,
 };
