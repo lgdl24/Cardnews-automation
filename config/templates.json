@@ -238,9 +238,9 @@
     },
     "브랜드": {
       "_defaults": { "colorMode": "기본" },
-      "_theme": { "color": { "bg": "#F4F1EC", "surface": "#FFFFFF", "text": "#26221F", "muted": "#5E5650", "primary": "#3F3A36", "accent": "#E4DDD3", "on-primary": "#FFFFFF" } },
+      "_theme": { "color": { "bg": "#F4F1EC", "surface": "#FFFFFF", "text": "#26221F", "muted": "#5E5650", "primary": "#3F3A36", "accent": "#E4DDD3", "on-primary": "#FFFFFF" }, "contrast": { "text/bg": 1, "text/accent": 1, "muted/bg": 1, "muted/accent": 1, "primary/accent": 1 } },
       "_notes": [
-        "카드 색은 구성안 작업에서 정한 brand_mood.palette를 써요(없으면 이 묶음 기본 색). 글자 대비 4.5는 출력이 자동으로 맞춰요",
+        "카드 색은 구성안 작업에서 정한 brand_mood.palette를 써요(없으면 이 묶음 기본 색). 글자는 모두 surface 면·primary 배지 위에 놓여서 그 짝만 대비 4.5를 출력이 맞춰요(bg·accent는 배경 그라데이션이라 _theme.contrast에서 1)",
         "배경은 문구 작업 뒤 GPT가 카드마다 만들어요(글자·제품 없는 장면, npm run ai-bg). 글자는 반투명 면 위에 코드로 얹어요",
         "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요"
       ],

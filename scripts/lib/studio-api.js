@@ -1001,7 +1001,8 @@ function createStudio({
         const n = body && body.card != null ? Number(body.card) : null;
         const cards = (readJsonSafe(path.join(productDir(id), 'cards.json')) || {}).cards || [];
         if (n != null && !cards.some((c) => c.no === n)) throw new HttpError(400, `${n}번 카드가 없어요`);
-        startAiBg(id, n);
+        // stale: 아직 없거나 무드가 바뀐 카드만 (위쪽 'N번 AI 배경 만들기' 버튼). 카드 번호도 stale도 없으면 전체
+        startAiBg(id, n, { stale: n == null && Boolean(body && body.stale) });
         return send(res, 202, detail());
       }
       // 피그마에서 편집: 출력한 카드를 피그마 레이어 파일로 준비 (플러그인이 가져감)

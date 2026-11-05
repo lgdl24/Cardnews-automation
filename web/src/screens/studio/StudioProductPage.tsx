@@ -168,7 +168,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
             </div>
           )}
           {p.ai_bg && (
-            <AiBgPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-bg`, card ? { card } : {})} onUpload={(card, data) => act(`/products/${id}/ai-bg/upload`, { card, data })} />
+            <AiBgPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-bg`, card ? { card } : { stale: true })} onUpload={(card, data) => act(`/products/${id}/ai-bg/upload`, { card, data })} />
           )}
           {p.ai_card && (
             <AiCardPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-card`, card ? { card } : {})} />

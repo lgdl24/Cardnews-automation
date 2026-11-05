@@ -132,6 +132,18 @@ test('GPT 사용량 한도·과부하는 다시 시도하지 않고 이유를 �
   assert.equal(usageLimit('./out.png'), null);
 });
 
+test('브랜드 색 대비: 템플릿이 쓰는 짝(면 위 글자·배지)만 맞추고, 밝은 배지에 어두운 글자면 배지를 어둡게 하지 않음', () => {
+  const { loadConfig } = require('../scripts/lib/common');
+  const { decideColors } = require('../scripts/lib/color-mood');
+  const { theme } = loadConfig({ cond: { 무드: '브랜드' } });
+  const palette = { bg: '#F4E9E6', surface: '#FDFDFD', text: '#1A1A1A', muted: '#6B6B6B', primary: '#FACADA', accent: '#00E1FF', 'on-primary': '#1A1A1A' };
+  const base = brand.brandPalette(theme.color, { palette }).color;
+  const c = decideColors({ mode: '기본', baseColor: base, pairMin: theme.contrast });
+  assert.equal(c.color.primary, '#FACADA', JSON.stringify(c.adjustments));
+  assert.ok(c.checks.find((x) => x.fg === 'on-primary' && x.bg === 'primary').ratio >= 4.5);
+  assert.ok(c.checks.find((x) => x.fg === 'text' && x.bg === 'surface').ratio >= 4.5);
+});
+
 test('브랜드 색: brand_mood.palette가 묶음 기본 색 위에 들어감', () => {
   const base = { bg: '#000000', surface: '#111111', text: '#222222', muted: '#333333', primary: '#444444', accent: '#555555', 'on-primary': '#666666', extra: '#777777' };
   const r = brand.brandPalette(base, MOOD);
@@ -244,6 +256,11 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
     assert.equal(r.body.actions.can_approve_final, false);
     r = await call('POST', '/products/brand-test/ai-bg', {});
     assert.equal(r.status, 409, '만드는 중에는 다시 못 누름');
+    releaseBg();
+    await new Promise((x) => setTimeout(x, 20));
+    r = await call('POST', '/products/brand-test/ai-bg', { stale: true });
+    assert.equal(r.status, 202);
+    assert.equal(order[order.length - 1], 'ai-bg:stale', '위쪽 버튼은 없는 카드만');
     releaseBg();
     await new Promise((x) => setTimeout(x, 20));
     r = await call('POST', '/products/brand-test/ai-bg', { card: 99 });
