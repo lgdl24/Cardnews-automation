@@ -13,6 +13,7 @@ const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
 const { applyAiCards } = require('./lib/ai-cards');
+const { BRAND_DESIGN, brandPalette, bgFiles } = require('./lib/brand');
 
 // 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
 // 제품 색이면 사진 픽셀을 읽으려고 브라우저를 먼저 띄움 (HTML만 만들 때도)
@@ -121,16 +122,18 @@ async function main() {
     return browser;
   };
 
-  // 카드 색
+  // 카드 색. 무드 '브랜드'면 구성안 작업이 정한 brand_mood.palette가 기본 색 (카드 색 '제품 색'을 고르면 그쪽이 우선)
+  const design = designRecord({ input, data });
+  const isBrand = design.id === BRAND_DESIGN;
+  const brand = isBrand ? brandPalette(theme.color, data.brand_mood) : { color: theme.color, used: false };
   const colorMode = colorModeOf(input, data);
   const colors = await colorsFor({
-    data, input, imageDir, baseColor: theme.color, pairMin: theme.contrast || {}, browser: colorMode === '제품 색' ? await startBrowser() : null,
+    data, input, imageDir, baseColor: brand.color, pairMin: theme.contrast || {}, browser: colorMode === '제품 색' ? await startBrowser() : null,
   });
   reportColors(report, colors);
-  const design = designRecord({ input, data });
   const DESIGN_FROM = { input: '입력에서 고름', cards: data.design && data.design.selected_by === 'human' ? '구성안에서 사람이 고름' : '구성안에서 Claude가 고름', default: '기본값' };
   console.log(`디자인 묶음: ${design.name} v${design.version ?? '-'} (${DESIGN_FROM[design.source]})`);
-  console.log(colorSummary(colors));
+  console.log(brand.used && colors.source === 'theme' ? colorSummary(colors).replace('카드 색: 기본', '카드 색: 브랜드 무드 (brand_mood.palette)') : colorSummary(colors));
   const cardTheme = { ...theme, color: colors.color };
 
   // 새 묶음의 제품 사진만 투명 여백 계산. 원본 파일은 그대로 둠.
@@ -149,11 +152,18 @@ async function main() {
   // 용도가 제형·배경인 사진 (#74): 사용 가능하고 파일이 있는 첫 장. 묶음 템플릿이 질감·연출 자리에 씀
   const firstOfKind = (kind) => (input.images || []).find((i) => i.kind === kind && i.usage !== '불가' && fs.existsSync(path.join(imageDir, i.file)))?.file || null;
   const extraImages = { texture: firstOfKind('제형'), scene: firstOfKind('배경') };
+  // 무드 '브랜드': 카드마다 GPT 배경(npm run ai-bg). 무드·템플릿이 바뀌어 맞지 않는 배경은 쓰지 않음
+  const bgs = isBrand ? bgFiles(paths.product(id), data) : new Map();
+  if (isBrand) {
+    const missing = targets.filter((c) => !bgs.has(c.no)).map((c) => c.no);
+    if (missing.length) console.log(`AI 배경 없음: ${missing.join('·')}번 (브랜드 색 그라데이션으로 출력. npm run ai-bg -- ${id})`);
+  }
 
   // HTML 생성
   for (const card of targets) {
     const html = buildCardHtml({
-      card, cards: data.cards, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image), extraImages,
+      card, cards: data.cards, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image),
+      extraImages: bgs.has(card.no) ? { ...extraImages, sceneFile: bgs.get(card.no) } : extraImages,
     });
     fs.writeFileSync(path.join(htmlDir, `card-${pad(card.no)}.html`), html);
   }
@@ -198,7 +208,8 @@ async function main() {
   );
   console.log(`PNG ${targets.length}장 저장: ${path.relative(paths.root, pngDir)}`);
   // 첫·마지막 카드는 AI 디자인 카드가 있고 문구가 그대로면 최종 카드에 다시 넣음 (문구가 바뀌었으면 템플릿 출력 유지 → 작업실이 다시 만듦)
-  const ai = applyAiCards(paths.product(id), data.cards, { only: targets.map((c) => c.no) });
+  // 무드 '브랜드'는 글자를 코드가 얹으므로(A안) GPT가 글자를 그린 AI 디자인 카드를 넣지 않음
+  const ai = isBrand ? { applied: [] } : applyAiCards(paths.product(id), data.cards, { only: targets.map((c) => c.no) });
   if (ai.applied.length) console.log(`AI 디자인 카드 유지: ${ai.applied.join('·')}번`);
   printReport(`레이아웃 점검: ${id}`, report);
   if (log) {

@@ -10,6 +10,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const aiCards = require('./ai-cards');
+const brand = require('./brand');
+const { extractInput } = require('./extract-input');
 const figmaPush = require('../figma-push');
 const { ROOT, readJson, parseInput, resolveDesign, designCatalog, moodInputOf } = require('./common');
 const { loadForm, renderInputMd } = require('./input-form');
@@ -88,14 +90,14 @@ function readEventsFrom(file) {
  * @param {object} [o]
  * @param {string} [o.root]         저장소 루트 (규칙·스크립트)
  * @param {string} [o.productsDir]  제품 폴더들 (기본 <root>/products)
- * @param {string} [o.bin]          claude 실행 파일 (기본 CARDNEWS_CLAUDE_BIN 또는 claude)
+ * @param {string} [o.bin]          claude 실행 파일 (기본 jobRunner.defaultClaudeBin())
  * @param {Function} [o.runJob]     작업 실행 함수 (테스트용 교체)
  * @param {Function} [o.aiCardFn]   AI 디자인 카드 실행 함수 (테스트용 교체): (id, { card, onLine }) => Promise<{ ok, code }>
  */
 function createStudio({
   root = ROOT,
   productsDir = path.join(root, 'products'),
-  bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude',
+  bin = jobRunner.defaultClaudeBin(),
   runJob = jobRunner.runJob,
   reportsDir = path.join(root, '.studio', 'jobs'),
   exportConfigFile = path.join(root, 'config', 'export.json'),
@@ -104,6 +106,12 @@ function createStudio({
   figmaExportFn,
   renderFn,
   aiCardFn,
+  // 무드 '브랜드': 구성안 작업 전 브랜드 페이지 스냅샷, 문구·출력 작업 뒤 카드별 GPT 배경(A안, 글자는 코드). CARDNEWS_AI_BG=off 로 자동 배경 끔
+  brandSnapshotFn,
+  aiBgFn,
+  aiBgAuto = process.env.CARDNEWS_AI_BG !== 'off',
+  // 자료(PDF·이미지·글)로 입력 칸 채우기: claude -p가 자료만 읽고 입력 초안을 돌려줌 (사람이 확인한 뒤 저장)
+  extractFn,
   // 문구·출력 작업이 끝나면 첫·마지막 카드를 GPT 이미지로 자동으로 만듦 (CARDNEWS_AI_CARD=off 로 끔)
   aiAuto = process.env.CARDNEWS_AI_CARD !== 'off',
   // '피그마에서 편집'을 누르면 로컬 Claude Code의 피그마 연결로 카드를 새 페이지에 바로 넣음 (CARDNEWS_FIGMA_PUSH=off 로 끔 → 플러그인으로 가져오기)
@@ -120,6 +128,7 @@ function createStudio({
   const lastJobs = new Map(); // 제품ID → 마지막 작업 요약
   const figmaRuns = new Map(); // 제품ID → { running, page_name, page_id, ok, error, started_at, finished_at, lines }
   const aiRuns = new Map(); // 제품ID → { card, auto, started_at, finished_at, running, ok, lines: [] }
+  const bgRuns = new Map(); // 제품ID → AI 배경 실행 상태 (aiRuns와 같은 모양)
   const isRunning = () => Boolean(current && current.status === 'running');
   const queueIndex = (id) => queue.findIndex((q) => q.product_id === id);
   // 이 제품의 작업 상태: 'running' | 'queued' | null
@@ -259,7 +268,7 @@ function createStudio({
     const approvedCurrentPlan = planApproved && lastPlanApproval && (!lastPlanJob || lastPlanApproval.ts > lastPlanJob.ts);
     const lastOk = lastFinish ? lastFinish.ok : null;
     // AI 디자인 카드를 만드는 중이면 최종 카드(1·마지막)가 아직 바뀌는 중 → 승인·내보내기·피그마는 기다림
-    const aiBusy = Boolean((aiRuns.get(id) || {}).running);
+    const aiBusy = Boolean((aiRuns.get(id) || {}).running) || Boolean((bgRuns.get(id) || {}).running);
     return {
       ai_busy: aiBusy,
       running,
@@ -278,6 +287,7 @@ function createStudio({
       can_export: !running && !aiBusy && stage === 'approved',
       can_render: !running && (stage === 'copy' || stage === 'approved'),
       can_ai_card: !running && (stage === 'copy' || stage === 'approved') && !(aiRuns.get(id) || {}).running,
+      can_ai_bg: !running && (stage === 'copy' || stage === 'approved') && !(bgRuns.get(id) || {}).running,
     };
   }
 
@@ -318,7 +328,9 @@ function createStudio({
       },
       actions: nextActions(id, { cards, events, check }),
       figma: figmaInfo(id),
-      ai_card: aiCardInfo(id),
+      ai_card: isBrand(input, cards) ? null : aiCardInfo(id),
+      ai_bg: isBrand(input, cards) ? aiBgInfo(id) : null,
+      brand_page: brandInfo(input, dir),
     };
   }
 
@@ -400,7 +412,9 @@ function createStudio({
     if (beforeStart) beforeStart();
     const job = { status: 'running', product_id: id, kind, job_id: null, started_at: new Date().toISOString(), progress: [], revision };
     current = job;
-    runJob({
+    const note = (text) => job.progress.push({ ts: new Date().toISOString(), type: 'text', text });
+    // 구성안 작업 전에 브랜드 페이지 스냅샷 (작업 실행기는 웹에 접속하지 않고 저장된 파일만 읽음)
+    Promise.resolve(kind === 'plan' ? prepareBrand(id, note) : null).then(() => runJob({
       kind,
       productId: id,
       productDir: productDir(id),
@@ -415,12 +429,15 @@ function createStudio({
       onProgress: (p) => {
         job.progress.push(p);
       },
-    })
+    }))
       .then((summary) => {
         job.status = 'done';
         job.summary = summary;
         lastJobs.set(id, { ...publicSummary(summary), status: 'done' });
-        if (summary && summary.ok && (kind === 'copy' || kind === 'revise')) autoAiCard(id);
+        if (summary && summary.ok && (kind === 'copy' || kind === 'revise')) {
+          if (isBrand(readInputOf(id), readJsonSafe(path.join(productDir(id), 'cards.json')))) autoAiBg(id);
+          else autoAiCard(id);
+        }
       })
       .catch((e) => {
         job.status = 'done';
@@ -476,7 +493,8 @@ function createStudio({
       fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2) + '\n');
     }
     if (exportFn) return exportFn(id);
-    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'export.js'), '--only', id, '--config', cfgFile], { encoding: 'utf8', env: scriptEnv({ CARDNEWS_NO_LOG: '1' }) });
+    // 웹 데이터는 webIndexFile이 있는 폴더로 (시험 폴더 모드에서 저장소 web/public/data를 건드리지 않게)
+    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'export.js'), '--only', id, '--config', cfgFile, '--out', path.dirname(webIndexFile)], { encoding: 'utf8', env: scriptEnv({ CARDNEWS_NO_LOG: '1' }) });
     const excluded = (r.stdout.match(/^\[제외\].*$/gm) || []).map((l) => l.replace(/^\[제외\]\s*/, ''));
     return { ok: r.status === 0 && excluded.length === 0, output: (r.stdout || '').trim().split('\n').slice(-6), excluded };
   }
@@ -571,6 +589,95 @@ function createStudio({
     if (!cards || cards.stage !== 'copy' || !Array.isArray(cards.cards)) return;
     if (!aiCards.staleTargets(productDir(id), cards.cards).length) return;
     startAiCard(id, null, { stale: true });
+  }
+
+  // ── 무드 '브랜드' (scripts/lib/brand.js)
+  const isBrand = (input, cards) => resolveDesign({ input, data: cards, config: templatesConfig() }).id === brand.BRAND_DESIGN;
+  function readInputOf(id) {
+    try { return parseInput(fs.readFileSync(path.join(productDir(id), 'input.md'), 'utf8')); } catch { return null; }
+  }
+  // 브랜드 페이지 스냅샷 상태 (brand/snapshot.json)
+  function brandInfo(input, dir) {
+    const url = brand.brandUrlOf(input);
+    if (!url) return null;
+    const snap = readJsonSafe(path.join(brand.brandDir(dir), 'snapshot.json'));
+    const fileV = (f) => { const p = path.join(brand.brandDir(dir), f); return fs.existsSync(p) ? Math.round(fs.statSync(p).mtimeMs) : 0; };
+    return {
+      url,
+      url_ok: brand.checkBrandUrl(url).ok,
+      snapshot: snap
+        ? { ok: Boolean(snap.ok), fetched_at: snap.fetched_at, title: snap.title, error: snap.error, warnings: snap.warnings || [], colors: (snap.colors || []).slice(0, 6), shots: (snap.shots || []).map((f) => ({ file: f, v: fileV(f) })) }
+        : null,
+    };
+  }
+  // 구성안 작업 전: 브랜드 URL이 있고 아직 같은 주소로 찍은 스냅샷이 없으면 한 번 찍음. 실패해도 구성안 작업은 진행(제품 사진으로 무드)
+  function prepareBrand(id, note) {
+    const input = readInputOf(id);
+    const url = brand.brandUrlOf(input);
+    if (!url) return Promise.resolve(null);
+    const checked = brand.checkBrandUrl(url);
+    if (!checked.ok) { note(`브랜드 URL을 쓸 수 없어요: ${checked.error} (제품 사진으로 무드를 정해요)`); return Promise.resolve(null); }
+    const snap = readJsonSafe(path.join(brand.brandDir(productDir(id)), 'snapshot.json'));
+    if (snap && snap.ok && snap.url === checked.url) return Promise.resolve(snap);
+    note('브랜드 상세페이지를 캡처하는 중… (30초~1분)');
+    const exec = brandSnapshotFn || ((pid) => new Promise((resolve) => {
+      const child = spawn(process.execPath, [path.join(root, 'scripts', 'brand-snapshot.js'), pid, '--force'], { env: scriptEnv() });
+      let out = '';
+      child.stdout.on('data', (d) => { out += d; });
+      child.stderr.on('data', (d) => { out += d; });
+      child.on('error', (e) => resolve({ ok: false, error: e.message }));
+      child.on('close', (code) => resolve({ ok: code === 0, error: code === 0 ? null : out.trim().split('\n').slice(-2).join(' ') }));
+    }));
+    return Promise.resolve(exec(id)).then((r) => {
+      note(r && r.ok ? '브랜드 페이지 캡처 완료' : `브랜드 페이지를 읽지 못했어요: ${(r && r.error) || '알 수 없는 오류'} (제품 사진으로 무드를 정해요)`);
+      return r;
+    }, (e) => { note(`브랜드 페이지를 읽지 못했어요: ${e.message}`); return null; });
+  }
+  // AI 배경 (scripts/ai-bg.js): 카드마다 글자·제품 없는 배경. 몇 분 걸려서 따로 돌리고 상태만 보여줌
+  const bgDir = (id) => brand.aiBgDir(productDir(id));
+  function aiBgInfo(id) {
+    const run = bgRuns.get(id) || null;
+    const report = brand.readBgReport(productDir(id));
+    const data = readJsonSafe(path.join(productDir(id), 'cards.json'));
+    const have = brand.bgFiles(productDir(id), data);
+    const fileV = (f) => (fs.existsSync(f) ? Math.round(fs.statSync(f).mtimeMs) : 0);
+    return {
+      auto: aiBgAuto,
+      running: Boolean(run && run.running),
+      run: run ? { card: run.card, auto: Boolean(run.auto), started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
+      made_at: report ? report.made_at : null,
+      has_mood: Boolean(data && data.brand_mood),
+      stale: brand.staleBg(productDir(id), data),
+      cards: ((data && data.cards) || []).map((c) => {
+        const r = report && (report.cards || []).find((x) => x.no === c.no);
+        return { no: c.no, template: c.template, ok: Boolean(r && r.ok), current: have.has(c.no), file: r && r.file ? r.file : null, v: r && r.file ? fileV(path.join(bgDir(id), r.file)) : 0, tries: r ? r.tries : [] };
+      }),
+    };
+  }
+  function startAiBg(id, card, { stale = false } = {}) {
+    const run = { card: card || null, auto: stale, started_at: new Date().toISOString(), finished_at: null, running: true, ok: null, lines: [] };
+    bgRuns.set(id, run);
+    const onLine = (line) => { if (line.trim()) run.lines.push(line.trim()); if (run.lines.length > 50) run.lines.shift(); };
+    const done = (r) => Object.assign(run, { running: false, ok: Boolean(r && r.ok), finished_at: new Date().toISOString() });
+    const exec = aiBgFn || ((pid, { card: c, stale: st }) => new Promise((resolve) => {
+      const args = [path.join(root, 'scripts', 'ai-bg.js'), pid, ...(c ? ['--card', String(c)] : []), ...(st ? ['--stale'] : [])];
+      const child = spawn(process.execPath, args, { env: scriptEnv() });
+      let buf = '';
+      const feed = (d) => { buf += d; const parts = buf.split('\n'); buf = parts.pop(); parts.forEach(onLine); };
+      child.stdout.on('data', feed);
+      child.stderr.on('data', feed);
+      child.on('error', (e) => { onLine(`[오류] ${e.message}`); resolve({ ok: false }); });
+      child.on('close', (code) => { if (buf) onLine(buf); resolve({ ok: code === 0, code }); });
+    }));
+    Promise.resolve(exec(id, { card, stale, onLine })).then(done, (e) => { onLine(`[오류] ${e.message}`); done({ ok: false }); });
+  }
+  // 문구·출력 작업이 성공하면: 아직 없거나 무드·템플릿이 바뀐 카드 배경만 GPT로 (뒤에서). 문구만 바뀌면 배경은 그대로
+  function autoAiBg(id) {
+    if (!aiBgAuto || (bgRuns.get(id) || {}).running) return;
+    const cards = readJsonSafe(path.join(productDir(id), 'cards.json'));
+    if (!cards || cards.stage !== 'copy' || !cards.brand_mood) return;
+    if (!brand.staleBg(productDir(id), cards).length) return;
+    startAiBg(id, null, { stale: true });
   }
   // 피그마 자동 보내기: claude -p 가 피그마 연결(MCP)로 새 페이지 → 이미지 올리기 → 카드 프레임 만들기 (scripts/figma-push.js 지시문)
   function startFigmaPush(id, pageName) {
@@ -714,6 +821,16 @@ function createStudio({
       const list = ids.map(productSummary).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
       return send(res, 200, { products: list });
     }
+    // 자료(PDF·이미지·글)로 입력 칸 채우기: 초안만 돌려주고 저장하지 않음 (사람이 확인한 뒤 제품 만들기)
+    if (method === 'POST' && parts[0] === 'extract' && parts.length === 1) {
+      const body = await readBody(req);
+      try {
+        const r = await (extractFn || extractInput)({ files: body.files, bin });
+        return send(res, 200, r);
+      } catch (e) {
+        throw new HttpError(e.status || 422, e.message);
+      }
+    }
     if (method === 'POST' && parts[0] === 'products' && parts.length === 1) {
       const body = await readBody(req);
       const id = requireId(body.id);
@@ -736,7 +853,9 @@ function createStudio({
         const base = folder === 'png' ? path.join(productDir(id), 'output', 'png')
           : folder === 'images' ? path.join(productDir(id), 'images')
           : folder === 'figma-edited' ? editedDir(id)
-            : folder === 'ai-card' ? aiDir(id) : null;
+            : folder === 'ai-card' ? aiDir(id)
+              : folder === 'ai-bg' ? bgDir(id)
+                : folder === 'brand' ? brand.brandDir(productDir(id)) : null;
         if (!base || !FILE_RE.test(file)) throw new HttpError(404, '파일이 없어요');
         const full = path.join(base, file);
         if (!fs.existsSync(full)) throw new HttpError(404, '파일이 없어요');
@@ -843,11 +962,23 @@ function createStudio({
         startAiCard(id, n);
         return send(res, 202, detail());
       }
+      // AI 배경 (무드 '브랜드'): 전체 또는 한 장 다시 만들기
+      if (method === 'POST' && parts[2] === 'ai-bg' && parts.length === 3) {
+        const body = await readBody(req);
+        if (!detail().ai_bg) throw new HttpError(409, "무드가 '브랜드'일 때만 AI 배경을 만들어요");
+        if (!detail().actions.can_ai_bg) throw new HttpError(409, (bgRuns.get(id) || {}).running ? 'AI 배경을 만드는 중이에요' : '문구를 만든 뒤, 작업이 없을 때 만들 수 있어요');
+        if (!detail().ai_bg.has_mood) throw new HttpError(409, '구성안에서 정한 브랜드 무드(brand_mood)가 없어요');
+        const n = body && body.card != null ? Number(body.card) : null;
+        const cards = (readJsonSafe(path.join(productDir(id), 'cards.json')) || {}).cards || [];
+        if (n != null && !cards.some((c) => c.no === n)) throw new HttpError(400, `${n}번 카드가 없어요`);
+        startAiBg(id, n);
+        return send(res, 202, detail());
+      }
       // 피그마에서 편집: 출력한 카드를 피그마 레이어 파일로 준비 (플러그인이 가져감)
       if (method === 'POST' && parts[2] === 'figma' && parts.length === 3) {
         if (!detail().pngs.length) throw new HttpError(409, '카드를 출력한 뒤에 피그마로 보낼 수 있어요');
         if (detail().actions.running) throw new HttpError(409, '작업이 끝난 뒤에 피그마로 보낼 수 있어요');
-        if (detail().actions.ai_busy) throw new HttpError(409, 'AI 디자인 카드(첫·마지막)를 만드는 중이에요. 끝난 뒤에 피그마로 보내요');
+        if (detail().actions.ai_busy) throw new HttpError(409, 'AI 디자인 카드·배경을 만드는 중이에요. 끝난 뒤에 피그마로 보내요');
         if ((figmaRuns.get(id) || {}).running) throw new HttpError(409, '피그마에 카드를 넣는 중이에요');
         const cfg = readJsonSafe(figmaConfigFile) || {};
         const push = figmaAutoPush && figmaPush.fileKeyOf(cfg.file_url);

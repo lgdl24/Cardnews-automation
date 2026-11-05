@@ -1,0 +1,33 @@
+<style>
+/* 브랜드 무드 · 설명형: 카드 전체에 AI 배경, 오른쪽 위 작은 실제 제품 사진, 아래 큰 반투명 면에 머리말·제목·번호 항목 (사용법은 STEP) */
+.card.brand { padding:0; background:linear-gradient(160deg, var(--color-bg) 0%, var(--color-accent) 100%); }
+.brand__scene { position:absolute; inset:0; overflow:hidden; }
+.brand__scene-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+.has-scene .brand__scene-img { display:block; }
+.brand__photo { position:absolute; display:block; object-fit:contain; object-position:center bottom; z-index:2; filter:drop-shadow(0 18px 18px rgb(0 0 0 / .26)); }
+.brand__panel { position:absolute; z-index:3; border-radius:28px; background:color-mix(in srgb, var(--color-surface) 90%, transparent); box-shadow:0 12px 36px rgb(0 0 0 / .12); }
+.brand .pager { position:absolute; right:40px; top:40px; z-index:4; padding:6px 18px; border-radius:24px; font-size:28px; font-weight:800; color:var(--color-muted); background:color-mix(in srgb, var(--color-surface) 90%, transparent); }
+.brand-label { font-size:32px; font-weight:800; line-height:1.2; color:var(--color-muted); letter-spacing:0.02em; }
+.brand-description .brand__photo { left:740px; top:96px; width:260px; height:250px; }
+/* 글자 면은 내용만큼, 아래쪽에 붙임 → 위로 AI 배경이 보임 */
+.brand-description .brand__panel { left:60px; bottom:60px; width:960px; max-height:680px; padding:44px 52px 22px; box-sizing:border-box; }
+.brand-description__title { margin-top:16px; font-size:60px; font-weight:800; line-height:1.24; letter-spacing:-0.01em; max-height:149px; color:var(--color-text); }
+.brand-description__items { margin:30px 0 0; padding:0; list-style:none; counter-reset:points; }
+.brand-description .desc__item { position:relative; min-height:118px; padding:0 0 0 104px; counter-increment:points; }
+.brand-description .desc__item::before { content:counter(points); position:absolute; left:0; top:4px; width:70px; height:70px; border-radius:35px; font-size:36px; font-weight:800; line-height:70px; text-align:center; background:var(--color-primary); color:var(--color-on-primary); }
+.brand-description .desc__text { display:block; font-size:38px; font-weight:400; line-height:1.34; max-height:102px; color:var(--color-text); }
+.brand-description.role-usage .desc__item { padding-left:260px; }
+.brand-description.role-usage .desc__item::after { content:'STEP ' counter(points); position:absolute; left:100px; top:20px; font-size:30px; font-weight:800; color:var(--color-muted); }
+.brand-description.no-image .brand__photo { display:none; }
+.brand-description.no-image .brand__panel { max-height:900px; }
+</style>
+<article class="card brand brand-description role-{{role}} {{imageClass}} {{sceneClass}}">
+  <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
+  <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
+  <span class="pager">{{page}} / {{total}}</span>
+  <div class="brand__panel">
+    <div class="brand-label">{{sectionLabel}}</div>
+    <h1 class="brand-description__title" data-fit>{{title}}</h1>
+    <ol class="brand-description__items">{{items}}</ol>
+  </div>
+</article>

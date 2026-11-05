@@ -4,7 +4,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import {
-  JOB_LABEL, STAGE_LABEL, aiCardUrl, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
+  JOB_LABEL, STAGE_LABEL, aiBgUrl, aiCardUrl, brandShotUrl, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
   type ProductDetail, type Report, type RevisionType, type StudioJob,
 } from '../../studio/api';
 import { useIndex } from '../../data/load';
@@ -29,7 +29,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   const { status } = useStudioStatus();
   const index = useIndex();
   const labels = index.status === 'ready' ? index.data.labels : undefined;
-  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && (d.actions.running || d.ai_card?.running || d.figma?.push?.running) ? 2000 : null));
+  const { data, error, refresh, setData } = usePolling(() => studioFetch<ProductDetail>(`/products/${id}`), [id], (d) => (d && (d.actions.running || d.ai_card?.running || d.ai_bg?.running || d.figma?.push?.running) ? 2000 : null));
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -117,6 +117,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
             canChange={Boolean(a.can_select_design) && p.design?.source !== 'input'}
             onChange={(designId) => act(`/products/${id}/design`, { id: designId }, 'PUT')}
           />
+          {(p.brand_page || p.cards?.brand_mood) && <BrandPanel detail={p} />}
           <PlanReview detail={p} labels={labels} />
           <ValidationPanel validation={p.validation} />
           {!a.running && (
@@ -144,6 +145,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
             {p.stage === 'approved' ? '최종 카드' : '카드 확인'}
           </h2>
           <DesignPanel detail={p} busy={busy} canChange={false} onChange={() => undefined} />
+          {(p.brand_page || p.cards?.brand_mood) && <BrandPanel detail={p} />}
           <CardReview detail={p} labels={labels} />
           <ValidationPanel validation={p.validation} />
           {p.stage === 'copy' && !a.running && (
@@ -164,6 +166,9 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
                 </button>
               </div>
             </div>
+          )}
+          {p.ai_bg && (
+            <AiBgPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-bg`, card ? { card } : {})} />
           )}
           {p.ai_card && (
             <AiCardPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-card`, card ? { card } : {})} />
@@ -558,6 +563,98 @@ function RevisionForm({
         </button>
       </div>
     </form>
+  );
+}
+
+// ── 브랜드 무드: 상세페이지 스냅샷(구성안 작업 전 자동)과 구성안 작업이 정한 brand_mood(색·분위기·배경 장면·근거)
+function BrandPanel({ detail }: { detail: ProductDetail }) {
+  const b = detail.brand_page;
+  const snap = b?.snapshot;
+  const mood = detail.cards?.brand_mood;
+  return (
+    <div className="panel brand-panel">
+      <h3 className="panel-title">브랜드 무드</h3>
+      {b && (
+        <p className="muted">
+          브랜드 페이지: <a href={b.url} target="_blank" rel="noreferrer noopener">{b.url}</a>
+          {!b.url_ok && ' · 쓸 수 없는 주소라 제품 사진으로 무드를 정해요'}
+          {b.url_ok && !snap && ' · 구성안 작업을 시작하면 페이지를 한 번 캡처해요'}
+          {snap && (snap.ok ? ` · ${new Date(snap.fetched_at).toLocaleString('ko-KR')} 캡처` : ` · 캡처 실패: ${snap.error ?? ''} (제품 사진으로 무드)`)}
+        </p>
+      )}
+      {snap?.warnings.map((w) => <p className="notice notice-warn" key={w}>[경고] {w}</p>)}
+      {snap?.ok && snap.shots.length > 0 && (
+        <div className="brand-shots">
+          {snap.shots.slice(0, 4).map((s) => <img key={s.file} src={brandShotUrl(detail.id, s.file, s.v)} alt={`브랜드 페이지 화면 ${s.file}`} loading="lazy" />)}
+        </div>
+      )}
+      {mood ? (
+        <>
+          <div className="brand-swatches" aria-label="브랜드 색">
+            {Object.entries(mood.palette).map(([k, hex]) => (
+              <span key={k} className="brand-swatch"><i style={{ background: hex }} aria-hidden="true" />{k} {hex}</span>
+            ))}
+          </div>
+          <p>{mood.summary}</p>
+          <p className="muted">말투 {mood.tone} · 사진 {mood.photo_style} · {mood.source === 'snapshot' ? '브랜드 페이지를 보고 정함' : '제품 사진을 보고 정함'}</p>
+          <p className="muted">배경 장면(GPT에 보냄, 글자·제품 없음): {mood.scene}</p>
+          <details><summary>근거 {mood.evidence.length}개</summary><ul>{mood.evidence.map((e) => <li key={e}>{e}</li>)}</ul></details>
+        </>
+      ) : (
+        <p className="muted">구성안 작업에서 Claude가 브랜드 색·분위기·배경 장면을 정해요.</p>
+      )}
+    </div>
+  );
+}
+
+// AI 배경 (무드 '브랜드', A안): 문구·출력 작업이 끝나면 카드마다 GPT가 글자·제품 없는 배경을 만들고, 출력이 그 위에 실제 제품 사진과 문구를 얹음
+function AiBgPanel({ detail, busy, onMake }: { detail: ProductDetail; busy: boolean; onMake: (card?: number) => void }) {
+  const bg = detail.ai_bg!;
+  const can = Boolean(detail.actions.can_ai_bg) && !busy && bg.has_mood;
+  const png = (no: number) => detail.pngs.find((x) => x.file === `card-${String(no).padStart(2, '0')}.png`);
+  return (
+    <div className="panel ai-card-panel">
+      <h3 className="panel-title">AI 배경 · 카드 {bg.cards.length}장</h3>
+      <p className="muted">
+        문구·출력 작업이 끝나면 카드마다 GPT 이미지(내 컴퓨터의 Codex)가 브랜드 무드에 맞는 <strong>배경만</strong> 만들어요. 카드 글자와 제품 사진은 그 위에 코드가 얹어서, 문구 검증을 그대로 거쳐요. 무드가 그대로면 문구를 고쳐도 배경은 다시 만들지 않아요.
+      </p>
+      {bg.running && <p className="notice" role="status">AI 배경을 만드는 중이에요 ({bg.run?.card ? `${bg.run.card}번` : '전체'}, 한 장에 1~2분). 끝나면 카드를 다시 출력해요.</p>}
+      {bg.run && (bg.running || bg.run.ok === false) && bg.run.progress.length > 0 && (
+        <pre className={`ai-card-log${bg.run.ok === false ? ' is-error' : ''}`}>{bg.run.progress.join('\n')}</pre>
+      )}
+      {!bg.running && bg.stale.length > 0 && (
+        <div className="action-bar">
+          <button className="btn btn-primary" disabled={!can} onClick={() => onMake()}>{bg.stale.join('·')}번 AI 배경 만들기</button>
+          <span className="muted">{bg.has_mood ? '아직 없거나 무드가 바뀐 카드예요.' : '구성안에서 정한 브랜드 무드가 없어요.'}</span>
+        </div>
+      )}
+      {bg.cards.some((c) => c.ok) && <p className="notice notice-warn" role="status">[참고] 배경에 글자·로고가 섞였는지 눈으로 확인해 주세요. 섞였으면 그 카드만 다시 만들어요.</p>}
+      <div className="ai-card-grid">
+        {bg.cards.map((c) => {
+          const card = png(c.no);
+          const last = c.tries[c.tries.length - 1];
+          return (
+            <div className="ai-card-item" key={c.no}>
+              <div className="ai-card-pair">
+                <figure>
+                  {c.ok && c.file ? <img src={aiBgUrl(detail.id, c.file, c.v)} alt={`${c.no}번 AI 배경`} loading="lazy" /> : <div className="ai-card-empty">{c.tries.length ? '만들지 못했어요' : '아직 없음'}</div>}
+                  <figcaption>AI 배경{c.ok && !c.current ? ' · 무드가 바뀜' : ''}</figcaption>
+                </figure>
+                <figure>
+                  {card ? <img src={pngUrl(detail.id, card.file, card.v)} alt={`${c.no}번 최종 카드`} loading="lazy" /> : <div className="ai-card-empty">카드</div>}
+                  <figcaption>최종 카드</figcaption>
+                </figure>
+              </div>
+              <div className="ai-card-meta">
+                <strong>{c.no}번</strong>
+                {last?.error && <span className="muted">{last.error}</span>}
+                <button className="btn btn-small" disabled={!can} onClick={() => onMake(c.no)}>이 배경 다시 만들기</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
