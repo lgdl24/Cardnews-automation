@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-05 | Claude | #84 · `fix/84-studio-usability` | **최신 main 합침 + AI 디자인 카드 Windows 수정** (이용석): `ai-card.js`의 `defaultCodexBin()` — `CODEX_BIN` → Windows npm 설치 위치의 `codex.js`(node로 실행) → `codex` 순(Windows는 `codex.cmd`라 spawn이 못 찾던 것). 생성 이미지 경로를 `C:\...\generated_images\...`도 찾게 함(기존 테스트가 Windows에서 실패). 피그마 자동 넣기는 #84의 `defaultClaudeBin()`을 그대로 써서 Windows에서도 claude를 찾음. Codex 실제 이미지 생성은 미확인 |
 | 2026-11-03 | Codex | `feat/web-ux-main` (PR 준비) | 웹 UI·UX 개편: 공통 탐색·검색/상태 필터·다크모드·입력 이탈 방지·카드 집중 검토·실패 메모 보존, 실제 내보내기 데이터 기반 평가/비교, `/guide`. `docs/web-ux.md` 참고. 카드 생성 규칙·API·제품 데이터는 변경하지 않음. |
 | 2026-11-03 | Claude | `feat/ai-card` (이슈 없음, `feat/figma-link` 위) | **AI 디자인 카드 + 피그마 자동 넣기**: 문구·출력 작업이 성공하면 첫·마지막 카드를 로컬 Codex(GPT 이미지)가 자동으로 만들어 최종 카드에 넣음(제품은 원본 사진 잠금·검사, 문구는 승인 문구). 템플릿 출력은 `output/ai-card/template-card-NN.png`. '피그마에서 편집'은 로컬 Claude Code의 피그마 연결로 새 페이지에 최종 1~5번을 바로 넣음(플러그인 불필요). `npm run ai-card`, `scripts/lib/ai-cards.js`, `scripts/figma-push.js`. 문서 `docs/research/ai-card.md` |
 | 2026-11-02 | Claude | #84 · `fix/84-studio-usability` | **작업실 사용성 수정 3개** (이용석): `job-runner.defaultClaudeBin()` — `CARDNEWS_CLAUDE_BIN` → Windows 설치 위치 `claude.exe` → `claude` 순으로 찾고 작업 실행기·작업실·평가 실행기 기본값으로 씀(Windows는 npm 설치가 `claude.cmd`라 `claude`를 못 찾던 것). 작업실 내보내기가 `--out`으로 `webIndexFile` 폴더에 씀(`CARDNEWS_STUDIO_SANDBOX` 모드에서 저장소 `web/public/data`를 건드리지 않음, 기본 설정은 그대로). 입력 폼 '선택' 표시 → '비워도 돼요'. 규칙·카드 결과 영향 없음 |
