@@ -312,3 +312,37 @@ test('이미지 만드는 곳: 기본은 Codex, CARDNEWS_IMAGE_BACKEND=openai면
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('제품 합성 배경: 제품 자리는 템플릿 사진 칸과 같고(아래 가운데), 요청문은 제품 잠금·그림자·글자 금지', () => {
+  // 세로로 긴 제품(1000×1500)을 표지 칸(560,420,460×600)에 contain → 높이 기준, 아래에 붙음
+  const b = brand.productBoxFor('cover', 1000, 1500);
+  assert.equal(b.h, 600);
+  assert.equal(b.w, 400);
+  assert.equal(b.x, 560 + 30);
+  assert.equal(b.y, 420);
+  const half = brand.productBoxFor('cover', 1000, 1500, 540);
+  assert.deepEqual([half.x, half.y, half.w, half.h], [295, 210, 200, 300]);
+  assert.equal(brand.productBoxFor('없는 템플릿', 10, 10), null);
+  const p = brand.compositePrompt(MOOD, 'cover', '#9BD770');
+  assert.match(p, /THE PRODUCT IS LOCKED/);
+  assert.match(p, /contact shadow/);
+  assert.match(p, /#9BD770/);
+  assert.match(p, /No text, letters/);
+  assert.match(brand.bgPrompt(MOOD, 'image', '#9BD770'), /main color #9BD770/);
+});
+
+test('배경 신선도: 제품 사진이 바뀌면 다시 만들고, 제품을 합성한 배경은 baked로 알려줌', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-bg2-'));
+  try {
+    const card = { no: 1, template: 'cover', image: 'a.png' };
+    const data = { brand_mood: MOOD, cards: [card] };
+    const out = brand.aiBgDir(dir);
+    fs.mkdirSync(out, { recursive: true });
+    fs.writeFileSync(path.join(out, 'card-01.png'), 'x');
+    fs.writeFileSync(path.join(out, 'ai-bg.json'), JSON.stringify({ cards: [{ no: 1, ok: true, file: 'card-01.png', baked: true, key: brand.bgKey(MOOD, card) }] }));
+    assert.equal(brand.bgEntries(dir, data).get(1).baked, true);
+    assert.deepEqual(brand.staleBg(dir, { ...data, cards: [{ ...card, image: 'b.png' }] }), [1]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

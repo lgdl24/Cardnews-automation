@@ -14,8 +14,9 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { paths, readJson, loadInput, requireProductId, designRecord } = require('./lib/common');
 const { pad, launchBrowser } = require('./lib/card-html');
-const { runCodex, generatedPath } = require('./ai-card');
-const { BRAND_DESIGN, aiBgDir, bgPrompt, chatPrompt, bgKey, readBgReport, staleBg } = require('./lib/brand');
+const { runCodex, generatedPath, lockScore, LOCK, PAGE_FNS } = require('./ai-card');
+const { representativeColor, readPixels } = require('./lib/color-mood');
+const { BRAND_DESIGN, aiBgDir, bgPrompt, chatPrompt, compositePrompt, PRODUCT_FRAME, productBoxFor, bgKey, readBgReport, staleBg } = require('./lib/brand');
 
 const FINAL = 1080;
 
@@ -76,8 +77,52 @@ async function runOpenAI(cwd, prompt, timeoutSec, { env = process.env, fetchFn =
   }
 }
 
-async function makeBg({ page, card, mood, dir, tries, timeoutSec, log, backend = imageBackend() }) {
-  const prompt = backend === 'openai' ? chatPrompt(mood, card.template) : bgPrompt(mood, card.template);
+// 제품을 넣은 채로 주변만 (제품 사진이 있는 카드, Codex): 바탕에 원본 제품을 놓고 GPT가 장면·바닥 그림자·반사를 그림
+// → 제품 자리를 원본과 비교(잠금 점수, ai-card.js와 같은 기준) → 원본 제품 픽셀을 다시 덮어 저장. 출력은 제품 사진을 다시 얹지 않음(baked)
+async function makeCompositeBg({ page, card, mood, cut, dir, tries, timeoutSec, log, productHex }) {
+  const BASE = 1024;
+  const box = productBoxFor(card.template, cut.w, cut.h, BASE);
+  const finalBox = productBoxFor(card.template, cut.w, cut.h, FINAL);
+  const prompt = compositePrompt(mood, card.template, productHex);
+  const record = { no: card.no, template: card.template, key: bgKey(mood, card), ok: false, file: null, source: 'codex', baked: false, tries: [] };
+  for (let t = 1; t <= tries; t++) {
+    const cwd = path.join(dir, 'work', `card-${pad(card.no)}-try${t}`);
+    fs.rmSync(cwd, { recursive: true, force: true });
+    fs.mkdirSync(cwd, { recursive: true });
+    fs.writeFileSync(path.join(cwd, 'base.png'), Buffer.from(await page.evaluate(([c, b, sz]) => window.makeBase(c, b, sz), [cut.b64, box, BASE]), 'base64'));
+    fs.writeFileSync(path.join(cwd, 'prompt.txt'), prompt);
+    log(`  ${card.no}번 제품 합성 배경 ${t}차 생성 중… (보통 1~2분)`);
+    const r = await runCodex(cwd, prompt, timeoutSec);
+    const gen = generatedPath(r.out, cwd);
+    const attempt = { try: t, sec: r.sec, exit: r.code, mode: 'composite' };
+    if (!gen) {
+      const limit = usageLimit(r.out);
+      attempt.error = r.code === -1 ? `codex를 실행하지 못했어요: ${r.out}` : limit || '생성된 이미지가 없어요';
+      record.tries.push(attempt);
+      log(`  ${card.no}번 ${t}차: ${attempt.error}`);
+      if (r.code === -1 || limit) { record.stop = attempt.error; break; }
+      continue;
+    }
+    if (path.resolve(gen) !== path.resolve(cwd, 'gen.png')) fs.copyFileSync(gen, path.join(cwd, 'gen.png'));
+    const src = `data:image/png;base64,${fs.readFileSync(gen).toString('base64')}`;
+    const P = LOCK.search;
+    const d = await page.evaluate(([c, g, b, p]) => window.lockData(c, g, b, p), [cut.b64, src, finalBox, P]);
+    const score = lockScore({ ai: Buffer.from(d.ai, 'base64'), aw: finalBox.w + 2 * P, orig: Buffer.from(d.orig, 'base64'), mask: Buffer.from(d.mask, 'base64'), w: finalBox.w, h: finalBox.h, pad: P });
+    Object.assign(attempt, score);
+    record.tries.push(attempt);
+    log(`  ${card.no}번 ${t}차: 제품 ${score.ok ? '유지' : '어긋남'} (차이 ${score.diff}, 이동 ${score.shift.join(',')})`);
+    if (!score.ok) continue;
+    const file = `card-${pad(card.no)}.png`;
+    fs.writeFileSync(path.join(dir, file), Buffer.from(await page.evaluate(([c, g, b]) => window.finalize(c, g, b), [cut.b64, src, finalBox]), 'base64'));
+    Object.assign(record, { ok: true, file, baked: true, box: finalBox });
+    log(`  ${card.no}번 제품 합성 배경 완료`);
+    break;
+  }
+  return record;
+}
+
+async function makeBg({ page, card, mood, dir, tries, timeoutSec, log, backend = imageBackend(), productHex = null }) {
+  const prompt = backend === 'openai' ? chatPrompt(mood, card.template, productHex) : bgPrompt(mood, card.template, productHex);
   const record = { no: card.no, template: card.template, key: bgKey(mood, card), ok: false, file: null, source: backend, tries: [] };
   for (let t = 1; t <= tries; t++) {
     const cwd = path.join(dir, 'work', `card-${pad(card.no)}-try${t}`);
@@ -125,8 +170,37 @@ async function run(id, { only = null, staleOnly = false, tries = 2, render = tru
     try {
       const page = await browser.newPage();
       await page.setContent('<!doctype html><title>ai-bg</title>');
+      await page.addScriptTag({ content: PAGE_FNS });
+      // 제품 사진: 누끼(투명이면 알파, 아니면 테두리 단색 제거)와 대표 색 (요청문에 넣어 배경 색을 제품과 맞춤)
+      const products = new Map();
+      const productOf = async (img) => {
+        if (!img) return null;
+        if (!products.has(img)) {
+          const file = path.join(pdir, 'images', img);
+          const mime = /\.png$/i.test(img) ? 'image/png' : 'image/jpeg';
+          const cut = await page.evaluate((s) => window.cutout(s), `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`);
+          const rep = representativeColor(await readPixels(page, file));
+          products.set(img, { cut, hex: rep.hex });
+        }
+        return products.get(img);
+      };
+      const firstImage = (cards.find((c) => c.image) || {}).image || null;
+      const backend = imageBackend();
       for (const card of list) {
-        const r = await makeBg({ page, card, mood: data.brand_mood, dir, tries, timeoutSec, log });
+        const prod = await productOf(card.image);
+        const hex = (prod || (await productOf(firstImage)) || {}).hex || null;
+        let r = null;
+        // 제품을 넣어 합성은 Codex(이미지 편집)일 때만. OpenAI API·제품 없는 카드는 배경만
+        if (prod && backend === 'codex' && PRODUCT_FRAME[card.template]) {
+          r = await makeCompositeBg({ page, card, mood: data.brand_mood, cut: prod.cut, dir, tries: Math.max(tries, 3), timeoutSec, log, productHex: hex });
+          if (!r.ok && !r.stop) {
+            log(`  ${card.no}번: 제품이 계속 어긋나 배경만 만들어요 (제품은 출력이 얹음)`);
+            const plain = await makeBg({ page, card, mood: data.brand_mood, dir, tries, timeoutSec, log, productHex: hex });
+            r = { ...plain, tries: [...r.tries, ...plain.tries] };
+          }
+        } else {
+          r = await makeBg({ page, card, mood: data.brand_mood, dir, tries, timeoutSec, log, productHex: hex });
+        }
         results.push(r);
         if (r.stop) { log(`[중단] ${r.stop} — 남은 카드(${list.slice(list.indexOf(card) + 1).map((c) => c.no).join('·') || '없음'})는 나중에 다시 만들어요`); break; }
       }

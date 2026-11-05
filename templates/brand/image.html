@@ -18,8 +18,10 @@
 .brand-image__title { margin-top:16px; font-size:62px; font-weight:800; line-height:1.24; letter-spacing:-0.01em; max-height:154px; color:var(--color-text); }
 .brand-image__copy { margin-top:16px; font-size:38px; font-weight:400; line-height:1.36; max-height:104px; color:var(--color-text); }
 .brand-image.no-image .brand__photo { display:none; }
+/* 배경에 실제 제품이 이미 합성됨(그림자·반사 포함) → 제품 사진을 다시 얹지 않음 */
+.has-baked .brand__photo { display:none; }
 </style>
-<article class="card brand brand-image role-{{role}} {{imageClass}} {{sceneClass}} {{textureClass}}">
+<article class="card brand brand-image role-{{role}} {{imageClass}} {{sceneClass}} {{bakedClass}} {{textureClass}}">
   <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
   <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
   <div class="image__frame"><img class="brand__texture" src="{{texture}}" alt=""></div>

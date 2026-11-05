@@ -17,8 +17,10 @@
 .brand-cover__copy:empty + .brand-cover__footer { display:block; }
 .brand-cover .brand__photo { left:560px; top:420px; width:460px; height:600px; }
 .brand-cover.no-image .brand__photo { display:none; }
+/* 배경에 실제 제품이 이미 합성됨(그림자·반사 포함) → 제품 사진을 다시 얹지 않음 */
+.has-baked .brand__photo { display:none; }
 </style>
-<article class="card brand brand-cover role-{{role}} {{imageClass}} {{sceneClass}}">
+<article class="card brand brand-cover role-{{role}} {{imageClass}} {{sceneClass}} {{bakedClass}}">
   <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
   <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
   <span class="pager">{{page}} / {{total}}</span>
