@@ -28,6 +28,7 @@ async function startServer() {
     reportsDir: path.join(dir, 'reports'),
     exportConfigFile,
     webIndexFile: path.join(dir, 'web', 'index.json'),
+    aiAuto: false, // AI 디자인 카드 자동 생성은 tests/ai-card.test.js에서 따로 봄
     exportFn: (id) => {
       exported.push(id);
       return { ok: true, output: [], excluded: [] };

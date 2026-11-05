@@ -3,29 +3,18 @@
 @import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 
 :root {
-  --color-bg: #fbf6f1;
-  --color-surface: #ffffff;
-  --color-text: #2b2420;
-  --color-muted: #7a6e66;
-  --color-primary: #d9826b;
-  --color-primary-strong: #b9624b;
-  --color-accent: #f2d7cc;
-  --color-border: #eadfd6;
-  --color-danger: #c2413b;
-
-  /* 단계 배지: 구성안(회색) · 문구(파랑) · 승인 완료(초록) — 노션 '웹 화면 설계' 공통 규칙 */
-  --stage-plan-bg: #ecebea;
-  --stage-plan-fg: #57514c;
-  --stage-copy-bg: #e1ecfb;
-  --stage-copy-fg: #2457a6;
-  --stage-approved-bg: #e0f2e6;
-  --stage-approved-fg: #23774a;
-
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 2px rgb(43 36 32 / 6%), 0 4px 12px rgb(43 36 32 / 5%);
-  --page-width: 1200px;
-  --gutter: 24px;
+  color-scheme: light;
+  --color-bg: #f6f7fa; --color-surface: #ffffff; --color-text: #202536;
+  --color-muted: #687184; --color-primary: #5146d8; --color-primary-strong: #4035b7;
+  --color-accent: #eeecff; --color-border: #e4e7ee; --color-danger: #c03945;
+  --color-subtle: #f0f2f7; --color-header: rgb(246 247 250 / 92%);
+  --color-warning: #8a5a10; --color-warning-bg: #fff6e3; --color-danger-bg: #fff0f1;
+  --stage-plan-bg: #eef0f5; --stage-plan-fg: #586174;
+  --stage-copy-bg: #eaf0ff; --stage-copy-fg: #3159a1;
+  --stage-approved-bg: #e8f5ee; --stage-approved-fg: #25714d;
+  --radius: 16px; --radius-sm: 9px;
+  --shadow: 0 4px 20px rgb(25 34 55 / 5%);
+  --page-width: 1440px; --gutter: 40px;
 
   font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   color: var(--color-text);
@@ -118,4 +107,17 @@ h3 {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #10131b; --color-surface: #191e29; --color-text: #e7eaf2;
+  --color-muted: #a1aabd; --color-primary: #9b92ff; --color-primary-strong: #b4adff;
+  --color-accent: #2c2949; --color-border: #303746; --color-subtle: #222937;
+  --color-header: rgb(16 19 27 / 92%); --color-danger: #ff9ba6;
+  --color-danger-bg: #3c242d; --color-warning: #efc57c; --color-warning-bg: #372e20;
+  --stage-plan-bg: #29313f; --stage-plan-fg: #c0c8d7;
+  --stage-copy-bg: #23334c; --stage-copy-fg: #a5c4ff;
+  --stage-approved-bg: #203b32; --stage-approved-fg: #8bdab3;
+  --shadow: 0 4px 20px rgb(0 0 0 / 12%);
 }

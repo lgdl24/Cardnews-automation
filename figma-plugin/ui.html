@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 14px; font: 12px/1.5 Inter, 'Apple SD Gothic Neo', system-ui, sans-serif; color: var(--figma-color-text, #222); background: var(--figma-color-bg, #fff); }
+  h1 { font-size: 13px; margin: 0 0 10px; }
+  label { display: block; margin: 8px 0 3px; color: var(--figma-color-text-secondary, #666); }
+  input, select { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--figma-color-border, #ccc); border-radius: 5px; font: inherit; background: var(--figma-color-bg, #fff); color: inherit; }
+  .row { display: flex; gap: 6px; align-items: end; }
+  .row > :first-child { flex: 1; }
+  button { padding: 7px 10px; border: 1px solid var(--figma-color-border, #ccc); border-radius: 5px; background: var(--figma-color-bg-secondary, #f4f4f4); color: inherit; font: inherit; cursor: pointer; }
+  button.primary { background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff); border-color: transparent; }
+  button:disabled { opacity: .5; cursor: default; }
+  .actions { display: grid; gap: 6px; margin-top: 12px; }
+  .status { margin-top: 12px; padding: 8px; border-radius: 5px; background: var(--figma-color-bg-secondary, #f4f4f4); white-space: pre-line; min-height: 2.6em; }
+  .status.error { background: #fde8e6; color: #9b1c12; }
+  .hint { color: var(--figma-color-text-secondary, #666); margin-top: 10px; }
+</style>
+</head>
+<body>
+<h1>카드뉴스 작업실 연결</h1>
+<label for="base">작업실 주소 (npm run studio)</label>
+<input id="base" value="http://localhost:5173">
+<div class="row">
+  <div>
+    <label for="code">연결 코드 (작업실 '피그마에서 편집'에 표시)</label>
+    <input id="code" placeholder="예: 3F9A2C" autocomplete="off">
+  </div>
+  <button id="connect">연결</button>
+</div>
+<label for="product">제품</label>
+<select id="product" disabled><option>먼저 연결해 주세요</option></select>
+<div class="actions">
+  <button id="pull" class="primary" disabled>피그마로 가져오기</button>
+  <button id="push" disabled>고친 카드를 웹으로 보내기</button>
+</div>
+<div id="status" class="status">작업실 연결 코드를 넣고 연결을 눌러 주세요.</div>
+<p class="hint">가져오기: 가져올 때마다 '제품명 (ID) · 날짜 시각' 새 페이지에 card-01~ 프레임을 만들어요. 이전에 고친 페이지는 그대로 남아요.<br>보내기: 지금 보고 있는 페이지가 그 제품 페이지면 그 페이지를, 아니면 그 제품의 가장 최근 페이지를 1080px PNG와 글자 내용으로 작업실에 보내요.</p>
+<script>
+const $ = (id) => document.getElementById(id);
+const statusEl = $('status');
+let products = [];
+const say = (text, error) => { statusEl.textContent = text; statusEl.className = 'status' + (error ? ' error' : ''); };
+const base = () => $('base').value.replace(/\/+$/, '');
+const code = () => $('code').value.trim().toUpperCase();
+// 미리 요청(preflight)이 없도록 코드는 주소에, 본문은 text/plain으로 보냄 (작업실은 JSON으로 읽음)
+const url = (path) => `${base()}/api/studio/figma${path}${path.includes('?') ? '&' : '?'}code=${encodeURIComponent(code())}`;
+async function api(path, init) {
+  let res;
+  try { res = await fetch(url(path), init); } catch (e) { throw new Error('작업실에 연결할 수 없어요. npm run studio가 켜져 있는지 확인해 주세요.'); }
+  if (!res.ok) {
+    let m = `요청 실패 (HTTP ${res.status})`;
+    try { m = (await res.json()).error || m; } catch (e) { /* 그대로 */ }
+    throw new Error(m);
+  }
+  return res;
+}
+const save = () => parent.postMessage({ pluginMessage: { type: 'save', data: { base: base(), code: code(), product: $('product').value } } }, '*');
+const busy = (on) => { for (const id of ['connect', 'pull', 'push']) $(id).disabled = on || (id !== 'connect' && !products.length); };
+
+async function connect(prefer) {
+  busy(true);
+  try {
+    say('연결하는 중…');
+    products = (await (await api('/products')).json()).products;
+    const sel = $('product');
+    sel.innerHTML = '';
+    for (const p of products) {
+      const o = document.createElement('option');
+      o.value = p.id;
+      o.textContent = `${p.name} (${p.id}) · ${p.cards}장`;
+      sel.appendChild(o);
+    }
+    sel.disabled = !products.length;
+    if (prefer && products.some((p) => p.id === prefer)) sel.value = prefer;
+    say(products.length ? '연결됐어요. 제품을 고르고 가져오기를 눌러 주세요.' : '피그마로 보낼 준비가 된 제품이 없어요. 작업실 제품 화면에서 "피그마에서 편집"을 먼저 눌러 주세요.');
+    save();
+  } catch (e) { say(e.message, true); products = []; }
+  busy(false);
+}
+
+async function pull() {
+  const id = $('product').value;
+  busy(true);
+  try {
+    say('카드 레이어를 받는 중…');
+    const data = await (await api(`/products/${encodeURIComponent(id)}/layers`)).json();
+    const names = [...new Set(data.cards.flatMap((c) => c.layers.filter((l) => l.kind === 'raster').map((l) => l.upload)))];
+    const images = {};
+    let done = 0;
+    await Promise.all(names.map(async (n) => {
+      const buf = await (await api(`/products/${encodeURIComponent(id)}/images/${encodeURIComponent(n)}.png`)).arrayBuffer();
+      images[n] = new Uint8Array(buf);
+      say(`이미지 받는 중… ${++done}/${names.length}`);
+    }));
+    say('피그마에 카드를 만드는 중…');
+    parent.postMessage({ pluginMessage: { type: 'build', cards: data.cards, images } }, '*');
+    save();
+  } catch (e) { say(e.message, true); busy(false); }
+}
+
+function push() {
+  busy(true);
+  say('카드를 PNG로 내보내는 중…');
+  parent.postMessage({ pluginMessage: { type: 'collect', id: $('product').value } }, '*');
+}
+
+function toBase64(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+async function send(id, page, cards) {
+  try {
+    say(`'${page}' 페이지를 작업실로 보내는 중… (${cards.length}장)`);
+    const body = JSON.stringify({ page, cards: cards.map((c) => ({ file: c.file, png: toBase64(c.png), texts: c.texts })) });
+    const r = await (await api(`/products/${encodeURIComponent(id)}/edited`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body })).json();
+    const changed = r.cards.filter((c) => c.changed.length);
+    say(`보냈어요: '${page}' ${r.cards.length}장.` + (changed.length ? `\n[주의] 문구가 바뀐 카드 ${changed.map((c) => c.file).join(', ')} — 작업실에서 확인해 주세요.` : '\n문구는 승인본과 같아요.'));
+  } catch (e) { say(e.message, true); }
+  busy(false);
+}
+
+window.onmessage = (ev) => {
+  const m = ev.data.pluginMessage;
+  if (!m) return;
+  if (m.type === 'init') {
+    if (m.saved.base) $('base').value = m.saved.base;
+    if (m.saved.code) { $('code').value = m.saved.code; connect(m.saved.product); }
+  } else if (m.type === 'built') {
+    const fonts = Object.entries(m.fonts).filter(([a, b]) => !b.startsWith(a.split(' ')[0])).map(([a, b]) => `${a} → ${b}`);
+    say(`'${m.page}' 페이지에 카드 ${m.frames}장을 만들었어요.` + (m.missing.length ? `\n받지 못한 이미지: ${m.missing.length}개` : '') + (fonts.length ? `\n글꼴 대체: ${fonts.join(', ')}` : ''), m.missing.length > 0);
+    busy(false);
+  } else if (m.type === 'collected') {
+    send(m.id, m.page, m.cards);
+  } else if (m.type === 'error') {
+    say(m.message, true);
+    busy(false);
+  }
+};
+
+$('connect').onclick = () => connect();
+$('pull').onclick = pull;
+$('push').onclick = push;
+$('product').onchange = save;
+</script>
+</body>
+</html>

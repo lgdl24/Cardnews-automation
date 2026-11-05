@@ -151,7 +151,7 @@
   padding: 9px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-text);
   width: 100%;
 }
@@ -482,7 +482,7 @@
   border-radius: 999px;
   font-size: 0.85rem;
   cursor: pointer;
-  background: #fff;
+  background: var(--color-surface);
 }
 .check:has(input:checked) {
   border-color: var(--color-primary);
@@ -602,4 +602,110 @@
 }
 .job-bar-queue a:hover {
   text-decoration: underline;
+}
+
+/* ── 피그마에서 편집 */
+.figma-steps {
+  margin: 14px 0 0;
+  padding-left: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  word-break: keep-all;
+}
+.figma-code {
+  font: 600 0.95rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.figma-edited {
+  margin-top: 18px;
+}
+.figma-edited .notice ul {
+  margin: 6px 0 0;
+  padding-left: 1.2em;
+}
+.figma-edited .card-review {
+  margin-top: 12px;
+}
+.panel-subtitle {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+/* AI 디자인 카드 (첫·마지막 카드): 템플릿 카드와 나란히 */
+.ai-card-log {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 160px;
+  overflow: auto;
+}
+.ai-card-log.is-error {
+  color: var(--color-danger);
+}
+.ai-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.ai-card-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ai-card-pair figure {
+  margin: 0;
+}
+.ai-card-pair img,
+.ai-card-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+}
+.ai-card-empty {
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  background: var(--color-surface);
+}
+.ai-card-pair figcaption {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  opacity: 0.75;
+}
+.ai-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-small {
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
+.figma-manual {
+  margin-top: 12px;
+}
+.figma-manual summary {
+  cursor: pointer;
+  color: var(--color-muted);
 }

@@ -11,6 +11,7 @@
 //   S3 /studio/:id               제작 진행: 승인·수정 요청·내보내기 (이규동)
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { Layout } from './components/Layout';
+import { GuidePage } from './screens/guide/GuidePage';
 import { ProjectListPage } from './screens/project-list/ProjectListPage';
 import { ProjectDetailPage } from './screens/project-detail/ProjectDetailPage';
 import { CardResultTab } from './screens/project-detail/tabs/CardResultTab';
@@ -49,6 +50,7 @@ const router = createBrowserRouter(
             { path: 'studio/new', element: <ProductFormPage /> },
             { path: 'studio/:id', element: <StudioProductPage /> },
             { path: 'studio/:id/edit', element: <ProductFormPage /> },
+            { path: 'guide', element: <GuidePage /> },
             { path: '*', element: <NotFoundPage /> },
           ],
         },
