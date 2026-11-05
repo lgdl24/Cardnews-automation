@@ -4,7 +4,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { buildPrompt, productBox, lockScore, generatedPath, LOCK } = require('../scripts/ai-card');
+const { buildPrompt, productBox, lockScore, generatedPath, defaultCodexBin, LOCK } = require('../scripts/ai-card');
 
 test('요청문: cards.json 문구를 그대로(줄 나눔 유지) 넣고, 제품 잠금·스크립트 금지 문장이 있음', () => {
   const p = buildPrompt('cover', { badge: 'SPF50+', title: '노란 톤은 잡고\n화사한 쿨톤으로', subtitle: '3중 기능성 워터풀 톤업 선크림(퍼플)' });
@@ -64,6 +64,14 @@ test('codex 출력에서 AI 원본 이미지 경로를 찾고, 없으면 out.png
   assert.equal(generatedPath('없음', dir), null);
   fs.writeFileSync(path.join(dir, 'out.png'), 'x');
   assert.equal(generatedPath('없음', dir), path.join(dir, 'out.png'));
+});
+
+test('codex 실행 파일: CODEX_BIN 우선, Windows는 npm 설치 위치의 codex.js, 없으면 codex', () => {
+  const js = path.win32.join('C:\\AppData', 'npm', 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
+  assert.equal(defaultCodexBin({ CODEX_BIN: 'my-codex', APPDATA: 'C:\\AppData' }, 'win32', () => true), 'my-codex');
+  assert.equal(defaultCodexBin({ APPDATA: 'C:\\AppData' }, 'win32', (p) => p === js), js);
+  assert.equal(defaultCodexBin({ APPDATA: 'C:\\AppData' }, 'win32', () => false), 'codex');
+  assert.equal(defaultCodexBin({ APPDATA: 'C:\\AppData' }, 'darwin', () => true), 'codex');
 });
 
 // 작업실 API: AI 디자인 카드 시작(202) → 상태 → 결과 파일. 실제 Codex 대신 aiCardFn으로 결과를 흉내냄

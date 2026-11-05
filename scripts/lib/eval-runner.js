@@ -341,7 +341,7 @@ function checkResultSchema(result, root = ROOT) {
  * @returns {Promise<{ result, schemaErrors, file }>}
  */
 async function runOne(run, {
-  inputsDir, runsDir, root = ROOT, bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude', model, maxTurns, timeoutMs,
+  inputsDir, runsDir, root = ROOT, bin = jobRunner.defaultClaudeBin(), model, maxTurns, timeoutMs,
   jobsDir, reportsDir, keep = false, claudeCodeVersion, onProgress = () => {},
 }) {
   const inputDir = path.join(inputsDir, run.inputId);
@@ -386,7 +386,7 @@ async function runOne(run, {
 async function runEval({
   inputIds = [], batch, repeat = 1, from = 1, variant = null, model, maxTurns, timeoutMs,
   root = ROOT, inputsDir = path.join(root, 'eval', 'inputs'), runsDir = path.join(root, 'eval', 'runs'),
-  variantsDir = path.join(root, 'eval', 'variants'), bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude', jobsDir, reportsDir, keep = false, dryRun = false, onProgress,
+  variantsDir = path.join(root, 'eval', 'variants'), bin = jobRunner.defaultClaudeBin(), jobsDir, reportsDir, keep = false, dryRun = false, onProgress,
 }) {
   const runs = planRuns({ inputIds, batch, repeat, from, variant, inputsDir, runsDir, root, variantsDir });
   if (dryRun) return { runs, results: [] };

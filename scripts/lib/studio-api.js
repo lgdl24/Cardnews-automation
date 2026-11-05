@@ -88,14 +88,14 @@ function readEventsFrom(file) {
  * @param {object} [o]
  * @param {string} [o.root]         저장소 루트 (규칙·스크립트)
  * @param {string} [o.productsDir]  제품 폴더들 (기본 <root>/products)
- * @param {string} [o.bin]          claude 실행 파일 (기본 CARDNEWS_CLAUDE_BIN 또는 claude)
+ * @param {string} [o.bin]          claude 실행 파일 (기본 jobRunner.defaultClaudeBin())
  * @param {Function} [o.runJob]     작업 실행 함수 (테스트용 교체)
  * @param {Function} [o.aiCardFn]   AI 디자인 카드 실행 함수 (테스트용 교체): (id, { card, onLine }) => Promise<{ ok, code }>
  */
 function createStudio({
   root = ROOT,
   productsDir = path.join(root, 'products'),
-  bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude',
+  bin = jobRunner.defaultClaudeBin(),
   runJob = jobRunner.runJob,
   reportsDir = path.join(root, '.studio', 'jobs'),
   exportConfigFile = path.join(root, 'config', 'export.json'),
@@ -476,7 +476,8 @@ function createStudio({
       fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2) + '\n');
     }
     if (exportFn) return exportFn(id);
-    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'export.js'), '--only', id, '--config', cfgFile], { encoding: 'utf8', env: scriptEnv({ CARDNEWS_NO_LOG: '1' }) });
+    // 웹 데이터는 webIndexFile이 있는 폴더로 (시험 폴더 모드에서 저장소 web/public/data를 건드리지 않게)
+    const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'export.js'), '--only', id, '--config', cfgFile, '--out', path.dirname(webIndexFile)], { encoding: 'utf8', env: scriptEnv({ CARDNEWS_NO_LOG: '1' }) });
     const excluded = (r.stdout.match(/^\[제외\].*$/gm) || []).map((l) => l.replace(/^\[제외\]\s*/, ''));
     return { ok: r.status === 0 && excluded.length === 0, output: (r.stdout || '').trim().split('\n').slice(-6), excluded };
   }

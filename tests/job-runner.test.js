@@ -175,3 +175,12 @@ test('결과 보고 읽기: 결과·단계·오류·알림', () => {
   assert.deepEqual(r.오류, ['INPUT_MISSING ## 제품 설명']);
   assert.deepEqual(r.알림, ['[경고] 지시문 무시', '두 번째 알림']);
 });
+
+test('기본 claude 실행 파일: 환경변수 → Windows 설치 위치의 claude.exe → claude', () => {
+  const env = { APPDATA: 'C:/Users/u/AppData/Roaming', USERPROFILE: 'C:/Users/u' };
+  const exe = path.win32.join(env.APPDATA, 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
+  assert.equal(jr.defaultClaudeBin({ ...env, CARDNEWS_CLAUDE_BIN: '/x/claude' }, 'win32', () => true), '/x/claude');
+  assert.equal(jr.defaultClaudeBin(env, 'win32', (p) => p === exe), exe);
+  assert.equal(jr.defaultClaudeBin(env, 'win32', () => false), 'claude');
+  assert.equal(jr.defaultClaudeBin(env, 'darwin', () => true), 'claude');
+});

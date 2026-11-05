@@ -114,6 +114,21 @@ function claudeArgs({ productId, maxTurns = 40, model }) {
   return args;
 }
 
+// 기본 claude 실행 파일: CARDNEWS_CLAUDE_BIN → (Windows) 설치 위치의 claude.exe → 'claude'
+// Windows는 npm 설치가 claude.cmd라 spawn이 'claude'를 못 찾음(ENOENT). 그래서 실제 exe를 찾아 씀
+function defaultClaudeBin(env = process.env, platform = process.platform, exists = fs.existsSync) {
+  if (env.CARDNEWS_CLAUDE_BIN) return env.CARDNEWS_CLAUDE_BIN;
+  if (platform === 'win32') {
+    const candidates = [
+      env.APPDATA && path.win32.join(env.APPDATA, 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe'),
+      env.USERPROFILE && path.win32.join(env.USERPROFILE, '.local', 'bin', 'claude.exe'),
+    ].filter(Boolean);
+    const found = candidates.find((p) => exists(p));
+    if (found) return found;
+  }
+  return 'claude';
+}
+
 // claude 실행 파일이 .js(테스트의 가짜 Claude 등)면 node로 실행. Windows는 .js를 직접 실행하지 못함(spawn EFTYPE)
 function claudeCommand(bin, args) {
   return /\.[cm]?js$/i.test(bin) ? [process.execPath, [bin, ...args]] : [bin, args];
@@ -326,12 +341,12 @@ function errorCodeOf({ report, result, crash, verify }) {
  * @param {'web'|'eval'} [o.mode]
  * @param {object} [o.revision]   수정 작업: { stage: 'plan'|'final', cards: number[], types: string[], memo }
  * @param {string} [o.overlayDir] 평가 비교판(A8)에서 바꾼 규칙 파일 폴더 (CLAUDE.md·Skill·prompts/eval). 기본 없음
- * @param {string} [o.bin]        claude 실행 파일 (테스트는 가짜 claude). 기본 CARDNEWS_CLAUDE_BIN 또는 'claude'
+ * @param {string} [o.bin]        claude 실행 파일 (테스트는 가짜 claude). 기본 defaultClaudeBin()
  * @param {(p) => void} [o.onProgress]
  */
 async function runJob({
   kind, productId, productDir, mode = 'web', revision = null,
-  bin = process.env.CARDNEWS_CLAUDE_BIN || 'claude', model, maxTurns, timeoutMs = 20 * 60 * 1000,
+  bin = defaultClaudeBin(), model, maxTurns, timeoutMs = 20 * 60 * 1000,
   root = ROOT, jobsDir, reportsDir, keep = false, onProgress, onStart, overlayDir = null,
 }) {
   assertId(productId);
@@ -399,6 +414,6 @@ async function runJob({
 
 module.exports = {
   ROOT, JOB_KINDS, MODES, TOOLS, RULE_ENTRIES, RULE_EXCLUDE,
-  allowedTools, newJobId, createWorkspace, fillPrompt, claudeArgs, claudeCommand, claudeEnv,
+  allowedTools, newJobId, createWorkspace, fillPrompt, claudeArgs, defaultClaudeBin, claudeCommand, claudeEnv,
   describeMessage, parseResultReport, verifyJob, mergeJob, errorCodeOf, runJob,
 };
