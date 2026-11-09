@@ -34,7 +34,7 @@
 │   ├── project.json          카드 결과·구성안·근거·품질 지표 (V2, V4)
 │   ├── timeline.json         제작 과정 (V2 제작 과정)
 │   └── png/card-01.png …     카드 이미지 (1080×1080)
-└── eval/                     평가 결과 (V3). 형식은 docs/eval-spec.md (이용석)
+└── eval/summary.json         평가 집계 (V3). 형식은 docs/eval-spec.md 7장. 중단된 실행 포함
 ```
 
 - `products/*/output/`은 git에서 빠지므로, **내보낸 데이터 폴더는 커밋합니다.** 배포는 커밋된 데이터로 합니다. 내보낸 뒤 `git diff`로 바뀐 프로젝트를 확인합니다.

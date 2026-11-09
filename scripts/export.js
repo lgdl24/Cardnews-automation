@@ -6,6 +6,7 @@ const path = require('path');
 const { ROOT, paths, readJson } = require('./lib/common');
 const { buildProject, buildIndex } = require('./lib/web-data');
 const { checkWebData } = require('./lib/web-schema');
+const { buildEvalSummary, headline } = require('./lib/eval-summary');
 
 const KINDS = ['production', 'example', 'eval'];
 
@@ -138,7 +139,20 @@ function exportWebData({ out = null, only = null, config = null, exportedAt, eva
     for (const p of b.pngs) fs.copyFileSync(p.src, path.join(dir, p.rel));
   }
   writeJson(indexFile, index);
-  return { outDir, exported: built.map((b) => b.project.id), excluded, schemaErrors };
+
+  // 평가 집계(eval/summary.json, docs/eval-spec.md 7장): 평가 실행 폴더를 읽었을 때만 새로 씀. 중단된 실행도 포함
+  let evalSummary = null;
+  if (evalRuns) {
+    evalSummary = buildEvalSummary({
+      runsDir: evalRuns,
+      inputsDir: path.join(ROOT, 'eval', 'inputs'),
+      judgmentsFile: path.join(ROOT, 'eval', 'judgments.json'),
+      exportedIds: index.projects.filter((p) => p.kind === 'eval').map((p) => p.id),
+      generatedAt: index.exported_at,
+    });
+    writeJson(path.join(outDir, 'eval', 'summary.json'), evalSummary);
+  }
+  return { outDir, exported: built.map((b) => b.project.id), excluded, schemaErrors, evalSummary };
 }
 
 if (require.main === module) {
@@ -156,6 +170,11 @@ if (require.main === module) {
   for (const e of schemaErrors) console.log(`[오류] SCHEMA_ERROR | ${e}`);
   if (schemaErrors.length) console.log('-- 스키마 검사 실패: 아무 파일도 쓰지 않았어요');
   else console.log(`-- 내보냄 ${exported.length}개, 제외 ${excluded.length}개`);
+  if (result.evalSummary) {
+    const h = headline(result.evalSummary.runs);
+    const pct = (v) => (v === null ? '—' : `${Math.round(v * 100)}%`);
+    console.log(`-- 평가 집계 eval/summary.json: 실행 ${h.runs}개(완료 ${h.completed}) · 1회 통과 ${pct(h.first_pass_rate)} · 핵심 정보 ${pct(h.key_info_rate)} · 안전성 ${pct(h.safety_rate)} · 사람 판정 대기 ${h.pending}`);
+  }
   process.exit(schemaErrors.length ? 1 : 0);
 }
 

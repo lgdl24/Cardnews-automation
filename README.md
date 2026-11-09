@@ -34,6 +34,7 @@ npm run eval -- --batch a8 --variant no-quote-rule         # 비교판 (A8): eva
 - 실행 폴더 `eval/runs/<입력ID>--<규칙 버전>--r<N>/`는 제품 폴더와 모양이 같아요(`CARDNEWS_PRODUCTS_DIR=eval/runs`로 `validate`·`log --summary` 사용 가능). 같은 실행ID가 있으면 시작 전에 멈추니 `--from`으로 반복 번호를 올려요.
 - `result.json`은 쓰기 전에 `schemas/eval/run-result.schema.json`으로 검사해요. 체크리스트 판정(기대 동작·금지 표현)과 핵심 정보 포함률이 들어 있어요.
 - `--variant <이름>`은 실행ID에 비교판 이름만 붙여요(A8). 규칙 일부를 뺀 판을 실제로 만드는 방법은 A8 작업에서 정해요.
+- 평가 대시보드(`/eval`)는 `npm run export`가 만드는 `web/public/data/eval/summary.json`을 읽어요. 중단된 실행까지 모두 들어가요. 평가를 다른 폴더에서 돌렸다면 `npm run export -- --eval-runs <그 폴더>/eval/runs`. 자동 판정이 안 되는 금지 항목은 `eval/judgments.json`에 사람 판정을 남기고 다시 내보내요(`docs/eval-spec.md` 7장).
 - 사용량이 들어요. 실행마다 `claude -p` 작업 1~2번이라 정상 입력 하나에 몇 분 걸려요. 웹 모드 제작과 동시에 돌리지 마세요.
 
 ## 사용 방법 (웹 모드)

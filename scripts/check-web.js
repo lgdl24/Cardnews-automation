@@ -9,7 +9,7 @@ const { paths, createReport, printReport } = require('./lib/common');
 const { checkWebData } = require('./lib/web-schema');
 
 // 데이터 폴더에 있어도 되는 파일 (docs/web-data-spec.md 폴더 구성)
-const DATA_FILE_RE = /^(index\.json|projects\/[a-z0-9-]+\/(project\.json|timeline\.json|png\/card-\d{2}\.png))$/;
+const DATA_FILE_RE = /^(index\.json|eval\/summary\.json|projects\/[a-z0-9-]+\/(project\.json|timeline\.json|png\/card-\d{2}\.png))$/;
 
 // 비밀 값 형태 (값 자체는 출력하지 않고 종류·위치만 알림)
 const SECRET_PATTERNS = [
@@ -73,6 +73,18 @@ function checkWebDeploy({ dataDir, distDir = null }) {
     if (!DATA_FILE_RE.test(f)) report.error('DEPLOY_FILE', f, '웹 데이터 규격에 없는 파일이에요. 배포에서 빼 주세요');
   }
   scanSecrets(report, dataDir, files, 'data');
+
+  // 평가 집계 (docs/eval-spec.md 7장): 공개하지 않는 필드(알림 원문·찾은 글자·체크리스트 인용)가 없어야 함
+  if (files.includes('eval/summary.json')) {
+    const ev = readJsonSafe(path.join(dataDir, 'eval/summary.json'));
+    if (ev.error) report.error('SCHEMA_ERROR', 'eval/summary.json', `JSON을 읽을 수 없어요: ${ev.error}`);
+    else if (!Array.isArray(ev.data.runs) || !Array.isArray(ev.data.inputs)) report.error('SCHEMA_ERROR', 'eval/summary.json', 'runs·inputs 목록이 없어요');
+    else {
+      const text = JSON.stringify(ev.data);
+      for (const key of ['"matched"', '"알림"', '"quote"', '"match"', '"copy_terms"'])
+        if (text.includes(key)) report.error('PRIVATE_FIELD', 'eval/summary.json', `공개하지 않는 필드가 있어요: ${key} (npm run export로 다시 만들기)`);
+    }
+  }
 
   const idx = readJsonSafe(path.join(dataDir, 'index.json'));
   if (idx.error) {
