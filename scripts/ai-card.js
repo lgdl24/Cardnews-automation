@@ -98,17 +98,32 @@ function lockScore({ ai, aw, orig, mask, w, h, pad: P }) {
 
 // codex 출력에서 생성된 이미지 경로 (Codex가 결과를 따로 손대도 AI 원본으로 검사)
 function generatedPath(output, cwd) {
-  const m = String(output).match(/\/[^\s"'`]*generated_images\/[^\s"'`]*\.png/);
+  // Windows 경로(C:\...\generated_images\...)도 찾음
+  const m = String(output).match(/(?:[A-Za-z]:)?[\\/][^\s"'`]*generated_images[\\/][^\s"'`]*\.png/);
   if (m && fs.existsSync(m[0])) return m[0];
   const out = path.join(cwd, 'out.png');
   return fs.existsSync(out) ? out : null;
 }
 
+// 기본 codex 실행 파일: CODEX_BIN → (Windows) npm 설치 위치의 codex.js → 'codex'
+// Windows는 npm 설치가 codex.cmd라 spawn이 'codex'를 못 찾음(ENOENT)
+function defaultCodexBin(env = process.env, platform = process.platform, exists = fs.existsSync) {
+  if (env.CODEX_BIN) return env.CODEX_BIN;
+  if (platform === 'win32' && env.APPDATA) {
+    const js = path.win32.join(env.APPDATA, 'npm', 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
+    if (exists(js)) return js;
+  }
+  return 'codex';
+}
+
 function runCodex(cwd, prompt, timeoutSec) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const bin = process.env.CODEX_BIN || 'codex';
-    const child = spawn(bin, ['exec', '--skip-git-repo-check', '-s', 'workspace-write', '-i', 'base.png'], { cwd, env: process.env });
+    const bin = defaultCodexBin();
+    const args = ['exec', '--skip-git-repo-check', '-s', 'workspace-write', '-i', 'base.png'];
+    // .js면 node로 실행 (Windows는 .js를 직접 실행하지 못함)
+    const [cmd, cmdArgs] = /\.[cm]?js$/i.test(bin) ? [process.execPath, [bin, ...args]] : [bin, args];
+    const child = spawn(cmd, cmdArgs, { cwd, env: process.env });
     let out = '';
     child.stdout.on('data', (d) => { out += d; });
     child.stderr.on('data', (d) => { out += d; });
@@ -274,4 +289,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });
 }
 
-module.exports = { buildPrompt, textLines, productBox, lockScore, generatedPath, LAYOUT, LOCK, run };
+module.exports = { buildPrompt, textLines, defaultCodexBin, productBox, lockScore, generatedPath, LAYOUT, LOCK, run };

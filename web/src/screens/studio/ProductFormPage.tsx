@@ -188,7 +188,7 @@ function Field({ field: f, value, onChange }: { field: FormField; value: string;
   return (
     <label className="field">
       <span className="field-label">
-        {f.key} {f.required ? <em>필수</em> : <span className="muted">선택</span>}
+        {f.key} {f.required ? <em>필수</em> : <span className="muted">비워도 돼요</span>}
       </span>
       {f.type === 'choice' ? (
         <select value={value} onChange={(e) => onChange(e.target.value)} required={f.required}>
@@ -232,7 +232,7 @@ function ImagesField({
   return (
     <div className="field">
       <span className="field-label">
-        {f.key} {f.required ? <em>필수</em> : <span className="muted">선택</span>}
+        {f.key} {f.required ? <em>필수</em> : <span className="muted">비워도 돼요</span>}
       </span>
       <ul className="image-rows">
         {images.map((img, i) => (
