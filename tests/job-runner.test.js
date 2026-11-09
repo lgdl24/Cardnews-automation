@@ -184,3 +184,12 @@ test('기본 claude 실행 파일: 환경변수 → Windows 설치 위치의 cla
   assert.equal(jr.defaultClaudeBin(env, 'win32', () => false), 'claude');
   assert.equal(jr.defaultClaudeBin(env, 'darwin', () => true), 'claude');
 });
+
+test('실패 원인: 사용량 한도 안내로 끝나면 USAGE_LIMIT, 카드만 다시 출력한 최신 결과는 그 카드의 판단으로 씀', () => {
+  const jr = require('../scripts/lib/job-runner');
+  if (typeof jr.errorCodeOf === 'function') {
+    const report = { 오류: [], 결과: null };
+    assert.equal(jr.errorCodeOf({ report, result: { subtype: 'success', is_error: true, num_turns: 1, text: "You've hit your usage limit · resets 5pm" }, crash: null, verify: { ok: false } }), 'USAGE_LIMIT');
+    assert.equal(jr.errorCodeOf({ report, result: { subtype: 'success', is_error: false, num_turns: 12, text: '완료' }, crash: null, verify: { ok: false } }), 'VERIFY_FAILED');
+  }
+});

@@ -153,9 +153,15 @@ async function inspectPage(page) {
         issues.push({ code: 'OVERFLOW', target: label(el), text: el.innerText.replace(/\s+/g, ' ').trim().slice(0, 30) });
       }
     });
+    // 카드 밖으로 이어지게 그린 장식(배경 아치 등, data-decor)은 잘려 보이는 게 의도라 높이 검사에서 뺌
     const card = document.querySelector('.card');
-    if (card && card.scrollHeight > card.clientHeight + 1) {
-      issues.push({ code: 'OVERFLOW', target: 'card', text: '카드 전체 높이 초과' });
+    if (card) {
+      const decor = [...card.querySelectorAll('[data-decor]')];
+      const prev = decor.map((el) => el.style.display);
+      decor.forEach((el) => { el.style.display = 'none'; });
+      const over = card.scrollHeight > card.clientHeight + 1;
+      decor.forEach((el, i) => { el.style.display = prev[i]; });
+      if (over) issues.push({ code: 'OVERFLOW', target: 'card', text: '카드 전체 높이 초과' });
     }
     document.querySelectorAll('img').forEach((img) => {
       if (img.offsetParent === null) return; // 숨김 처리된 이미지는 제외

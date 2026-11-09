@@ -394,11 +394,14 @@ async function runEval({
   if (!claudeCodeVersion) throw new Error(`Claude Code(${bin})를 실행할 수 없어요. 설치·로그인을 확인해 주세요 (claude auth status)`);
   fs.mkdirSync(runsDir, { recursive: true });
   const results = [];
+  let stoppedAt = null;
   for (const run of runs) {
-    // 실행 하나가 실패해도 다음 실행은 계속함 (실패도 평가 결과)
-    results.push({ run, ...(await runOne(run, { inputsDir, runsDir, root, bin, model, maxTurns, timeoutMs, jobsDir, reportsDir, keep, claudeCodeVersion, onProgress })) });
+    // 실행 하나가 실패해도 다음 실행은 계속함 (실패도 평가 결과). 단, 사용량 한도면 남은 실행은 멈춤 → 나중에 --from으로 이어서
+    const one = await runOne(run, { inputsDir, runsDir, root, bin, model, maxTurns, timeoutMs, jobsDir, reportsDir, keep, claudeCodeVersion, onProgress });
+    results.push({ run, ...one });
+    if (((one.result && one.result.jobs) || []).some((j) => j.error_code === 'USAGE_LIMIT')) { stoppedAt = run.runId; break; }
   }
-  return { runs, results };
+  return { runs, results, stoppedAt };
 }
 
 module.exports = {
