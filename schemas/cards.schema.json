@@ -21,6 +21,34 @@
         "reason": { "type": "string", "minLength": 1 }
       }
     },
+    "brand_mood": {
+      "description": "브랜드 무드 (선택). 입력 무드가 '브랜드'(또는 무드를 비우고 브랜드 URL을 적음)면 필수(validate가 검사). 구성안 작업이 brand/ 스냅샷(없으면 제품 사진)을 보고 정함. palette는 카드 색, scene은 GPT 배경 요청에 씀 (scripts/lib/brand.js)",
+      "type": "object",
+      "required": ["source", "summary", "palette", "tone", "photo_style", "scene", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "enum": ["snapshot", "product_photo"] },
+        "summary": { "type": "string", "minLength": 1 },
+        "palette": {
+          "type": "object",
+          "required": ["bg", "surface", "text", "muted", "primary", "accent", "on-primary"],
+          "additionalProperties": false,
+          "properties": {
+            "bg": { "$ref": "#/$defs/hexColor" },
+            "surface": { "$ref": "#/$defs/hexColor" },
+            "text": { "$ref": "#/$defs/hexColor" },
+            "muted": { "$ref": "#/$defs/hexColor" },
+            "primary": { "$ref": "#/$defs/hexColor" },
+            "accent": { "$ref": "#/$defs/hexColor" },
+            "on-primary": { "$ref": "#/$defs/hexColor" }
+          }
+        },
+        "tone": { "type": "string", "minLength": 1 },
+        "photo_style": { "type": "string", "minLength": 1 },
+        "scene": { "type": "string", "minLength": 1 },
+        "evidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
     "sources": {
       "type": "array",
       "minItems": 1,
@@ -60,6 +88,7 @@
   ],
   "$defs": {
     "sourceId": { "type": "string", "pattern": "^S\\d+$" },
+    "hexColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
     "evidence": { "type": "array", "items": { "$ref": "#/$defs/sourceId" } },
     "analysisItem": {
       "type": "object",

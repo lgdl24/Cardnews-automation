@@ -11,7 +11,7 @@ export type JobKind = 'plan' | 'copy' | 'revise';
 export interface FormField {
   key: string;
   required: boolean;
-  type: 'text' | 'paragraph' | 'list' | 'images' | 'number' | 'choice';
+  type: 'text' | 'paragraph' | 'list' | 'images' | 'number' | 'choice' | 'url';
   guide: string;
   example?: string[];
   usage?: string[];
@@ -129,6 +129,7 @@ export interface Actions {
   /** 승인된 문구 그대로 카드 이미지만 다시 출력 (output/이 없는 새 폴더·다른 컴퓨터) */
   can_render?: boolean;
   can_ai_card?: boolean;
+  can_ai_bg?: boolean;
   ai_busy?: boolean;
   can_plan: boolean;
   can_approve_plan: boolean;
@@ -183,7 +184,7 @@ export interface ProductDetail extends ProductSummary {
     card_count: number | null;
   };
   check: Report;
-  cards: { stage: StudioStage; sources: Source[]; analysis: Analysis; cards: StudioCard[] } | null;
+  cards: { stage: StudioStage; sources: Source[]; analysis: Analysis; cards: StudioCard[]; brand_mood?: BrandMood } | null;
   validation: (Report & { quality: { coverage: number | null; evidence_rate: number | null; caution: { total: number } | null } | null }) | null;
   pngs: { file: string; v: number }[];
   events: StudioEvent[];
@@ -192,7 +193,11 @@ export interface ProductDetail extends ProductSummary {
   actions: Actions;
   design?: DesignInfo;
   figma?: FigmaInfo;
-  ai_card?: AiCardInfo;
+  ai_card?: AiCardInfo | null;
+  /** 무드 '브랜드'의 카드별 GPT 배경 (A안: 배경만 GPT, 글자는 코드) */
+  ai_bg?: AiBgInfo | null;
+  /** 브랜드 URL·상세페이지 스냅샷 상태 (입력에 브랜드 URL이 있을 때) */
+  brand_page?: BrandInfo | null;
 }
 
 /** 피그마에서 직접 고치기: 연결 코드, 피그마 파일, 준비 시각, 피그마에서 돌려받은 카드 */
@@ -251,6 +256,48 @@ export interface AiCardInfo {
   }[];
 }
 
+/** 브랜드 상세페이지 스냅샷 (brand/snapshot.json) */
+export interface BrandInfo {
+  url: string;
+  url_ok: boolean;
+  snapshot: {
+    ok: boolean;
+    fetched_at: string;
+    title: string | null;
+    error: string | null;
+    warnings: string[];
+    colors: { hex: string; ratio: number }[];
+    shots: { file: string; v: number }[];
+  } | null;
+}
+/** cards.json brand_mood: 구성안 작업이 정한 브랜드 무드 */
+export interface BrandMood {
+  source: 'snapshot' | 'product_photo';
+  summary: string;
+  palette: Record<string, string>;
+  tone: string;
+  photo_style: string;
+  scene: string;
+  evidence: string[];
+}
+/** AI 배경 (scripts/ai-bg.js) 실행 상태와 카드별 결과 */
+export interface AiBgInfo {
+  auto: boolean;
+  running: boolean;
+  run: { card: number | null; auto: boolean; started_at: string; finished_at: string | null; ok: boolean | null; progress: string[] } | null;
+  made_at: string | null;
+  has_mood: boolean;
+  stale: number[];
+  cards: { no: number; template: string; ok: boolean; current: boolean; file: string | null; v: number; tries: { try: number; sec: number; error?: string }[] }[];
+}
+/** 자료로 입력 칸 채우기 결과 (POST /extract) */
+export interface ExtractResult {
+  values: Record<string, string | string[]>;
+  missing: string[];
+  warnings: string[];
+  files: string[];
+}
+
 export class StudioError extends Error {
   constructor(
     message: string,
@@ -277,6 +324,8 @@ export async function studioFetch<T>(path: string, init: { method?: string; body
 export const pngUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/png/${file}${v ? `?v=${v}` : ''}`;
 export const aiCardUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/ai-card/${file}${v ? `?v=${v}` : ''}`;
 export const figmaEditedUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/figma-edited/${file}${v ? `?v=${v}` : ''}`;
+export const aiBgUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/ai-bg/${file}${v ? `?v=${v}` : ''}`;
+export const brandShotUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/brand/${file}${v ? `?v=${v}` : ''}`;
 export const imageUrl = (id: string, file: string) => `${BASE}/products/${encodeURIComponent(id)}/files/images/${encodeURIComponent(file)}`;
 
 // ── 로컬 제작 API가 켜져 있는지 (한 번만 확인, 화면 여러 곳에서 공유)

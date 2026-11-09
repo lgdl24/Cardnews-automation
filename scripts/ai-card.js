@@ -116,11 +116,12 @@ function defaultCodexBin(env = process.env, platform = process.platform, exists 
   return 'codex';
 }
 
-function runCodex(cwd, prompt, timeoutSec) {
+// image: 함께 넘길 바탕 그림(작업 폴더 기준). null이면 그림 없이 새로 만듦 (ai-bg.js 배경)
+function runCodex(cwd, prompt, timeoutSec, { image = 'base.png' } = {}) {
   return new Promise((resolve) => {
     const started = Date.now();
     const bin = defaultCodexBin();
-    const args = ['exec', '--skip-git-repo-check', '-s', 'workspace-write', '-i', 'base.png'];
+    const args = ['exec', '--skip-git-repo-check', '-s', 'workspace-write', ...(image ? ['-i', image] : [])];
     // .js면 node로 실행 (Windows는 .js를 직접 실행하지 못함)
     const [cmd, cmdArgs] = /\.[cm]?js$/i.test(bin) ? [process.execPath, [bin, ...args]] : [bin, args];
     const child = spawn(cmd, cmdArgs, { cwd, env: process.env });
@@ -289,4 +290,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });
 }
 
-module.exports = { buildPrompt, textLines, defaultCodexBin, productBox, lockScore, generatedPath, LAYOUT, LOCK, run };
+module.exports = { buildPrompt, textLines, defaultCodexBin, runCodex, productBox, lockScore, generatedPath, LAYOUT, LOCK, run };

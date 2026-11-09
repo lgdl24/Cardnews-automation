@@ -44,9 +44,11 @@ function buildCardHtml({ card, cards = [], total, product, tpl, theme, htmlDir, 
     image: escapeHtml(imageSrc),
     imageClass: useImage ? 'has-image' : 'no-image',
     texture: extraImages.texture ? escapeHtml(path.relative(htmlDir, path.join(imageDir, extraImages.texture)).split(path.sep).join('/')) : '',
-    scene: extraImages.scene ? escapeHtml(path.relative(htmlDir, path.join(imageDir, extraImages.scene)).split(path.sep).join('/')) : '',
+    // sceneFile: 카드별 배경(절대 경로, 무드 '브랜드'의 GPT 배경 output/ai-bg/card-NN.png)이 있으면 입력 배경 사진보다 먼저 씀
+    scene: extraImages.sceneFile ? escapeHtml(path.relative(htmlDir, extraImages.sceneFile).split(path.sep).join('/'))
+      : extraImages.scene ? escapeHtml(path.relative(htmlDir, path.join(imageDir, extraImages.scene)).split(path.sep).join('/')) : '',
     textureClass: extraImages.texture ? 'has-texture' : 'no-texture',
-    sceneClass: extraImages.scene ? 'has-scene' : 'no-scene',
+    sceneClass: extraImages.sceneFile || extraImages.scene ? 'has-scene' : 'no-scene',
     items: (copy.items || [])
       .map((t) => `<li class="desc__item"><span class="desc__text" data-fit>${toHtmlText(t)}</span></li>`)
       .join(''),

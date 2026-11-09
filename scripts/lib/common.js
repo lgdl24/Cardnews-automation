@@ -27,6 +27,7 @@ function moodInputOf(input) {
 
 // 디자인 묶음 정하기 (#74). 앞에서부터 처음 맞는 것을 씀
 //   ① 입력 '무드'(예전 '디자인')에 목록에 있는 묶음을 직접 적음 → 사람이 고른 것
+//   ①' 무드를 비우고 '브랜드 URL'을 적음 → 브랜드 (브랜드 상세페이지 무드)
 //   ② cards.json의 design.id → 구성안 작업에서 고른 묶음 (자동 추천, #74 3단계)
 //   ③ 기본
 // 목록에 없는 값·빈 값은 건너뜀. 반환 source: 'input' | 'cards' | 'default'
@@ -34,6 +35,8 @@ function resolveDesign({ input = null, data = null, config = readJson(paths.conf
   const known = (v) => typeof v === 'string' && (v === '기본' || Object.hasOwn(config._designs || {}, v));
   const { value } = moodInputOf(input);
   if (value && known(value)) return { id: value, source: 'input' };
+  const brandUrl = ((input?.cond || {})['브랜드 URL'] || '').split('\n')[0].trim();
+  if (!value && brandUrl && known('브랜드')) return { id: '브랜드', source: 'input' };
   const picked = data && data.design && data.design.id;
   if (known(picked)) return { id: picked, source: 'cards' };
   return { id: '기본', source: 'default' };
