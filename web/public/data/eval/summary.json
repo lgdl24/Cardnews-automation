@@ -1,6 +1,6 @@
 {
   "spec_version": "0.2",
-  "generated_at": "2026-11-09T08:33:08.078Z",
+  "generated_at": "2026-11-10T00:26:22.554Z",
   "inputs": [
     {
       "input_id": "eval-derma-barrier-cream",
@@ -1297,7 +1297,7 @@
         "judgment_note": null
       },
       "project_id": null,
-      "notes": null
+      "notes": "보고는 누락 항목 3개를 모두 적었지만, 이름을 백틱으로 감싸 report_lists_missing이 거짓으로 판정됨(평가 실행기 오판, 11.10 수정). 고친 판정으로 r2 재실행"
     },
     {
       "run_id": "eval-long-serum--v1--r1",
@@ -2248,6 +2248,142 @@
           },
           {
             "id": "F3",
+            "found": false,
+            "matched_count": 0,
+            "by_human": false
+          }
+        ],
+        "pass": true,
+        "judged_by": null,
+        "judged_at": null,
+        "judgment_note": null
+      },
+      "project_id": null,
+      "notes": null
+    },
+    {
+      "run_id": "eval-input-missing--v1--r2",
+      "batch": "b1",
+      "input_id": "eval-input-missing",
+      "input_type": "boundary",
+      "input_source": "가상",
+      "skill_version": "v1",
+      "variant": null,
+      "repeat": 2,
+      "model": "claude-opus-5-5",
+      "claude_code_version": "2.1.316",
+      "started_at": "2026-11-10T00:25:42.308Z",
+      "finished_at": "2026-11-10T00:25:59.613Z",
+      "design": {
+        "id": "기본",
+        "source": "default"
+      },
+      "outcome": {
+        "result": "중단",
+        "final_stage": null,
+        "error_code": "INPUT_MISSING",
+        "cards_json": false,
+        "card_count": null,
+        "check_errors": [
+          "## 제품 설명",
+          "## 주요 특징",
+          "## 콘텐츠 목적",
+          "## 카드 수",
+          "이미지 bottle.png"
+        ],
+        "check_instruction_warnings": 0,
+        "report_errors": [
+          "INPUT_MISSING - ## 제품 설명 (내용이 비어 있어요)",
+          "INPUT_MISSING - ## 주요 특징 (항목이 없어요)",
+          "INPUT_MISSING - ## 콘텐츠 목적 (내용이 비어 있어요)",
+          "INPUT_MISSING - ## 카드 수 (숫자만 써 주세요. 현재: \"6장\")",
+          "INPUT_MISSING - 이미지 bottle.png (images/ 폴더에 파일이 없어요)"
+        ],
+        "report_warning_count": 0,
+        "report_caution_count": 0
+      },
+      "jobs": [
+        {
+          "kind": "plan",
+          "ok": false,
+          "error_code": "INPUT_MISSING",
+          "duration_ms": 16082,
+          "num_turns": 4,
+          "permission_denials": 0,
+          "report_warning_count": 0,
+          "report_caution_count": 0
+        }
+      ],
+      "metrics": {
+        "first_pass": null,
+        "error_codes": {},
+        "auto_fix_count": 0,
+        "final_error_count": null,
+        "coverage": null,
+        "evidence_rate": null,
+        "char_usage": null,
+        "char_usage_max": null,
+        "caution": null,
+        "key_info_rate": null,
+        "key_info_copy_rate": null,
+        "key_info_hits": [],
+        "duration_ms": 16082,
+        "num_turns": 4
+      },
+      "checks": {
+        "expected": [
+          {
+            "name": "check",
+            "expected": "INPUT_MISSING",
+            "actual": "INPUT_MISSING",
+            "pass": true
+          },
+          {
+            "name": "check_errors",
+            "expected": [
+              "## 제품 설명",
+              "## 주요 특징",
+              "## 콘텐츠 목적",
+              "## 카드 수",
+              "이미지 bottle.png"
+            ],
+            "actual": [
+              "## 제품 설명",
+              "## 주요 특징",
+              "## 콘텐츠 목적",
+              "## 카드 수",
+              "이미지 bottle.png"
+            ],
+            "pass": true
+          },
+          {
+            "name": "result",
+            "expected": "중단",
+            "actual": "중단",
+            "pass": true
+          },
+          {
+            "name": "error_code",
+            "expected": "INPUT_MISSING",
+            "actual": "INPUT_MISSING",
+            "pass": true
+          },
+          {
+            "name": "cards_json",
+            "expected": false,
+            "actual": false,
+            "pass": true
+          },
+          {
+            "name": "report_lists_missing",
+            "expected": true,
+            "actual": true,
+            "pass": true
+          }
+        ],
+        "forbidden": [
+          {
+            "id": "F2",
             "found": false,
             "matched_count": 0,
             "by_human": false
