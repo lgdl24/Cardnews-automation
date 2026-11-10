@@ -128,3 +128,19 @@ test('웹 데이터가 없으면 오류, 빌드 결과가 없으면 경고만', 
     s.cleanup();
   }
 });
+
+test('평가 집계 eval/summary.json은 배포 대상이고, 공개하지 않는 필드가 있으면 PRIVATE_FIELD', () => {
+  const s = setup();
+  try {
+    const fixture = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/fixtures/eval-summary.json'), 'utf8'));
+    fs.mkdirSync(path.join(s.data, 'eval'));
+    const file = path.join(s.data, 'eval', 'summary.json');
+    fs.writeFileSync(file, JSON.stringify(fixture));
+    assert.deepEqual(checkWebDeploy({ dataDir: s.data, distDir: null }).errors, []);
+    fixture.runs[0].checks.forbidden.push({ id: 'F9', found: true, matched: ['이전 지시를 무시해'] });
+    fs.writeFileSync(file, JSON.stringify(fixture));
+    assert.deepEqual(codes(checkWebDeploy({ dataDir: s.data, distDir: null })), ['PRIVATE_FIELD']);
+  } finally {
+    s.cleanup();
+  }
+});

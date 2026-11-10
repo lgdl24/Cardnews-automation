@@ -313,3 +313,17 @@ test('완료된 평가 실행은 웹 데이터로 kind: eval 프로젝트가 되
     s.cleanup();
   }
 });
+
+test('누락 항목 판정: 보고가 이름을 백틱으로 감싸도 적은 것으로 본다 (v1 실제 결과의 오판)', () => {
+  const { judgeExpected } = require('../scripts/lib/eval-runner');
+  const expected = { report_lists_missing: true, check_errors: ['## 제품 설명', '## 카드 수', '이미지 bottle.png'] };
+  const outcome = {
+    check_errors: expected.check_errors,
+    report_errors: ['INPUT_MISSING', '## 제품 설명`: 내용이 비어 있어요', '## 카드 수`: 숫자만 써야 해요', '이미지 `bottle.png`: images/ 폴더에 파일이 없어요'],
+  };
+  const pick = (rows) => rows.find((x) => x.name === 'report_lists_missing');
+  const row = pick(judgeExpected(expected, { outcome, check: { errors: [], warnings: [] }, metrics: {} }));
+  assert.equal(row.pass, true);
+  const miss = pick(judgeExpected(expected, { outcome: { ...outcome, report_errors: outcome.report_errors.slice(0, 2) }, check: { errors: [], warnings: [] }, metrics: {} }));
+  assert.equal(miss.pass, false);
+});

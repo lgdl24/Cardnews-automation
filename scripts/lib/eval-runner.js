@@ -217,8 +217,9 @@ function judgeExpected(expected, { outcome, check, metrics }) {
   }
   if ('report_lists_missing' in expected) {
     // 결과 보고 '오류'에 입력 확인에서 빠진 항목 이름이 모두 나오는지
-    const text = outcome.report_errors.join('\n');
-    const names = (expected.check_errors || outcome.check_errors).map(stripHeading);
+    // 보고는 이름을 `bottle.png`처럼 코드 표시로 감싸기도 해서 백틱은 빼고 비교
+    const text = outcome.report_errors.join('\n').replace(/`/g, '');
+    const names = (expected.check_errors || outcome.check_errors).map((n) => stripHeading(n).replace(/`/g, ''));
     const a = outcome.report_errors.length > 0 && names.every((n) => text.includes(n));
     add('report_lists_missing', a, a === expected.report_lists_missing);
   }
