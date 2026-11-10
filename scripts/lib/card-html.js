@@ -49,6 +49,8 @@ function buildCardHtml({ card, cards = [], total, product, tpl, theme, htmlDir, 
       : extraImages.scene ? escapeHtml(path.relative(htmlDir, path.join(imageDir, extraImages.scene)).split(path.sep).join('/')) : '',
     textureClass: extraImages.texture ? 'has-texture' : 'no-texture',
     sceneClass: extraImages.sceneFile || extraImages.scene ? 'has-scene' : 'no-scene',
+    // 배경에 제품이 이미 합성됨(무드 '브랜드' 제품 잠금 배경) → 템플릿이 제품 사진을 숨김
+    bakedClass: extraImages.bakedProduct ? 'has-baked' : '',
     items: (copy.items || [])
       .map((t) => `<li class="desc__item"><span class="desc__text" data-fit>${toHtmlText(t)}</span></li>`)
       .join(''),

@@ -283,12 +283,14 @@ export interface BrandMood {
 /** AI 배경 (scripts/ai-bg.js) 실행 상태와 카드별 결과 */
 export interface AiBgInfo {
   auto: boolean;
+  /** 이미지 만드는 곳: codex(로컬 Codex CLI) | openai(배포용 OpenAI 이미지 API) */
+  backend: 'codex' | 'openai';
   running: boolean;
   run: { card: number | null; auto: boolean; started_at: string; finished_at: string | null; ok: boolean | null; progress: string[] } | null;
   made_at: string | null;
   has_mood: boolean;
   stale: number[];
-  cards: { no: number; template: string; ok: boolean; current: boolean; file: string | null; v: number; tries: { try: number; sec: number; error?: string }[] }[];
+  cards: { no: number; template: string; ok: boolean; current: boolean; source: 'codex' | 'openai' | 'chat' | null; file: string | null; v: number; tries: { try: number; sec: number; error?: string }[]; prompt: string | null }[];
 }
 /** 자료로 입력 칸 채우기 결과 (POST /extract) */
 export interface ExtractResult {

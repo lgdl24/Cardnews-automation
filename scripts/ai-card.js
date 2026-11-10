@@ -290,4 +290,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });
 }
 
-module.exports = { buildPrompt, textLines, defaultCodexBin, runCodex, productBox, lockScore, generatedPath, LAYOUT, LOCK, run };
+module.exports = { buildPrompt, textLines, defaultCodexBin, runCodex, productBox, lockScore, generatedPath, LAYOUT, LOCK, PAGE_FNS, run };

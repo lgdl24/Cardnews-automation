@@ -13,7 +13,7 @@ const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
 const { applyAiCards } = require('./lib/ai-cards');
-const { BRAND_DESIGN, brandPalette, bgFiles } = require('./lib/brand');
+const { BRAND_DESIGN, brandPalette, bgEntries } = require('./lib/brand');
 
 // 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
 // 제품 색이면 사진 픽셀을 읽으려고 브라우저를 먼저 띄움 (HTML만 만들 때도)
@@ -153,7 +153,8 @@ async function main() {
   const firstOfKind = (kind) => (input.images || []).find((i) => i.kind === kind && i.usage !== '불가' && fs.existsSync(path.join(imageDir, i.file)))?.file || null;
   const extraImages = { texture: firstOfKind('제형'), scene: firstOfKind('배경') };
   // 무드 '브랜드': 카드마다 GPT 배경(npm run ai-bg). 무드·템플릿이 바뀌어 맞지 않는 배경은 쓰지 않음
-  const bgs = isBrand ? bgFiles(paths.product(id), data) : new Map();
+  // baked: 배경에 실제 제품이 이미 합성됨(제품 잠금) → 제품 사진을 다시 얹지 않음
+  const bgs = isBrand ? bgEntries(paths.product(id), data) : new Map();
   if (isBrand) {
     const missing = targets.filter((c) => !bgs.has(c.no)).map((c) => c.no);
     if (missing.length) console.log(`AI 배경 없음: ${missing.join('·')}번 (브랜드 색 그라데이션으로 출력. npm run ai-bg -- ${id})`);
@@ -163,7 +164,7 @@ async function main() {
   for (const card of targets) {
     const html = buildCardHtml({
       card, cards: data.cards, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image),
-      extraImages: bgs.has(card.no) ? { ...extraImages, sceneFile: bgs.get(card.no) } : extraImages,
+      extraImages: bgs.has(card.no) ? { ...extraImages, sceneFile: bgs.get(card.no).file, bakedProduct: bgs.get(card.no).baked } : extraImages,
     });
     fs.writeFileSync(path.join(htmlDir, `card-${pad(card.no)}.html`), html);
   }
