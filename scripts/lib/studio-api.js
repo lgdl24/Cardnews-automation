@@ -656,7 +656,7 @@ function createStudio({
           no: c.no, template: c.template, ok: Boolean(r && r.ok), current: have.has(c.no), source: (r && r.source) || (r ? 'codex' : null),
           file: r && r.file ? r.file : null, v: r && r.file ? fileV(path.join(bgDir(id), r.file)) : 0, tries: r ? r.tries : [],
           // ChatGPT 채팅창에 붙여 넣을 요청문 (Codex 사용량 한도일 때 사람이 만들어 올림)
-          prompt: data && data.brand_mood ? brand.chatPrompt(data.brand_mood, c.template) : null,
+          prompt: data && data.brand_mood ? brand.chatPrompt(data.brand_mood, c.template, (report && report.product_hex) || null) : null,
         };
       }),
     };

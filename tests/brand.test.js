@@ -271,8 +271,11 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
     releaseBg();
     await new Promise((x) => setTimeout(x, 20));
     // ChatGPT 채팅에서 만든 이미지 올리기: 카드별 요청문을 보여주고, 올린 이미지는 --import로 넣음
+    fs.mkdirSync(ws.file('output', 'ai-bg'), { recursive: true });
+    fs.writeFileSync(ws.file('output', 'ai-bg', 'ai-bg.json'), JSON.stringify({ product_hex: '#9BD770', cards: [] }));
     r = await call('GET', '/products/brand-test');
     assert.match(r.body.ai_bg.cards[0].prompt, /BACKGROUND ONLY/);
+    assert.match(r.body.ai_bg.cards[0].prompt, /#9BD770/, '채팅용 요청문에도 제품 색');
     r = await call('POST', '/products/brand-test/ai-bg/upload', { card: 3, data: Buffer.from('not image').toString('base64') });
     assert.equal(r.status, 400, '이미지가 아니면 거절');
     const PNG = '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8cfc0f01f0005000201a3d8b1a40000000049454e44ae426082';

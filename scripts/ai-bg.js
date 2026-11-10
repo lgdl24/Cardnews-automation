@@ -163,6 +163,7 @@ async function run(id, { only = null, staleOnly = false, tries = 2, render = tru
   if (staleOnly) { const st = staleBg(pdir, data); list = list.filter((c) => st.includes(c.no)); }
   const dir = aiBgDir(pdir);
   const results = [];
+  let productHex = null;
   if (list.length) {
     fs.mkdirSync(dir, { recursive: true });
     const timeoutSec = Number(process.env.AI_CARD_TIMEOUT || 360);
@@ -185,6 +186,7 @@ async function run(id, { only = null, staleOnly = false, tries = 2, render = tru
         return products.get(img);
       };
       const firstImage = (cards.find((c) => c.image) || {}).image || null;
+      productHex = ((await productOf(firstImage)) || {}).hex || null;
       const backend = imageBackend();
       for (const card of list) {
         const prod = await productOf(card.image);
@@ -207,7 +209,7 @@ async function run(id, { only = null, staleOnly = false, tries = 2, render = tru
     } finally {
       await browser.close();
     }
-    saveReport(id, pdir, cards, results);
+    saveReport(id, pdir, cards, results, { product_hex: productHex });
   }
   const rendered = render && results.some((r) => r.ok) ? rerender(id, log) : null;
   return { results, rendered };
@@ -223,10 +225,12 @@ function loadBrandData(id) {
   return { pdir, data };
 }
 
-function saveReport(id, pdir, cards, results) {
+// extra.product_hex: 제품 대표 색 (작업실의 ChatGPT 채팅용 요청문에도 넣음). 없으면 이전 값 유지
+function saveReport(id, pdir, cards, results, extra = {}) {
   const prev = readBgReport(pdir) || { cards: [] };
   const merged = [...prev.cards.filter((c) => !results.some((r) => r.no === c.no) && cards.some((x) => x.no === c.no)), ...results].sort((a, b) => a.no - b.no);
-  fs.writeFileSync(path.join(aiBgDir(pdir), 'ai-bg.json'), `${JSON.stringify({ product_id: id, made_at: new Date().toISOString(), cards: merged }, null, 2)}\n`);
+  const productHex = extra.product_hex || prev.product_hex || null;
+  fs.writeFileSync(path.join(aiBgDir(pdir), 'ai-bg.json'), `${JSON.stringify({ product_id: id, made_at: new Date().toISOString(), product_hex: productHex, cards: merged }, null, 2)}\n`);
 }
 
 function rerender(id, log) {
