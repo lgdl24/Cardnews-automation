@@ -13,6 +13,7 @@ test('요청문: cards.json 문구를 그대로(줄 나눔 유지) 넣고, 제�
   assert.match(p, /- subtitle: 3중 기능성 워터풀 톤업 선크림\(퍼플\)/);
   assert.match(p, /THE PRODUCT IS LOCKED/);
   assert.match(p, /Do not write or run any code or scripts/);
+  assert.match(p, /no doctors, pharmacists or experts, no white coats/, '가상 전문가 이미지 금지 (개정 화장품법 제13조①4)');
   const c = buildPrompt('closing', { title: '매일 부담 없이', subtitle: '줄\n바꿈' });
   assert.doesNotMatch(c, /badge/);
   assert.match(c, /left 50% of the image/);

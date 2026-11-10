@@ -321,6 +321,17 @@ export async function studioFetch<T>(path: string, init: { method?: string; body
   return data as T;
 }
 
+/** 게시 전 점검 (GET /products/:id/precheck, scripts/lib/publish-check.js) */
+export type CheckStatus = 'pass' | 'warn' | 'fail' | 'todo';
+export interface PublishCheck {
+  product_id: string;
+  checked_at: string;
+  ready: boolean;
+  counts: Record<CheckStatus, number>;
+  checks: { id: string; label: string; status: CheckStatus; detail: string }[];
+}
+export const loadPublishCheck = (id: string) => studioFetch<PublishCheck>(`/products/${encodeURIComponent(id)}/precheck`);
+
 export const pngUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/png/${file}${v ? `?v=${v}` : ''}`;
 export const aiCardUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/ai-card/${file}${v ? `?v=${v}` : ''}`;
 export const figmaEditedUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/figma-edited/${file}${v ? `?v=${v}` : ''}`;

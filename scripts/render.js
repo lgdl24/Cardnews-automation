@@ -7,12 +7,13 @@
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
-const { paths, loadConfig, loadInput, createReport, printReport, requireProductId, designRecord } = require('./lib/common');
+const { paths, readJson, loadConfig, loadInput, createReport, printReport, requireProductId, designRecord } = require('./lib/common');
 const { validate } = require('./validate');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
 const { applyAiCards } = require('./lib/ai-cards');
+const { stampProduct } = require('./lib/ai-disclosure');
 const { BRAND_DESIGN, brandPalette, bgFiles } = require('./lib/brand');
 
 // 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
@@ -211,6 +212,15 @@ async function main() {
   // 무드 '브랜드'는 글자를 코드가 얹으므로(A안) GPT가 글자를 그린 AI 디자인 카드를 넣지 않음
   const ai = isBrand ? { applied: [] } : applyAiCards(paths.product(id), data.cards, { only: targets.map((c) => c.no) });
   if (ai.applied.length) console.log(`AI 디자인 카드 유지: ${ai.applied.join('·')}번`);
+  // AI 활용 표시(AI 기본법 제31조): 최종 PNG에 XMP 메타데이터. GPT 이미지가 들어간 카드(AI 디자인 카드·브랜드 배경)는 따로 표시
+  const stamped = stampProduct(paths.product(id), {
+    productId: id,
+    cards: data.cards,
+    imageCards: [...ai.applied, ...bgs.keys()],
+    skillVersion: readJson(paths.config('skill-version.json')).version,
+    only: targets.map((c) => c.no),
+  });
+  console.log(`AI 활용 표시(메타데이터): ${stamped.length}장`);
   printReport(`레이아웃 점검: ${id}`, report);
   if (log) {
     appendEvent(id, 'validate_result', resultFields('layout', report, {

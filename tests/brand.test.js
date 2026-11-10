@@ -95,6 +95,7 @@ test('배경 요청문: 무드 장면·색·글자 면 자리를 넣고 글자·
   assert.match(p, /No text, letters, numbers, logos/);
   assert.match(p, /No product, bottle/);
   assert.match(p, /No medical/);
+  assert.match(p, /no doctors, pharmacists or experts, no white coats/);
   assert.doesNotMatch(brand.bgPrompt(MOOD, 'description'), /upper-left area/);
 });
 

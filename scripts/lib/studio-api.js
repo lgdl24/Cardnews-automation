@@ -119,6 +119,8 @@ function createStudio({
   figmaAutoPush = process.env.CARDNEWS_FIGMA_PUSH !== 'off',
   figmaCode = crypto.randomBytes(3).toString('hex').toUpperCase(),
   figmaConfigFile = path.join(root, 'config', 'figma.json'),
+  // 게시 전 점검(준법·AI 표시, docs/proposals/ax-plan.md A4). 저장소 products/에서만 (검증이 저장소 경로를 씀, 테스트는 교체)
+  precheckFn = (id) => (productsDir === path.join(ROOT, 'products') ? require('../precheck').run(id) : null),
 } = {}) {
   const productDir = (id) => path.join(productsDir, id);
   const logFile = (id) => path.join(productDir(id), 'log.jsonl');
@@ -989,6 +991,11 @@ function createStudio({
         return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `피그마용 카드를 만들지 못했어요: ${(result.output || []).slice(-1).join('') || '스크립트 오류'}` }), figma_export: result, product: detail() });
       }
       // 카드 이미지 다시 만들기: 승인된 문구 그대로 HTML·PNG만 다시 출력 (Claude 안 씀, 제작 기록에 안 남김). 새 폴더·다른 컴퓨터는 output/이 git에 없어 필요
+      if (method === 'GET' && parts[2] === 'precheck' && parts.length === 3) {
+        const r = precheckFn(id);
+        if (!r) throw new HttpError(404, '게시 전 점검을 할 수 없어요');
+        return send(res, 200, r);
+      }
       if (method === 'POST' && parts[2] === 'render' && parts.length === 3) {
         if (!detail().actions.can_render) throw new HttpError(409, '문구를 만든 뒤, 작업이 없을 때 다시 출력할 수 있어요');
         const result = renderFn ? renderFn(id) : (() => {

@@ -4,8 +4,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import {
-  JOB_LABEL, STAGE_LABEL, aiBgUrl, aiCardUrl, brandShotUrl, describeProgress, figmaEditedUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
-  type ProductDetail, type Report, type RevisionType, type StudioJob,
+  JOB_LABEL, STAGE_LABEL, aiBgUrl, aiCardUrl, brandShotUrl, describeProgress, figmaEditedUrl, loadPublishCheck, pngUrl, studioFetch, usePolling, useStudioStatus,
+  type CheckStatus, type ProductDetail, type PublishCheck, type Report, type RevisionType, type StudioJob,
 } from '../../studio/api';
 import { useIndex } from '../../data/load';
 import { buildZip } from '../../lib/zip';
@@ -184,6 +184,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
               }}
             />
           )}
+          {p.pngs.length > 0 && <PublishCheckPanel id={id} version={`${p.stage}|${p.updated_at}|${p.events.length}`} />}
           {p.stage === 'approved' && <ExportPanel detail={p} busy={busy} onExport={() => act(`/products/${id}/export`)} />}
         </section>
       )}
@@ -864,6 +865,57 @@ function FigmaPanel({ detail, busy, onPrepare }: { detail: ProductDetail; busy: 
 }
 
 // ── 내보내기
+// ── 게시 전 점검: 광고 주의 표현(개정 화장품법 포함)·AI 활용 표시(AI 기본법)·출력·승인. 인스타 게시는 여기서 '게시 가능'일 때만
+const CHECK_MARK: Record<CheckStatus, { mark: string; word: string }> = {
+  pass: { mark: '✓', word: '통과' },
+  warn: { mark: '!', word: '사람 확인' },
+  fail: { mark: '✕', word: '고쳐야 함' },
+  todo: { mark: '…', word: '아직' },
+};
+function PublishCheckPanel({ id, version }: { id: string; version: string }) {
+  const [state, setState] = useState<{ data?: PublishCheck; error?: string; loading: boolean }>({ loading: true });
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    setState((s) => ({ ...s, loading: true }));
+    loadPublishCheck(id)
+      .then((data) => alive && setState({ data, loading: false }))
+      .catch((e: Error) => alive && setState({ error: e.message, loading: false }));
+    return () => {
+      alive = false;
+    };
+  }, [id, version, tick]);
+  const r = state.data;
+  return (
+    <div className="panel publish-check-panel">
+      <div className="panel-head">
+        <h3 className="panel-title">게시 전 점검</h3>
+        {r && <span className={`check-verdict ${r.ready ? 'is-ready' : 'is-wait'}`}>{r.ready ? '게시 가능' : '아직 게시할 수 없어요'}</span>}
+      </div>
+      <p className="muted">광고 주의 표현(개정 화장품법의 가상 전문가 추천 포함)과 AI 활용 표시(AI 기본법)를 자동으로 확인해요. ‘사람 확인’은 게시 전에 직접 봐 주세요.</p>
+      {state.error && <p className="notice notice-warn">{state.error}</p>}
+      {r && (
+        <ul className="check-list">
+          {r.checks.map((c) => (
+            <li key={c.id} className={`check-item check-${c.status}`}>
+              <span className="check-mark" aria-hidden>{CHECK_MARK[c.status].mark}</span>
+              <span className="check-label">{c.label}</span>
+              <span className="check-word">{CHECK_MARK[c.status].word}</span>
+              <span className="check-detail">{c.detail}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="action-bar">
+        <button className="btn" disabled={state.loading} onClick={() => setTick((t) => t + 1)}>
+          {state.loading ? '점검 중…' : '다시 점검'}
+        </button>
+        {r && <span className="muted">점검 {formatDateTime(r.checked_at)}</span>}
+      </div>
+    </div>
+  );
+}
+
 function ExportPanel({ detail, busy, onExport }: { detail: ProductDetail; busy: boolean; onExport: () => void }) {
   const done = Boolean(detail.export.exported_at);
   return (

@@ -747,3 +747,35 @@
 .materials-fill .action-bar {
   flex-wrap: wrap;
 }
+
+/* 게시 전 점검 */
+.publish-check-panel .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.check-verdict { font-size: 0.82rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.check-verdict.is-ready { color: var(--stage-approved-fg, #25714d); background: var(--stage-approved-bg, #e8f5ee); }
+.check-verdict.is-wait { color: var(--color-muted); background: var(--color-surface-2, rgba(127, 127, 127, 0.12)); }
+.check-list { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; }
+.check-item {
+  display: grid;
+  grid-template-columns: 22px minmax(90px, 140px) 72px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.88rem;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.check-mark { font-weight: 800; text-align: center; }
+.check-label { font-weight: 600; }
+.check-word { font-size: 0.8rem; font-weight: 700; }
+.check-detail { color: var(--color-muted); overflow-wrap: anywhere; }
+.check-pass .check-mark, .check-pass .check-word { color: var(--stage-approved-fg, #25714d); }
+.check-warn { background: color-mix(in srgb, #b7791f 10%, transparent); }
+.check-warn .check-mark, .check-warn .check-word { color: #8a5a10; }
+.check-fail { background: color-mix(in srgb, #c03945 10%, transparent); }
+.check-fail .check-mark, .check-fail .check-word { color: #c03945; }
+.check-todo .check-mark, .check-todo .check-word { color: var(--color-muted); }
+:root[data-theme='dark'] .check-warn .check-mark, :root[data-theme='dark'] .check-warn .check-word { color: #efc57c; }
+:root[data-theme='dark'] .check-fail .check-mark, :root[data-theme='dark'] .check-fail .check-word { color: #ff9ba6; }
+@media (max-width: 640px) {
+  .check-item { grid-template-columns: 22px 1fr auto; }
+  .check-detail { grid-column: 2 / -1; }
+}
