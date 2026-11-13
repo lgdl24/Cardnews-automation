@@ -5,7 +5,7 @@ const { paths, readJson } = require('./common');
 
 const EVENTS = [
   'input_submitted', 'job_started', 'job_finished', 'validate_result',
-  'plan_approved', 'final_approved', 'revision_requested', 'design_selected',
+  'plan_approved', 'final_approved', 'revision_requested', 'design_selected', 'published',
 ];
 const JOB_KINDS = ['plan', 'copy', 'revise'];
 

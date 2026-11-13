@@ -44,9 +44,13 @@ test('승인·검증·출력·표시가 모두 되면 캡션만 남고, 캡션�
     const r = publishCheck({ productDir: s.dir, data: s.data, validation: { errors: [] }, caution });
     assert.deepEqual(status(r), { approved: 'pass', validate: 'pass', render: 'pass', caution: 'pass', ai_label: 'pass', ai_image: 'pass', caption: 'todo' });
     assert.equal(r.ready, false);
-    const ok = publishCheck({ productDir: s.dir, data: { ...s.data, caption: { text: '가벼운 수분 크림 #AI활용' } }, validation: { errors: [] }, caution });
+    const ok = publishCheck({ productDir: s.dir, data: { ...s.data, caption: { text: 'AI 활용 · 가벼운 수분 크림' } }, validation: { errors: [] }, caution });
     assert.equal(ok.ready, true);
-    const noLabel = publishCheck({ productDir: s.dir, data: { ...s.data, caption: { text: '가벼운 수분 크림' } }, validation: { errors: [] }, caution });
+    const noLabel = publishCheck({ productDir: s.dir, data: { ...s.data, caption: { text: '가벼운 수분 크림\n#AI활용' } }, validation: { errors: [] }, caution });
+    // ig prepare가 만든 캡션 파일도 읽음
+    fs.mkdirSync(path.join(s.dir, 'output', 'instagram'));
+    fs.writeFileSync(path.join(s.dir, 'output', 'instagram', 'caption.txt'), '🤖 AI를 활용해 제작한 카드뉴스예요\n본문');
+    assert.equal(publishCheck({ productDir: s.dir, data: s.data, validation: { errors: [] }, caution }).ready, true);
     assert.equal(status(noLabel).caption, 'fail');
   } finally {
     s.cleanup();

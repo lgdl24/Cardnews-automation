@@ -149,4 +149,53 @@ function stampProduct(productDir, { productId = path.basename(productDir), cards
   return done;
 }
 
-module.exports = { SOURCE_TYPE, XMP_KEY, buildXmp, withXmp, stripXmp, readXmp, readDisclosure, samePng, stampProduct, describe };
+// ── JPEG (인스타 게시용): XMP는 APP1 'http://ns.adobe.com/xap/1.0/\0' 세그먼트
+const JPEG_XMP_NS = Buffer.from('http://ns.adobe.com/xap/1.0/\0', 'latin1');
+
+function jpegSegments(buf) {
+  if (buf[0] !== 0xff || buf[1] !== 0xd8) throw new Error('JPEG가 아니에요');
+  const segs = [];
+  let i = 2;
+  while (i + 4 <= buf.length && buf[i] === 0xff) {
+    const marker = buf[i + 1];
+    if (marker === 0xda) break; // 이미지 데이터 시작(SOS) 이후는 그대로
+    const len = buf.readUInt16BE(i + 2);
+    segs.push({ marker, start: i, end: i + 2 + len });
+    i += 2 + len;
+  }
+  return { segs, rest: i };
+}
+const isJpegXmp = (buf, s) => s.marker === 0xe1 && buf.subarray(s.start + 4, s.start + 4 + JPEG_XMP_NS.length).equals(JPEG_XMP_NS);
+
+/** XMP를 넣은(바꿔 끼운) JPEG. APP0(JFIF) 뒤, 없으면 SOI 바로 뒤 */
+function withXmpJpeg(buf, xmp) {
+  const { segs, rest } = jpegSegments(buf);
+  const body = Buffer.concat([JPEG_XMP_NS, Buffer.from(xmp, 'utf8')]);
+  if (body.length + 2 > 0xffff) throw new Error('XMP가 너무 커요');
+  const head = Buffer.alloc(4);
+  head[0] = 0xff;
+  head[1] = 0xe1;
+  head.writeUInt16BE(body.length + 2, 2);
+  const app1 = Buffer.concat([head, body]);
+  const kept = segs.filter((s) => !isJpegXmp(buf, s));
+  const out = [buf.subarray(0, 2)];
+  let placed = false;
+  for (const s of kept) {
+    if (!placed && s.marker !== 0xe0) {
+      out.push(app1);
+      placed = true;
+    }
+    out.push(buf.subarray(s.start, s.end));
+  }
+  if (!placed) out.push(app1);
+  out.push(buf.subarray(rest));
+  return Buffer.concat(out);
+}
+
+function readXmpJpeg(buf) {
+  const { segs } = jpegSegments(buf);
+  const s = segs.find((x) => isJpegXmp(buf, x));
+  return s ? buf.subarray(s.start + 4 + JPEG_XMP_NS.length, s.end).toString('utf8') : null;
+}
+
+module.exports = { SOURCE_TYPE, XMP_KEY, buildXmp, withXmp, stripXmp, readXmp, readDisclosure, samePng, stampProduct, describe, withXmpJpeg, readXmpJpeg };

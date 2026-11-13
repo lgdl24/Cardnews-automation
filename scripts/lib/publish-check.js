@@ -42,6 +42,9 @@ function latestRender(outDir) {
  * @param {string} o.sourceText 원문(input.md) 글
  */
 function publishCheck({ productDir, data, validation, caution, sourceText = '' }) {
+  // 게시 캡션: npm run ig -- prepare 가 만든 output/instagram/caption.txt (cards.json에 caption이 있으면 그것)
+  const captionFile = path.join(productDir, 'output', 'instagram', 'caption.txt');
+  const captionText = data.caption?.text ?? (fs.existsSync(captionFile) ? fs.readFileSync(captionFile, 'utf8') : null);
   const checks = [];
   const add = (id, label, status, detail, extra = {}) => checks.push({ id, label, status, detail, ...extra });
   const cards = data.cards || [];
@@ -99,10 +102,9 @@ function publishCheck({ productDir, data, validation, caution, sourceText = '' }
     );
 
   // 7) 게시 캡션 (B1에서 만듦)
-  const caption = data.caption;
-  if (!caption) add('caption', '게시 캡션', 'todo', '캡션이 아직 없어요 (인스타 게시 단계에서 만들어요)');
-  else if (!/AI/.test(caption.text || '')) add('caption', '게시 캡션', 'fail', "캡션에 'AI 활용' 표시 문구가 없어요");
-  else add('caption', '게시 캡션', 'pass', '캡션과 AI 활용 표시 문구가 있어요');
+  if (!captionText) add('caption', '게시 캡션', 'todo', '캡션이 아직 없어요 (npm run ig -- prepare 로 만들어요)');
+  else if (!/AI/.test(captionText.split('\n')[0] || '')) add('caption', '게시 캡션', 'fail', "캡션 첫 줄에 'AI 활용' 표시 문구가 없어요");
+  else add('caption', '게시 캡션', 'pass', `캡션 ${captionText.trim().length}자, 첫 줄에 AI 활용 표시`);
 
   const ready = !checks.some((c) => c.status === 'fail' || c.status === 'todo');
   return { ready, counts: Object.fromEntries(['pass', 'warn', 'fail', 'todo'].map((s) => [s, checks.filter((c) => c.status === s).length])), checks };
