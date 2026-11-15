@@ -10,6 +10,8 @@ export type JobKind = 'plan' | 'copy' | 'revise';
 
 export interface FormField {
   key: string;
+  /** 화면에 보일 이름 (없으면 key). 예: 주요 특징 → 제품 설명·주요 특징 */
+  label?: string;
   required: boolean;
   type: 'text' | 'paragraph' | 'list' | 'images' | 'number' | 'choice' | 'url';
   guide: string;
@@ -20,6 +22,8 @@ export interface FormField {
   options?: string[];
   min?: number;
   max?: number;
+  /** 새 제작 화면에 미리 채울 값 (카드 수 5) */
+  default?: string | number;
 }
 export interface FormDef {
   groups: { title: string; source: boolean; fields: FormField[] }[];

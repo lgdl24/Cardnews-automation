@@ -1,18 +1,14 @@
 {
   "_comment": "입력 양식(input.md) 항목 정의. check-input(필수 항목 검사), new-product(빈 양식 만들기), 웹 입력 폼(W3)이 모두 이 파일을 기준으로 합니다. 항목을 바꾸면 docs/input-form.md도 함께 고치고 npm test로 확인합니다.",
-  "version": "1.4",
+  "version": "1.6",
   "groups": [
     {
       "title": "제품 정보",
       "source": true,
       "fields": [
         { "key": "제품명", "required": true, "type": "text", "guide": "예: 데일리 톤업 선크림" },
-        { "key": "브랜드", "required": false, "type": "text", "guide": "" },
-        { "key": "카테고리", "required": false, "type": "text", "guide": "예: 선케어" },
-        { "key": "제품 설명", "required": true, "type": "paragraph", "guide": "제품 소개 문단을 그대로 붙여 넣습니다." },
-        { "key": "주요 특징", "required": true, "type": "list", "guide": "한 줄에 하나씩", "example": ["특징 1", "특징 2"] },
+        { "key": "주요 특징", "label": "제품 설명·주요 특징", "required": true, "type": "list", "guide": "제품 소개 문장과 특징을 한 줄에 하나씩, 자료 문장 그대로 (예전 '제품 설명' 칸을 합침)", "example": ["가벼운 보습 마무리 젤크림 콘셉트예요", "특징 1"] },
         { "key": "사용 방법", "required": true, "type": "paragraph", "guide": "" },
-        { "key": "주의사항", "required": false, "type": "paragraph", "guide": "제품에 표기된 사용상 주의사항" },
         {
           "key": "이미지",
           "required": true,
@@ -29,11 +25,8 @@
       "source": false,
       "fields": [
         { "key": "콘텐츠 목적", "required": true, "type": "text", "guide": "예: 신제품 소개, 사용법 안내" },
-        { "key": "강조 정보", "required": false, "type": "text", "guide": "꼭 들어가야 할 정보" },
-        { "key": "카드 수", "required": true, "type": "number", "guide": "숫자만. 예: 5", "min": 3, "max": 8 },
-        { "key": "카드 색", "required": false, "type": "choice", "options": ["기본", "제품 색"], "guide": "기본 또는 제품 색. 비우면 무드의 기본 색을 써요 (기본은 기본 색, 프리미엄은 제품 색)" },
-        { "key": "무드", "required": false, "type": "choice", "options": ["기본", "프리미엄", "타이포", "팝", "연출", "브랜드", "자동 추천"], "guide": "기본·프리미엄·타이포·팝·연출·브랜드 또는 자동 추천. 비우면 기본(브랜드 URL을 적었으면 브랜드). 프리미엄은 큰 제품 사진·분할 배치·가는 선, 타이포는 아주 큰 제목, 팝은 색면·큰 원, 연출은 위쪽 연출 띠, 브랜드는 브랜드 상세페이지 색과 GPT 배경. 자동 추천이면 구성안 작업에서 Claude가 묶음 목록 중 하나를 고르고 이유를 남겨요(구성안 확인 때 바꿀 수 있음)" },
-        { "key": "브랜드 URL", "required": false, "type": "url", "guide": "브랜드 공식몰의 제품 상세페이지 주소(https://…). 구성안 작업 전에 페이지를 한 번 캡처해 브랜드 색·분위기만 읽어요. 페이지 글은 카드 문구에 쓰지 않아요. 적으면 무드를 비웠을 때 브랜드로 만들어요" }
+        { "key": "카드 수", "required": true, "type": "number", "guide": "숫자만. 예: 5", "min": 3, "max": 8, "default": 5 },
+        { "key": "브랜드 URL", "required": false, "type": "url", "guide": "브랜드 공식몰의 제품 상세페이지 주소(https://…). 구성안 작업 전에 페이지를 한 번 캡처해 브랜드 색·분위기만 읽고, GPT가 그 무드로 카드 배경을 만들어요. 페이지 글은 카드 문구에 쓰지 않아요" }
       ]
     }
   ]
