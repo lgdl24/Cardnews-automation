@@ -18,6 +18,8 @@ const { loadForm, renderInputMd } = require('./input-form');
 const { summarize } = require('./analysis');
 const jobRunner = require('./job-runner');
 const { compact: compactCard } = require('../figma-export');
+const { createPublisher } = require('./ig-publisher');
+const igDeps = require('./ig-publish-deps');
 
 const API = '/api/studio';
 const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -119,9 +121,14 @@ function createStudio({
   figmaAutoPush = process.env.CARDNEWS_FIGMA_PUSH !== 'off',
   figmaCode = crypto.randomBytes(3).toString('hex').toUpperCase(),
   figmaConfigFile = path.join(root, 'config', 'figma.json'),
-  // 게시 전 점검(준법·AI 표시, docs/proposals/ax-plan.md A4). 저장소 products/에서만 (검증이 저장소 경로를 씀, 테스트는 교체)
-  precheckFn = (id) => (productsDir === path.join(ROOT, 'products') ? require('../precheck').run(id) : null),
+  // 게시 전 점검(준법·AI 표시, docs/proposals/ax-plan.md A4): 별도 프로세스로 이 제품 폴더 기준 (테스트는 교체)
+  precheckFn,
+  // 인스타 게시(B5, #104): 게시 관리자. 테스트는 가짜 인스타 API·JPEG·공개 주소를 넣은 것을 줌
+  publisher: publisherIn,
+  // 예약 게시 확인(30초마다). CARDNEWS_IG_SCHEDULE=off 로 끔 (테스트는 직접 tick)
+  igSchedule = process.env.CARDNEWS_IG_SCHEDULE !== 'off',
 } = {}) {
+  precheckFn = precheckFn || igDeps.precheckIn(root, productsDir);
   const productDir = (id) => path.join(productsDir, id);
   const logFile = (id) => path.join(productDir(id), 'log.jsonl');
   let current = null; // { product_id, kind, job_id, status: 'running'|'done', started_at, progress: [], summary }
@@ -167,6 +174,21 @@ function createStudio({
     fs.appendFileSync(logFile(id), JSON.stringify(entry) + '\n');
     return entry;
   };
+  const listIds = () => (fs.existsSync(productsDir)
+    ? fs.readdirSync(productsDir).filter((d) => ID_RE.test(d) && fs.existsSync(path.join(productDir(d), 'input.md')))
+    : []);
+  const publisher = publisherIn || createPublisher({
+    productsDir,
+    appendEvent,
+    precheck: (id) => precheckFn(id),
+    client: igDeps.client,
+    configured: igDeps.configured,
+    toJpegs: igDeps.toJpegs,
+    openPublicUrls: igDeps.openPublicUrls,
+  });
+  // 작업실을 다시 켜면: 진행 중이던 게시는 이어 하지 않고 상태를 정리, 예약은 파일에서 그대로 이어감
+  publisher.recover(listIds());
+  if (igSchedule) publisher.startTimer(listIds);
 
   // 같은 파일이면 다시 검사하지 않음 (진행 중 화면이 자주 새로 고침)
   const cache = new Map();
@@ -248,6 +270,7 @@ function createStudio({
       thumb: pngFiles.length ? { file: pngFiles[0], v: Math.round(fs.statSync(path.join(pngDir, pngFiles[0])).mtimeMs) } : null,
       png_count: pngFiles.length,
       last_job: lastFinish ? { kind: lastFinish.kind || null, ok: Boolean(lastFinish.ok), error_code: lastFinish.error_code || null, ts: lastFinish.ts } : null,
+      instagram: publisher.summary(id),
     };
   }
 
@@ -825,11 +848,12 @@ function createStudio({
       return send(res, 200, { ok: true, mode: 'web', claude: claudeStatus(), job: current ? publicJob(current) : null, jobs: jobsOverview(), form: loadForm(), revision_types: readJson(path.join(root, 'config', 'revision-types.json')).types.map(({ code, label, example }) => ({ code, label, example })) });
     }
     if (method === 'GET' && parts[0] === 'products' && parts.length === 1) {
-      const ids = fs.existsSync(productsDir)
-        ? fs.readdirSync(productsDir).filter((d) => ID_RE.test(d) && fs.existsSync(path.join(productDir(d), 'input.md')))
-        : [];
-      const list = ids.map(productSummary).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+      const list = listIds().map(productSummary).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
       return send(res, 200, { products: list });
+    }
+    // 인스타 연결 계정 (이름·24시간 한도만, 토큰은 보내지 않음)
+    if (method === 'GET' && parts[0] === 'instagram' && parts[1] === 'account' && parts.length === 2) {
+      return send(res, 200, await publisher.account({ refresh: url.searchParams.get('refresh') === '1' }));
     }
     // 자료(PDF·이미지·글)로 입력 칸 채우기: 초안만 돌려주고 저장하지 않음 (사람이 확인한 뒤 제품 만들기)
     if (method === 'POST' && parts[0] === 'extract' && parts.length === 1) {
@@ -999,6 +1023,32 @@ function createStudio({
         return send(res, result.ok ? 200 : 422, { ...(result.ok ? {} : { error: `피그마용 카드를 만들지 못했어요: ${(result.output || []).slice(-1).join('') || '스크립트 오류'}` }), figma_export: result, product: detail() });
       }
       // 카드 이미지 다시 만들기: 승인된 문구 그대로 HTML·PNG만 다시 출력 (Claude 안 씀, 제작 기록에 안 남김). 새 폴더·다른 컴퓨터는 output/이 git에 없어 필요
+      // 인스타 게시 (B5, #104): 상태·미리보기 / 사람 확인 / 지금 게시 / 예약·취소 / 게시 여부 확인
+      if (parts[2] === 'instagram') {
+        const sub = parts[3] || '';
+        if (method === 'GET' && parts.length === 3) return send(res, 200, publisher.status(id, { refresh: url.searchParams.get('refresh') === '1' }));
+        if (parts.length !== 4) throw new HttpError(404, '없는 API예요');
+        if (method === 'POST' && sub === 'ack') return send(res, 200, publisher.acknowledge(id, await readBody(req)));
+        if (method === 'POST' && sub === 'publish') {
+          const body = await readBody(req);
+          const { request } = publisher.start(id, { version: body.version, trigger: 'manual' });
+          return send(res, 202, { request, instagram: publisher.status(id) });
+        }
+        if (method === 'POST' && sub === 'schedule') {
+          const body = await readBody(req);
+          return send(res, 200, publisher.schedule(id, { version: body.version, at: body.at }));
+        }
+        if (method === 'DELETE' && sub === 'schedule') return send(res, 200, publisher.cancelSchedule(id));
+        if (method === 'POST' && sub === 'verify') {
+          try {
+            return send(res, 200, await publisher.verify(id));
+          } catch (e) {
+            if (e.status) throw e;
+            throw new HttpError(502, `인스타에서 확인하지 못했어요: ${e.message}`);
+          }
+        }
+        throw new HttpError(404, '없는 API예요');
+      }
       if (method === 'GET' && parts[2] === 'precheck' && parts.length === 3) {
         const r = precheckFn(id);
         if (!r) throw new HttpError(404, '게시 전 점검을 할 수 없어요');
@@ -1067,7 +1117,7 @@ function createStudio({
     return true;
   }
 
-  return { handle, figmaCode, state: () => ({ current, queue: queue.map(({ beforeStart, ...q }) => q), claude: claudeInfo }) };
+  return { handle, figmaCode, publisher, state: () => ({ current, queue: queue.map(({ beforeStart, ...q }) => q), claude: claudeInfo }) };
 }
 
 function readJsonSafeStr(s) {
