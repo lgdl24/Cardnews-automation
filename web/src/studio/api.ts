@@ -107,6 +107,13 @@ export interface ProductSummary {
   running: boolean;
   queued?: boolean;
   queue_position?: number | null;
+  /** 카드 수 (cards.json이 있을 때) */
+  card_count?: number | null;
+  /** 대표 카드: 출력된 첫 PNG (없으면 null) */
+  thumb?: { file: string; v: number } | null;
+  png_count?: number;
+  /** 마지막으로 끝난 작업 (job_finished 기록) */
+  last_job?: { kind: JobKind | null; ok: boolean; error_code: string | null; ts: string } | null;
 }
 export interface StudioCard {
   no: number;
@@ -368,7 +375,12 @@ export function usePolling<T>(load: () => Promise<T>, deps: unknown[], intervalM
         const next = intervalMs(d);
         if (next) timer = setTimeout(() => setTick((t) => t + 1), next);
       },
-      (e: Error) => alive && setError(e),
+      (e: Error) => {
+        if (!alive) return;
+        setError(e);
+        // 연결이 끊겨도 마지막 화면은 두고 5초 뒤 다시 확인 (작업실 서버 재시작·잠깐 끊김)
+        if (!(e instanceof StudioError && e.status === 404)) timer = setTimeout(() => setTick((t) => t + 1), 5000);
+      },
     );
     return () => {
       alive = false;
