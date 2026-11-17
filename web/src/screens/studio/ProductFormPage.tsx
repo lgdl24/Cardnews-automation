@@ -1,9 +1,12 @@
 // S2 새 제작 · 입력 고치기 (웹 모드) — 담당 이규동
 // 입력 폼은 config/input-form.json 정의로 그림 → 저장하면 서버가 products/<제품ID>/input.md를 만들고 입력 확인
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+// 입력 부담 줄이기: 필수 먼저, 선택 글 항목은 접기 · 제출 때 오류 요약 · 글 입력은 브라우저에 임시 저장(이미지 제외)
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useBlocker } from 'react-router';
 import { studioFetch, useStudioStatus, imageUrl, type ExtractResult, type FormDef, type FormField, type ProductDetail } from '../../studio/api';
 import { ErrorState, Loading } from '../../components/StateView';
+import { Icon } from '../../components/Icon';
+import { formatDateTime } from '../../data/format';
 import { StudioOff } from './StudioCommon';
 import './studio.css';
 
@@ -18,6 +21,7 @@ interface ImageRow {
 }
 
 type Values = Record<string, string>;
+interface Draft { productId: string; values: Values; saved_at: string }
 
 export function ProductFormPage() {
   const { status } = useStudioStatus();
@@ -27,22 +31,34 @@ export function ProductFormPage() {
   return <ProductForm key={id ?? 'new'} form={status.form} editId={id} />;
 }
 
+const draftKey = (editId?: string) => `cardnews-draft:${editId ?? 'new'}`;
+function readDraft(key: string): Draft | null {
+  try { const raw = localStorage.getItem(key); return raw ? (JSON.parse(raw) as Draft) : null; } catch { return null; }
+}
+const filled = (v: string | undefined) => Boolean(v && v.trim());
+
 function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
   const navigate = useNavigate();
   const fields = useMemo(() => form.groups.flatMap((g) => g.fields), [form]);
   const imageField = fields.find((f) => f.type === 'images');
+  // 기본값: 필수 선택 칸은 첫 값, 양식에 default가 있으면(카드 수 5) 미리 채움
+  const defaults = useMemo<Values>(() => Object.fromEntries([
+    ...fields.filter((f) => f.type === 'choice' && f.required && f.options?.length).map((f) => [f.key, f.options![0]!]),
+    ...fields.filter((f) => f.default !== undefined).map((f) => [f.key, String(f.default)]),
+  ]), [fields]);
   const [productId, setProductId] = useState(editId ?? '');
-  const [values, setValues] = useState<Values>(() => Object.fromEntries([
-    ...fields.filter(f => f.type === 'choice' && f.required && f.options?.length).map(f => [f.key, f.options![0]!]),
-    // 양식에 기본값이 있으면(카드 수 5) 미리 채움
-    ...fields.filter(f => f.default !== undefined).map(f => [f.key, String(f.default)]),
-  ]));
+  const [values, setValues] = useState<Values>(defaults);
   const [images, setImages] = useState<ImageRow[]>([]);
   const [loading, setLoading] = useState(Boolean(editId));
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [problems, setProblems] = useState<{ id: string; text: string }[]>([]);
+  const [submitted, setSubmitted] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [draft, setDraft] = useState<Draft | null>(() => readDraft(draftKey(editId)));
+  const summaryRef = useRef<HTMLDivElement>(null);
+
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && !saving && currentLocation.pathname !== nextLocation.pathname);
   useEffect(() => {
     if (!dirty || saving) return;
@@ -50,6 +66,15 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty, saving]);
+
+  // 글 입력 임시 저장 (이 브라우저에만, 이미지 제외): 고친 뒤 0.6초 쉬면 저장
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(draftKey(editId), JSON.stringify({ productId, values, saved_at: new Date().toISOString() } satisfies Draft)); } catch { /* 저장소를 못 쓰면 건너뜀 */ }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [dirty, productId, values, editId]);
 
   // 입력 고치기: 기존 값 불러오기
   useEffect(() => {
@@ -69,17 +94,17 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
     );
   }, [editId]);
 
-  const set = (key: string, v: string) => setValues((prev) => ({ ...prev, [key]: v }));
+  const set = (key: string, v: string) => { setValues((prev) => ({ ...prev, [key]: v })); setDirty(true); };
 
   const addFiles = async (files: FileList | null) => {
     if (!files) return;
     try {
       const selected = [...files];
-      if (selected.some(f => !['image/png', 'image/jpeg'].includes(f.type) || f.size > 10 * 1024 * 1024)) throw new Error('PNG 또는 JPG 이미지, 파일당 10MB 이하로 선택해주세요.');
-      const names = [...images.map(i => i.file), ...selected.map(f => safeName(f.name))];
+      if (selected.some((f) => !['image/png', 'image/jpeg'].includes(f.type) || f.size > 10 * 1024 * 1024)) throw new Error('PNG 또는 JPG 이미지, 파일당 10MB 이하로 선택해주세요.');
+      const names = [...images.map((i) => i.file), ...selected.map((f) => safeName(f.name))];
       if (new Set(names).size !== names.length) throw new Error('같은 이름의 이미지가 있어요. 파일 이름을 바꾼 뒤 다시 추가해주세요.');
       const rows = await Promise.all(
-        [...files].map(
+        selected.map(
           (f) =>
             new Promise<ImageRow>((resolve, reject) => {
               const reader = new FileReader();
@@ -93,13 +118,34 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
         ),
       );
       setImages((prev) => [...prev, ...rows]);
+      setDirty(true);
       setError(null);
     } catch (err) { setError((err as Error).message); }
   };
 
-  const submit = async (e: FormEvent) => {
+  // 제출 전 확인: 브라우저 검사 결과를 화면 위 요약과 필드 표시로 바꿔 보여줌
+  const collectProblems = (formEl: HTMLFormElement) => {
+    const list: { id: string; text: string }[] = [];
+    for (const el of Array.from(formEl.elements) as (HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement)[]) {
+      if (!('willValidate' in el) || !el.willValidate || el.validity.valid) continue;
+      const name = el.getAttribute('aria-label') || el.closest('.field')?.querySelector('.field-label-text')?.textContent || el.name || '항목';
+      const why = el.validity.valueMissing ? '입력이 필요해요' : el.validity.patternMismatch ? '형식이 맞지 않아요' : el.validity.typeMismatch ? '주소 형식이 맞지 않아요' : el.validity.rangeOverflow || el.validity.rangeUnderflow ? '허용 범위를 벗어났어요' : el.validationMessage;
+      if (el.id) list.push({ id: el.id, text: `${name}: ${why}` });
+    }
+    if (imageField?.required && images.length === 0) list.push({ id: 'image-add', text: `${imageField.label ?? imageField.key}: 한 장 이상 추가해 주세요` });
+    return list;
+  };
+
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setSubmitted(true);
+    const found = collectProblems(e.currentTarget);
+    setProblems(found);
+    if (found.length) {
+      requestAnimationFrame(() => summaryRef.current?.focus());
+      return;
+    }
     setSaving(true);
     const body = {
       id: productId,
@@ -112,6 +158,7 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
       const d = editId
         ? await studioFetch<ProductDetail>(`/products/${editId}/input`, { method: 'PUT', body })
         : await studioFetch<ProductDetail>('/products', { method: 'POST', body });
+      try { localStorage.removeItem(draftKey(editId)); } catch { /* 무시 */ }
       navigate(`/studio/${d.id}`);
     } catch (err) {
       setError((err as Error).message);
@@ -120,89 +167,150 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
     }
   };
 
-  // 화면 순서: 01 자료·브랜드(브랜드 URL·제품 사진) → 02 채운 내용 확인(제품 정보·콘텐츠 목적·강조 정보) → 03 제작 조건(나머지)
+  // 화면 순서 (#92 입력 간소화 v1.6): 01 자료·브랜드(제품ID·자료로 채우기·브랜드 URL·제품 사진)
+  // → 02 채운 내용 확인(제품 정보·콘텐츠 목적) → 03 제작 조건(나머지)
   const SOURCE_KEYS = ['브랜드 URL'];
   const REVIEW_COND_KEYS = ['콘텐츠 목적'];
   const sourceGroup = form.groups.find((g) => g.source);
   const sourceFields = fields.filter((f) => SOURCE_KEYS.includes(f.key) || f.type === 'images');
   const reviewFields = [...(sourceGroup?.fields ?? []).filter((f) => f.type !== 'images'), ...fields.filter((f) => REVIEW_COND_KEYS.includes(f.key))];
   const condFields = fields.filter((f) => !sourceFields.includes(f) && !reviewFields.includes(f));
-  const renderField = (f: FormField) => (f.type === 'images'
-    ? <ImagesField key={f.key} field={f} images={images} setImages={setImages} addFiles={addFiles} />
-    : <Field key={f.key} field={f} value={values[f.key] ?? ''} onChange={(v) => set(f.key, v)} />);
 
   if (loading) return <div className="page"><Loading /></div>;
   if (loadError) return <div className="page"><ErrorState error={loadError} /></div>;
 
+  const done = (f: FormField) => (f.type === 'images' ? images.length > 0 : filled(values[f.key]));
+  const steps = [
+    { id: 'step-source', title: '01 자료·브랜드', fields: sourceFields, extra: 1, extraDone: filled(productId) ? 1 : 0 },
+    { id: 'step-review', title: '02 채운 내용 확인', fields: reviewFields, extra: 0, extraDone: 0 },
+    { id: 'step-cond', title: '03 제작 조건', fields: condFields, extra: 0, extraDone: 0 },
+  ];
+  const progress = (s: (typeof steps)[number]) => {
+    const req = s.fields.filter((f) => f.required);
+    return { done: req.filter(done).length + s.extraDone, total: req.length + s.extra };
+  };
+  const requiredDone = steps.reduce((n, s) => n + progress(s).done, 0);
+  const requiredTotal = steps.reduce((n, s) => n + progress(s).total, 0);
+
+  const renderField = (f: FormField) => (f.type === 'images'
+    ? <ImagesField key={f.key} field={f} images={images} setImages={(fn) => { setImages(fn); setDirty(true); }} addFiles={addFiles} submitted={submitted} />
+    : <Field key={f.key} field={f} value={values[f.key] ?? ''} onChange={(v) => set(f.key, v)} />);
+  // 필수·선택지·이미지는 바로 보이고, 나머지 선택 글 칸은 접음(채워져 있으면 펼침)
+  const renderStep = (list: FormField[]) => {
+    const main = list.filter((f) => f.required || f.type === 'choice' || f.type === 'images');
+    const extra = list.filter((f) => !main.includes(f));
+    return (
+      <>
+        {main.map(renderField)}
+        {extra.length > 0 && (
+          <details className="optional-fields" open={extra.some((f) => filled(values[f.key]))}>
+            <summary>선택 항목 {extra.length}개 <span className="muted">· {extra.map((f) => f.label ?? f.key).join(', ')}</span></summary>
+            <div>{extra.map(renderField)}</div>
+          </details>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="page page-narrow">
-      <Link to={editId ? `/studio/${editId}` : '/studio'} className="back-link">
-        ← {editId ? '제작으로 돌아가기' : '작업실'}
-      </Link>
+      <Link to={editId ? `/studio/${editId}` : '/studio'} className="back-link"><Icon name="back" size={16} /> {editId ? '제작으로 돌아가기' : '작업실'}</Link>
       <h1 className="page-title">{editId ? '입력 고치기' : '새 제작'}</h1>
-      <p className="page-desc">제품 정보는 카드 문구의 원문이 돼요. 원문에 없는 효능·수치는 카드에 쓰지 않아요.</p>
+      <p className="page-desc">자료(PDF·이미지·글)나 공식몰 주소와 제품 사진만 넣으면 나머지 칸은 자동으로 채워요. 제품 정보는 카드 문구의 원문이 되고, 원문에 없는 효능·수치는 카드에 쓰지 않아요. 저장만으로 생성 작업이 시작되지는 않아요.</p>
 
-      <nav className="form-outline" aria-label="입력 단계"><a href="#step-source">01 자료·브랜드</a><a href="#step-review">02 채운 내용 확인</a><a href="#step-cond">03 제작 조건</a></nav>
-      <p className="page-desc">자료(PDF·이미지·글)나 공식몰 주소와 제품 사진만 넣으면 나머지 칸은 자동으로 채워요. 저장 → 구성안 만들기(브랜드 무드 읽기) → 구성안 승인 → 문구·GPT 배경 → 카드 검토 순서로 진행돼요. 저장만으로 생성 작업이 시작되지는 않아요.</p>
-      <form className="studio-form" onSubmit={submit} onChangeCapture={() => setDirty(true)}>
-        {/* 01 사람이 넣는 것: 자료·공식몰 주소·제품 사진 (+ 제품ID) */}
-        <fieldset className="form-group" id="step-source">
-          <legend>01 자료·브랜드</legend>
-          <label className="field" id="product-id">
-            <span className="field-label">
-              제품ID <em>필수</em>
-            </span>
-            <input
-              title="영문 소문자·숫자·하이픈으로 입력해 주세요"
-              value={productId}
-              onChange={(e) => setProductId(e.target.value.toLowerCase())}
-              pattern="[a-z0-9]+(-[a-z0-9]+)*"
-              placeholder="예: toneup-sunscreen"
-              required
-              disabled={Boolean(editId)}
-              autoComplete="off"
-            />
-            <span className="field-guide">영문 소문자·숫자·하이픈을 사용해 주세요. 나중에 같은 제품을 찾는 고유 이름이에요.</span>
-          </label>
-          {!editId && (
-            <MaterialsFill
-              fields={fields}
-              onFill={(v) => { setValues((prev) => ({ ...prev, ...v })); setDirty(true); }}
-              onAddImages={(files) => addFiles(files)}
-            />
-          )}
-          {sourceFields.map(renderField)}
-        </fieldset>
-
-        {/* 02 자동으로 채운 내용 확인: 제품 정보는 카드 문구의 원문이 됨 */}
-        <fieldset className="form-group" id="step-review">
-          <legend>02 채운 내용 확인</legend>
-          <p className="muted">'자료로 채우기'가 채운 내용을 자료와 대조해 고쳐 주세요. 제품 정보는 카드 문구의 원문이 돼요. 자료가 없으면 직접 적어도 돼요.</p>
-          {reviewFields.map(renderField)}
-        </fieldset>
-
-        {/* 03 제작 조건 (남은 칸) */}
-        <fieldset className="form-group" id="step-cond">
-          <legend>03 제작 조건</legend>
-          {condFields.map(renderField)}
-        </fieldset>
-
-        {error && (
-          <p className="notice notice-error" role="alert" id="form-error">
-            {error}
-          </p>
-        )}
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={saving || (imageField?.required && images.length === 0)}>
-            {saving ? '저장하는 중…' : editId ? '변경사항 저장하고 계속' : '자료 저장하고 계속'}
-          </button>
-          <span className="muted">저장하면 입력 확인(필수 항목·이미지·지시문 형태 문장)을 바로 해요.</span>
+      {draft && (
+        <div className="notice notice-info draft-banner" role="status">
+          <span>{formatDateTime(draft.saved_at)}에 임시 저장한 입력이 있어요. 이미지는 임시 저장되지 않아요.</span>
+          <span className="action-bar" style={{ marginTop: 0 }}>
+            <button type="button" className="btn btn-small" onClick={() => { setProductId(editId ?? draft.productId); setValues({ ...defaults, ...draft.values }); setDirty(true); setDraft(null); }}>불러오기</button>
+            <button type="button" className="btn btn-small btn-ghost" onClick={() => { try { localStorage.removeItem(draftKey(editId)); } catch { /* 무시 */ } setDraft(null); }}>지우기</button>
+          </span>
         </div>
-      </form>
-      {blocker.state === 'blocked' && <dialog className="leave-dialog" aria-labelledby="leave-title" ref={node => { if (node && !node.open) node.showModal(); }} onCancel={e => { e.preventDefault(); blocker.reset(); }}>
-        <h2 id="leave-title">입력 중인 자료가 있어요</h2><p>아직 저장하지 않은 내용은 사라집니다. 계속 입력할까요?</p>
-        <div className="action-bar"><button className="btn btn-primary" type="button" autoFocus onClick={() => blocker.reset()}>계속 입력하기</button><button className="btn" type="button" onClick={() => blocker.proceed()}>저장하지 않고 나가기</button></div>
-      </dialog>}
+      )}
+
+      <div className="form-layout">
+        <nav className="form-outline" aria-label="입력 단계">
+          {steps.map((s) => {
+            const pr = progress(s);
+            const complete = pr.done === pr.total;
+            return (
+              <a key={s.id} href={`#${s.id}`}>
+                <span>{s.title}</span>
+                <span className={`outline-count${complete ? ' outline-done' : ''}`}>{complete ? <Icon name="check" size={14} /> : `${pr.done}/${pr.total}`}</span>
+              </a>
+            );
+          })}
+        </nav>
+
+        <div className="studio-form">
+          <form id="product-form" className={`studio-form${submitted ? ' was-submitted' : ''}`} onSubmit={submit} noValidate onChangeCapture={() => setDirty(true)}>
+            {problems.length > 0 && (
+              <div className="error-summary" role="alert" tabIndex={-1} ref={summaryRef}>
+                <h2>저장하기 전에 {problems.length}개 항목을 확인해 주세요</h2>
+                <ul>{problems.map((p) => <li key={p.id + p.text}><a href={`#${p.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(p.id); el?.focus(); el?.scrollIntoView({ block: 'center' }); }}>{p.text}</a></li>)}</ul>
+              </div>
+            )}
+
+            {/* 01 사람이 넣는 것: 제품ID·자료·공식몰 주소·제품 사진 */}
+            <fieldset className="form-group" id="step-source">
+              <legend>01 자료·브랜드</legend>
+              <label className="field" id="product-id">
+                <span className="field-label"><span className="field-label-text">제품ID</span> <em className="req">필수</em></span>
+                <input
+                  id="field-product-id"
+                  title="영문 소문자·숫자·하이픈으로 입력해 주세요"
+                  value={productId}
+                  onChange={(e) => { setProductId(e.target.value.toLowerCase()); setDirty(true); }}
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  placeholder="예: toneup-sunscreen"
+                  required
+                  disabled={Boolean(editId)}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <span className="field-error" aria-hidden="true"><Icon name="alert" size={14} /> 영문 소문자·숫자·하이픈으로 입력해 주세요</span>
+                <span className="field-guide">영문 소문자·숫자·하이픈. 같은 제품을 다시 찾는 고유 이름이에요. 저장한 뒤에는 바꿀 수 없어요.</span>
+              </label>
+              {!editId && <MaterialsFill fields={fields} onFill={(v) => { setValues((prev) => ({ ...prev, ...v })); setDirty(true); }} onAddImages={(files) => addFiles(files)} />}
+              {sourceFields.map(renderField)}
+            </fieldset>
+
+            {/* 02 자동으로 채운 내용 확인: 제품 정보는 카드 문구의 원문이 됨 */}
+            <fieldset className="form-group" id="step-review">
+              <legend>02 채운 내용 확인</legend>
+              <p className="form-group-desc">'자료로 채우기'가 채운 내용을 자료와 대조해 고쳐 주세요. 여기 적은 문장만 카드 문구의 근거로 써요. 자료가 없으면 직접 적어도 돼요.</p>
+              {renderStep(reviewFields)}
+            </fieldset>
+
+            {/* 03 제작 조건 (남은 칸) */}
+            <fieldset className="form-group" id="step-cond">
+              <legend>03 제작 조건</legend>
+              {renderStep(condFields)}
+            </fieldset>
+
+            {error && <p className="notice notice-error" role="alert" id="form-error">{error}</p>}
+            <div className="form-actions">
+              <p className="form-actions-note">
+                필수 <strong className="num">{requiredDone}/{requiredTotal}</strong> 입력 · 저장하면 입력 확인(필수 항목·이미지·지시문 형태 문장)을 바로 해요.
+              </p>
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? '저장하는 중…' : editId ? '변경사항 저장하고 계속' : '자료 저장하고 계속'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {blocker.state === 'blocked' && (
+        <dialog className="leave-dialog" aria-labelledby="leave-title" ref={(node) => { if (node && !node.open) node.showModal(); }} onCancel={(e) => { e.preventDefault(); blocker.reset(); }}>
+          <h2 id="leave-title">입력 중인 자료가 있어요</h2>
+          <p>아직 저장하지 않은 내용은 작업실에 반영되지 않아요. 글 입력은 이 브라우저에 임시 저장돼 다시 불러올 수 있지만 이미지는 다시 골라야 해요.</p>
+          <div className="action-bar">
+            <button className="btn btn-primary" type="button" autoFocus onClick={() => blocker.reset()}>계속 입력하기</button>
+            <button className="btn" type="button" onClick={() => blocker.proceed()}>저장하지 않고 나가기</button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 }
@@ -214,10 +322,18 @@ function MaterialsFill({ fields, onFill, onAddImages }: { fields: FormField[]; o
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ExtractResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [started, setStarted] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!busy) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [busy]);
   const imageFiles = files ? [...files].filter((f) => /\.(png|jpe?g)$/i.test(f.name)) : [];
   const run = async () => {
     if (!files || !files.length) return;
     setBusy(true);
+    setStarted(Date.now());
     setError(null);
     setResult(null);
     try {
@@ -243,23 +359,27 @@ function MaterialsFill({ fields, onFill, onAddImages }: { fields: FormField[]; o
       setBusy(false);
     }
   };
+  const sec = started ? Math.round((now - started) / 1000) : 0;
   return (
     <section className="materials-fill" aria-labelledby="materials-title">
-      <h2 id="materials-title" className="panel-title">자료로 채우기 <span className="muted">비워도 돼요</span></h2>
-      <p className="muted">제품 소개 PDF·이미지·글을 올리면 Claude가 읽고 아래 '제품 정보' 칸을 채워요. 자료에 적힌 문장만 옮기고, 없는 내용은 비워 둬요. <strong>채워진 내용을 원문과 대조해 확인한 뒤 저장해 주세요.</strong></p>
-      <div className="action-bar">
-        <label className="btn file-btn">
-          자료 고르기 (PDF·PNG·JPG·TXT·MD)
-          <input type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.md,application/pdf,image/png,image/jpeg,text/plain,text/markdown" multiple onChange={(e) => { setFiles(e.target.files); setResult(null); }} />
-        </label>
+      <div>
+        <h2 id="materials-title" className="panel-title">자료로 채우기 <em className="opt">선택</em></h2>
+        <p className="field-guide">제품 소개 PDF·이미지·글을 올리면 Claude가 읽고 '제품 정보' 칸을 채워요. 자료에 적힌 문장만 옮기고, 없는 내용은 비워 둬요. <strong>채워진 내용은 원문과 대조해 확인한 뒤 저장해 주세요.</strong></p>
+      </div>
+      <label className="btn file-btn">
+        <span><Icon name="doc" size={18} /> {files?.length ? [...files].map((f) => f.name).join(', ') : '자료 고르기'}</span>
+        <span className="muted">PDF·PNG·JPG·TXT·MD, 파일당 20MB</span>
+        <input type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.md,application/pdf,image/png,image/jpeg,text/plain,text/markdown" multiple onChange={(e) => { setFiles(e.target.files); setResult(null); }} />
+      </label>
+      <div className="action-bar" style={{ marginTop: 0 }}>
         <button type="button" className="btn btn-primary" disabled={busy || !files || !files.length} onClick={run}>
-          {busy ? '자료 읽는 중… (1~3분)' : '자료로 칸 채우기'}
+          {busy ? <><span className="spinner spinner-sm" aria-hidden="true" /> 자료 읽는 중 · {sec}초</> : '자료로 칸 채우기'}
         </button>
-        {files && files.length > 0 && <span className="muted">{[...files].map((f) => f.name).join(', ')}</span>}
+        {busy && <span className="muted" role="status">이 컴퓨터의 Claude Code가 읽고 있어요. 보통 1~3분 걸려요.</span>}
       </div>
       {error && <p className="notice notice-error" role="alert">{error}</p>}
       {result && (
-        <div className="notice" role="status">
+        <div className="notice notice-info" role="status">
           <p>제품 정보 칸을 채웠어요. 원문과 다른 곳이 없는지 확인해 주세요.</p>
           {result.missing.length > 0 && <p>자료에서 찾지 못한 칸: {result.missing.join(', ')} — 직접 채워 주세요.</p>}
           {result.warnings.map((w) => <p key={w}>[경고] {w}</p>)}
@@ -277,25 +397,25 @@ function MaterialsFill({ fields, onFill, onAddImages }: { fields: FormField[]; o
 }
 
 function Field({ field: f, value, onChange }: { field: FormField; value: string; onChange: (v: string) => void }) {
+  const id = useId();
+  const guideId = `${id}-guide`;
   const guide = [f.guide, f.example && f.type === 'list' ? `예: ${f.example.join(' / ')}` : ''].filter(Boolean).join(' · ');
+  const lines = f.type === 'list' ? value.split('\n').filter((s) => s.trim()).length : 0;
   return (
-    <label className="field">
-      <span className="field-label">
-        {f.label ?? f.key} {f.required ? <em>필수</em> : <span className="muted">비워도 돼요</span>}
-      </span>
+    <div className="field">
+      <label className="field-label" htmlFor={id}>
+        <span className="field-label-text">{f.label ?? f.key}</span> {f.required ? <em className="req">필수</em> : <em className="opt">선택</em>}
+      </label>
       {f.type === 'choice' ? (
-        <select value={value} onChange={(e) => onChange(e.target.value)} required={f.required}>
+        <select id={id} value={value} onChange={(e) => onChange(e.target.value)} required={f.required} aria-describedby={guide ? guideId : undefined}>
           {!f.required && <option value="">선택 안 함</option>}
-          {(f.options ?? []).map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
+          {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       ) : f.type === 'paragraph' || f.type === 'list' ? (
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={f.type === 'list' ? 5 : 4} required={f.required} placeholder={f.type === 'list' ? '한 줄에 하나씩' : undefined} />
+        <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} rows={f.type === 'list' ? 5 : 4} required={f.required} placeholder={f.type === 'list' ? '한 줄에 하나씩' : undefined} aria-describedby={guide ? guideId : undefined} />
       ) : (
         <input
+          id={id}
           type={f.type === 'number' ? 'number' : f.type === 'url' ? 'url' : 'text'}
           placeholder={f.type === 'url' ? 'https://' : undefined}
           value={value}
@@ -304,60 +424,72 @@ function Field({ field: f, value, onChange }: { field: FormField; value: string;
           min={f.min}
           max={f.max}
           inputMode={f.type === 'number' ? 'numeric' : undefined}
+          aria-describedby={guide ? guideId : undefined}
         />
       )}
-      {guide && <span className="field-guide">{guide}</span>}
-    </label>
+      <span className="field-error" aria-hidden="true"><Icon name="alert" size={14} /> {f.type === 'url' ? 'https://로 시작하는 주소를 넣어 주세요' : f.type === 'number' ? `${f.min ?? 1}~${f.max ?? ''} 사이 숫자를 넣어 주세요` : '이 항목을 채워 주세요'}</span>
+      {(guide || f.type === 'list') && (
+        <span className="field-guide" id={guideId}>
+          {guide}
+          {f.type === 'list' && <span className="num"> · {lines}줄</span>}
+        </span>
+      )}
+    </div>
   );
 }
 
-function ImagesField({
-  field: f,
-  images,
-  setImages,
-  addFiles,
-}: {
+function ImagesField({ field: f, images, setImages, addFiles, submitted }: {
   field: FormField;
   images: ImageRow[];
   setImages: (fn: (prev: ImageRow[]) => ImageRow[]) => void;
   addFiles: (files: FileList | null) => void;
+  submitted: boolean;
 }) {
   const update = (i: number, patch: Partial<ImageRow>) => setImages((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   return (
     <div className="field">
       <span className="field-label">
-        {f.label ?? f.key} {f.required ? <em>필수</em> : <span className="muted">비워도 돼요</span>}
+        <span className="field-label-text">{f.label ?? f.key}</span> {f.required ? <em className="req">필수</em> : <em className="opt">선택</em>}
+        {images.length > 0 && <span className="muted num">{images.length}장</span>}
       </span>
-      <ul className="image-rows">
-        {images.map((img, i) => (
-          <li key={`${img.file}-${i}`} className="image-row">
-            {img.preview && <img src={img.preview} alt="" width={72} height={72} />}
-            <div className="image-row-fields">
-              <code>{img.file}</code>
-              <input aria-label={`${img.file} 설명`} placeholder="설명 (예: 제품 단독 컷)" value={img.desc} onChange={(e) => update(i, { desc: e.target.value })} required />
-              <input aria-label={`${img.file} 출처`} placeholder="출처 (예: 직접 촬영)" value={img.source} onChange={(e) => update(i, { source: e.target.value })} required />
-              <select aria-label={`${img.file} 사용 가능 여부`} value={img.usage} onChange={(e) => update(i, { usage: e.target.value })}>
-                {(f.usage ?? ['가능', '불가', '확인 중']).map((u) => (
-                  <option key={u}>{u}</option>
-                ))}
-              </select>
-              <select aria-label={`${img.file} 용도`} title="제품: 배경 지운 제품 사진 · 제형: 크림 자국 같은 질감 사진 · 배경: 제품 없는 연출 장면" value={img.kind} onChange={(e) => update(i, { kind: e.target.value })}>
-                {(f.kinds ?? ['제품', '제형', '배경']).map((k) => (
-                  <option key={k}>{k}</option>
-                ))}
-              </select>
-            </div>
-            <button type="button" className="btn btn-ghost" onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}>
-              빼기
-            </button>
-          </li>
-        ))}
-      </ul>
-      <label className="btn file-btn">
-        이미지 추가 (PNG·JPG)
-        <input type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" multiple onChange={(e) => addFiles(e.target.files)} />
+      {images.length > 0 && (
+        <ul className="image-rows">
+          {images.map((img, i) => {
+            const blocked = img.usage === '불가';
+            const needInfo = !img.desc.trim() || !img.source.trim();
+            return (
+              <li key={`${img.file}-${i}`} className={`image-row${blocked ? ' is-blocked' : ''}`}>
+                {img.preview ? <img src={img.preview} alt="" width={80} height={80} /> : <span />}
+                <div className="image-row-fields">
+                  <div className="image-row-head">
+                    <code>{img.file}</code>
+                    <span className={`pill ${img.data ? 'pill-running' : 'pill-done'}`}>{img.data ? '새 이미지 · 저장할 때 올라가요' : '저장됨'}</span>
+                    {blocked && <span className="pill pill-failed">사용 불가 · 제작할 수 없어요</span>}
+                    {!blocked && needInfo && <span className={`pill ${submitted ? 'pill-failed' : 'pill-queued'}`}>설명·출처 필요</span>}
+                  </div>
+                  <input id={`img-${i}-desc`} aria-label={`${img.file} 설명`} placeholder="설명 (예: 제품 단독 컷)" value={img.desc} onChange={(e) => update(i, { desc: e.target.value })} required />
+                  <input id={`img-${i}-source`} aria-label={`${img.file} 출처`} placeholder="출처 (예: 직접 촬영)" value={img.source} onChange={(e) => update(i, { source: e.target.value })} required />
+                  <select aria-label={`${img.file} 사용 가능 여부`} value={img.usage} onChange={(e) => update(i, { usage: e.target.value })}>
+                    {(f.usage ?? ['가능', '불가', '확인 중']).map((u) => <option key={u}>{u}</option>)}
+                  </select>
+                  <select aria-label={`${img.file} 용도`} title="제품: 배경 지운 제품 사진 · 제형: 크림 자국 같은 질감 사진 · 배경: 제품 없는 연출 장면" value={img.kind} onChange={(e) => update(i, { kind: e.target.value })}>
+                    {(f.kinds ?? ['제품', '제형', '배경']).map((k) => <option key={k}>{k}</option>)}
+                  </select>
+                </div>
+                <button type="button" className="btn btn-ghost btn-small" onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))} aria-label={`${img.file} 빼기`}>
+                  <Icon name="x" size={16} /> 빼기
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <label className="btn file-btn" id="image-add-label">
+        <span><Icon name="image" size={18} /> 이미지 추가</span>
+        <span className="muted">PNG·JPG, 파일당 10MB · 제품·제형·배경 용도를 골라 주세요</span>
+        <input id="image-add" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" multiple onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
       </label>
-      <span className="field-guide">출처가 없거나 '불가'면 제작할 수 없어요. 10MB 이하.</span>
+      <span className="field-guide">출처가 없거나 '불가'면 제작할 수 없어요. 설명은 카드 이미지 설명에 쓰여요.</span>
     </div>
   );
 }

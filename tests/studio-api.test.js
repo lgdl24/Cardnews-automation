@@ -181,6 +181,14 @@ test('웹 제작 흐름: 입력 → 구성안 → 수정 요청 → 승인·문�
     // 목록
     const list = await s.call('GET', '/products');
     assert.deepEqual(list.body.products.map((p) => [p.id, p.stage]), [['toneup-web', 'approved']]);
+    // 목록 화면용 대표 카드·카드 수·마지막 작업 결과 (읽기 전용 요약)
+    const item = list.body.products[0];
+    assert.equal(item.thumb.file, 'card-01.png');
+    assert.ok(item.thumb.v > 0);
+    assert.equal(item.png_count, 5);
+    assert.equal(item.card_count, 5);
+    assert.equal(item.last_job.ok, true);
+    assert.equal(item.last_job.kind, 'revise');
   } finally {
     s.close();
   }
