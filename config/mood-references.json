@@ -1,6 +1,6 @@
 {
   "_comment": "뷰티 카드뉴스 템플릿 레퍼런스. 사람이 고른 비슷한 무드의 카드뉴스 템플릿(핀터레스트·비핸스·템플릿 사이트·팀 시안)에서 이미지·글자·로고는 가져오지 않고 디자인 특징만 글로 옮긴 것입니다. 사용자가 고르는 카테고리가 아닙니다. 구성안 작업에서 브랜드 페이지(스냅샷)의 분위기와 'mood' 단어가 가장 가까운 레퍼런스 1~2개를 Claude가 찾아 brand_mood의 장면·사진 연출·색 쓰는 법에 참고합니다. 색 값은 항상 브랜드 페이지에서 가져옵니다. 설명: docs/designs/mood-references.md",
-  "version": "0.2",
+  "version": "0.3",
   "updated_at": "2026-11-17",
   "common": {
     "principles": [
@@ -185,6 +185,76 @@
       "photo_style": "가까이 찍은 물방울·버블, 차가운 부드러운 빛",
       "scene": "Macro of tiny clear bubbles and water droplets on a pale blue-grey glass surface, cool soft light, clean and minimal.",
       "avoid": ["원문에 없는 수분 수치·지속 시간", "얼굴 사진"],
+      "in_repo": null
+    },
+    {
+      "id": "phone-ui-problem-solution",
+      "layout_id": "editorial",
+      "title": "휴대폰 화면 문제→해결 (핀터레스트, 검색창·말풍선·알림·토글 카드)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1069534611531049012/", "seen_at": "2026-11-17" },
+      "mood": ["공감", "대화형", "미니멀", "밝은 회색", "문제 해결"],
+      "layout": "첫 장에 검색창·채팅 말풍선·알림창·꺼짐/켜짐 스위치 같은 휴대폰 화면 조각으로 고민을 던지고, 아래나 다음 장에 제품으로 답함 (같은 형식: 핀 1051660950521023552 고민↔해결 나란히, 1146518017659512350 부재중 전화, 764556474285870712 토글). 전용 표지 배치는 규칙 v2 훅이 정해진 뒤 만들 예정이라 지금은 editorial로 연결",
+      "type": "작은 산세리프(화면 UI 글자 크기), 답은 굵은 제목",
+      "color_usage": "흰색·밝은 회색 바탕, 말풍선·스위치에만 브랜드 주색",
+      "photo_style": "부드럽게 퍼지는 주광, 제품은 작게 정면",
+      "scene": "Soft white satin fabric folds under diffused daylight, pale grey and white tones, clean, quiet and minimal.",
+      "avoid": ["피부 상태·질환 단어를 검색어·고민으로 쓰기 (원문 사용감을 뒤집은 상황만)", "꺼짐/켜짐으로 피부 변화를 단정하기 (사용감만)", "다른 제품 깎아내리기"],
+      "in_repo": null
+    },
+    {
+      "id": "dark-gold-luxe",
+      "layout_id": "immersive",
+      "title": "다크 골드 럭스 (핀터레스트, 검정·금색 프리미엄 크림)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/527273068867351507/", "seen_at": "2026-11-17" },
+      "mood": ["고급", "묵직", "어두운", "금색", "클래식"],
+      "layout": "검정 바탕 가운데 제품, 위에 스크립트 영문 한 줄과 굵은 한글 제목, 아래 가는 금색 선",
+      "type": "세리프·스크립트 영문 + 굵은 한글 명조",
+      "color_usage": "검정·짙은 갈색 바탕, 금색 계열은 가는 선과 영문에만",
+      "photo_style": "낮은 조명, 금빛 테두리 빛, 짙은 그림자",
+      "scene": "Deep black glossy surface with a soft warm golden rim light and a faint golden haze in the air, luxurious, low-key and quiet.",
+      "avoid": ["순위·수상 배지 (원본에 있었음)", "노화·탄력 같은 기능성 단어를 장식으로", "금박 남발"],
+      "in_repo": null
+    },
+    {
+      "id": "citrus-fresh",
+      "layout_id": "editorial",
+      "title": "시트러스 프레시 (핀터레스트, 노란 클렌징 워터·레몬)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/536491374384222054/", "seen_at": "2026-11-17" },
+      "mood": ["산뜻", "상큼", "밝은", "노랑", "생기"],
+      "layout": "제품을 비스듬히 크게, 옆에 작은 사각 사진 한 장을 덧붙인 콜라주, 왼쪽 아래 짧은 특징 목록과 손글씨 느낌 한 줄",
+      "type": "산세리프 제목 + 작은 손글씨풍 영문 한 줄",
+      "color_usage": "아이보리·연회색 바탕에 브랜드의 노랑 계열 한 가지",
+      "photo_style": "밝은 햇빛, 선명한 짧은 그림자, 물방울",
+      "scene": "Bright sunlit pale cream surface with halved lemons and a few glossy citrus leaves, crisp short shadows and tiny water droplets, fresh yellow and white tones.",
+      "avoid": ["원문에 비타민·시트러스 성분이 없는데 레몬 소품으로 성분을 암시하기", "인물 사진 (원본에 있었음)"],
+      "in_repo": null
+    },
+    {
+      "id": "pink-reminder",
+      "layout_id": "editorial",
+      "title": "핑크 리마인더 (핀터레스트, 연분홍 습관 카드)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1017743215818493883/", "seen_at": "2026-11-17" },
+      "mood": ["다정", "부드러운", "연분홍", "루틴", "차분"],
+      "layout": "위에 스크립트 영문 제목, 가운데 둥근 칸마다 가는 선 아이콘 + 짧은 한 줄, 아래 작은 마무리 한 줄. 사용법 카드에 어울림",
+      "type": "스크립트 영문 제목, 작은 대문자 산세리프 항목",
+      "color_usage": "연분홍 바탕, 흰 반투명 칸, 브랜드 진분홍은 아이콘·선에만",
+      "photo_style": "물결 위 은은한 빛, 분홍 돌 소품",
+      "scene": "Soft pink water surface with gentle light caustics and a smooth rose quartz stone at the edge, dreamy pastel pink tones, calm and airy.",
+      "avoid": ["원문에 없는 생활 습관 조언(물 마시기·수면 등)을 항목으로 넣기", "하트·장식 아이콘 남발"],
+      "in_repo": null
+    },
+    {
+      "id": "bold-question-grid",
+      "layout_id": "panel",
+      "title": "볼드 질문 그리드 (핀터레스트, 질문 제목 + 말풍선 특징)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1129981362790986107/", "seen_at": "2026-11-17" },
+      "mood": ["대담", "친근", "그래픽", "세이지", "대화형"],
+      "layout": "격자 바탕 위 아주 굵은 질문형 제목(“이게 뭘 해 주나요?”), 제품 옆에 기울어진 말풍선 2~3개로 특징",
+      "type": "아주 굵은 산세리프 제목, 말풍선 안은 짧은 굵은 글자",
+      "color_usage": "연한 세이지 바탕 + 짙은 초록 글자, 말풍선은 브랜드 연두 계열",
+      "photo_style": "정면, 그림자 짧게, 배경과 분리된 깔끔한 컷",
+      "scene": "Pale sage green paper with a faint fine grid pattern, soft even daylight, clean, flat and graphic.",
+      "avoid": ["말풍선 안에 원문보다 강한 효능 쓰기", "질문을 여러 개 늘어놓기 (질문은 하나)"],
       "in_repo": null
     }
   ]

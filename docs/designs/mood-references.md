@@ -36,7 +36,7 @@
 | `avoid` | 이 레퍼런스를 따라 할 때 피할 것 |
 | `in_repo` | 이미 옮긴 디자인 묶음 이름, 없으면 null |
 
-## 들어 있는 레퍼런스 (12개)
+## 들어 있는 레퍼런스 (17개)
 
 | id | 분위기 | 출처 |
 |---|---|---|
@@ -52,6 +52,11 @@
 | single-drop-macro | 고급·몰입·어두운 | 핀터레스트 |
 | pearl-glow-luxe | 고급·화사·샴페인 | 핀터레스트 |
 | pale-blue-hydration-grid | 산뜻·맑은·쿨톤 | 핀터레스트 |
+| phone-ui-problem-solution | 공감·대화형·문제 해결 | 핀터레스트 (전용 배치 전이라 editorial로 연결) |
+| dark-gold-luxe | 고급·묵직·어두운·금색 | 핀터레스트 |
+| citrus-fresh | 산뜻·상큼·노랑 | 핀터레스트 |
+| pink-reminder | 다정·부드러운·연분홍·루틴 | 핀터레스트 |
+| bold-question-grid | 대담·친근·그래픽·대화형 | 핀터레스트 |
 
 핀터레스트 조사 노트(디자인 갈래, 첫 장 훅 형식): [beauty-cardnews-pinterest.md](../research/beauty-cardnews-pinterest.md)
 
