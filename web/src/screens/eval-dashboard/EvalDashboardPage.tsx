@@ -118,7 +118,7 @@ function Heading({ children }: { children?: ReactNode }) {
   return (
     <div className="page-heading">
       <div>
-        <p className="eyebrow">QUALITY OVERVIEW</p>
+        <p className="eyebrow">품질 한눈에 보기</p>
         <h1 className="page-title">평가 대시보드</h1>
         <p className="page-desc">평가 입력을 같은 규칙으로 반복 제작한 결과예요. 중단된 실행과 경계 입력도 모두 포함해요. {children}</p>
       </div>
