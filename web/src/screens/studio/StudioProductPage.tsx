@@ -168,7 +168,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
             </div>
           )}
           {p.ai_bg && (
-            <AiBgPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-bg`, card ? { card } : {})} />
+            <AiBgPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-bg`, card ? { card } : { stale: true })} onUpload={(card, data) => act(`/products/${id}/ai-bg/upload`, { card, data })} />
           )}
           {p.ai_card && (
             <AiCardPanel detail={p} busy={busy || a.running} onMake={(card) => act(`/products/${id}/ai-card`, card ? { card } : {})} />
@@ -608,15 +608,26 @@ function BrandPanel({ detail }: { detail: ProductDetail }) {
 }
 
 // AI 배경 (무드 '브랜드', A안): 문구·출력 작업이 끝나면 카드마다 GPT가 글자·제품 없는 배경을 만들고, 출력이 그 위에 실제 제품 사진과 문구를 얹음
-function AiBgPanel({ detail, busy, onMake }: { detail: ProductDetail; busy: boolean; onMake: (card?: number) => void }) {
+function AiBgPanel({ detail, busy, onMake, onUpload }: { detail: ProductDetail; busy: boolean; onMake: (card?: number) => void; onUpload: (card: number, data: string) => void }) {
   const bg = detail.ai_bg!;
+  const [copied, setCopied] = useState<number | null>(null);
+  const copy = async (no: number, text: string) => { try { await navigator.clipboard.writeText(text); setCopied(no); } catch { setCopied(null); } };
+  const upload = (no: number, file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onUpload(no, String(reader.result).split(',')[1] ?? '');
+    reader.readAsDataURL(file);
+  };
   const can = Boolean(detail.actions.can_ai_bg) && !busy && bg.has_mood;
   const png = (no: number) => detail.pngs.find((x) => x.file === `card-${String(no).padStart(2, '0')}.png`);
   return (
     <div className="panel ai-card-panel">
       <h3 className="panel-title">AI 배경 · 카드 {bg.cards.length}장</h3>
       <p className="muted">
-        문구·출력 작업이 끝나면 카드마다 GPT 이미지(내 컴퓨터의 Codex)가 브랜드 무드에 맞는 <strong>배경만</strong> 만들어요. 카드 글자와 제품 사진은 그 위에 코드가 얹어서, 문구 검증을 그대로 거쳐요. 무드가 그대로면 문구를 고쳐도 배경은 다시 만들지 않아요.
+        문구·출력 작업이 끝나면 카드마다 GPT 이미지({bg.backend === 'openai' ? 'OpenAI 이미지 API, 장당 요금' : '내 컴퓨터의 Codex, ChatGPT 요금제 사용량'})가 브랜드 무드에 맞는 <strong>배경만</strong> 만들어요. 카드 글자와 제품 사진은 그 위에 코드가 얹어서, 문구 검증을 그대로 거쳐요. 무드가 그대로면 문구를 고쳐도 배경은 다시 만들지 않아요.
+      </p>
+      <p className="muted">
+        자동 생성이 사용량 한도에 걸리면: 카드마다 <strong>요청문 복사</strong> → <a href="https://chatgpt.com/" target="_blank" rel="noreferrer noopener">ChatGPT 채팅</a>에 붙여 넣기 → 받은 이미지를 <strong>이미지 올리기</strong>로 넣으면 같은 방식으로 카드에 들어가요.
       </p>
       {bg.running && <p className="notice" role="status">AI 배경을 만드는 중이에요 ({bg.run?.card ? `${bg.run.card}번` : '전체'}, 한 장에 1~2분). 끝나면 카드를 다시 출력해요.</p>}
       {bg.run && (bg.running || bg.run.ok === false) && bg.run.progress.length > 0 && (
@@ -648,7 +659,13 @@ function AiBgPanel({ detail, busy, onMake }: { detail: ProductDetail; busy: bool
               <div className="ai-card-meta">
                 <strong>{c.no}번</strong>
                 {last?.error && <span className="muted">{last.error}</span>}
+                {c.ok && <span className="muted">{c.source === 'chat' ? 'ChatGPT 채팅' : c.source === 'openai' ? 'OpenAI API' : 'Codex 자동'}</span>}
                 <button className="btn btn-small" disabled={!can} onClick={() => onMake(c.no)}>이 배경 다시 만들기</button>
+                {c.prompt && <button type="button" className="btn btn-small" onClick={() => copy(c.no, c.prompt!)}>{copied === c.no ? '복사했어요' : '요청문 복사'}</button>}
+                <label className={`btn btn-small file-btn${can ? '' : ' is-disabled'}`}>
+                  이미지 올리기
+                  <input type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" disabled={!can} onChange={(e) => { upload(c.no, e.target.files?.[0]); e.target.value = ''; }} />
+                </label>
               </div>
             </div>
           );

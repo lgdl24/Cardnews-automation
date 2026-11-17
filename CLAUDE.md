@@ -46,7 +46,7 @@
 
 1. 입력 확인 → `npm run check -- <제품ID>`
 2. 자료 분석·핵심 메시지 도출 (원문 근거 포함)
-3. 구성안 기획 → `cards.json`에 `stage: "plan"`으로 저장 → `npm run validate -- <제품ID>` (무드가 `브랜드`면 `brand/` 스냅샷을 보고 `brand_mood`도 정함)
+3. 구성안 기획 → `cards.json`에 `stage: "plan"`으로 저장 → `npm run validate -- <제품ID>` (브랜드 URL이 있으면(묶음 `브랜드`) `brand/` 스냅샷을 보고 `brand_mood`도 정함)
 4. **구성안 확인: 사람의 승인 없이는 문구 생성으로 넘어가지 않음** (웹 모드·평가 모드는 여기서 작업 종료)
 5. 카드별 문구 생성 → `stage: "copy"`
 6. 데이터 검증 → `npm run validate -- <제품ID>`
