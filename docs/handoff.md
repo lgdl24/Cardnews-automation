@@ -8,7 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
-| 2026-11-17 | Codex | #96 · `fix/96-instagram-unified-login` (`feat/instagram` 위) | Unified Login 지원. `.env`의 `IG_API_SETUP=unified`·`IG_USER_ID`로 `graph.facebook.com`의 계정 ID를 조회. `check`·`publish`에서 게시 권한·한도 확인, 일반 요청은 Bearer 헤더 사용, 통신 오류도 토큰 숨김. 기존 Instagram Login 기본값 유지. Unified 토큰의 기존 Instagram 갱신 경로 차단. 이전 실험 이미지도 출력 메타데이터의 GPT 사용 표시를 읽어 사람 확인 항목으로 남김. 실계정 연결 성공, 실제 게시 전 |
+| 2026-11-17 | Codex | #96 · `fix/96-instagram-unified-login` (`feat/instagram` 위), PR #99 | Unified Login·게시 권한·한도 확인 지원, Bearer 헤더와 오류 토큰 숨김. 이전 실험 이미지의 GPT 사용 표시도 검토에 반영. 게시 명령의 `check` 이름 충돌 수정, Cloudflare는 연결 등록을 기다린 뒤 DNS 전파 15초 대기. 사용자 승인 후 젤크림 5장 첫 실제 게시·캡션·순서 검증 완료. 아래 게시 링크와 기록 위치 참조 |
 | 2026-11-13 | Claude | `feat/instagram` (`feat/ax-compliance` 위) | **인스타 연동 B1~B4 (실계정 시험 전)**: `npm run ig -- check`(토큰으로 계정·24시간 한도) · `prepare <id>`(캡션 `output/instagram/caption.txt` — 카드 문구만, 첫 줄 AI 활용·샘플 표시 / JPEG 변환, PNG의 AI 활용 XMP를 JPEG APP1로) · `publish <id> [--dry-run] [--base-url]`(게시 전 점검 '게시 가능'만 → 비밀 경로 파일 서버 + `cloudflared` 빠른 터널 → 카드별 컨테이너 → 캐러셀 → 게시 → `published.json`·`published` 이벤트) · `refresh-token`(.env의 토큰 줄만 교체). 토큰은 `.env`의 `IG_ACCESS_TOKEN`, 출력·오류 메시지에 안 나옴. 설정 `config/instagram.json`(API v27.0). 이벤트 규격 v0.4. 다음: 실계정 첫 게시 → 작업실 '게시' 패널(B5) → 성과 수집(C) |
 | 2026-11-10 | Claude | `feat/ax-compliance` (이슈 없음) | **AX 확장 A: 게시 전 점검** (계획 `docs/proposals/ax-plan.md`, A→B 인스타 게시→C 성과 되먹임): A1 주의 표현 '가상 인물·전문가 추천' 분류(개정 화장품법 제13조①4 · 공정위 가상인물 지침, 목록 v2) · A2 GPT 이미지 지시문에 의료인·가운·병원 금지 · A3 출력 PNG에 AI 활용 XMP(IPTC `DigitalSourceType`=compositeWithTrainedAlgorithmicMedia, `cardnews:aiParts` text/text,image) 자동 삽입(`render` 끝, `scripts/lib/ai-disclosure.js`). AI 카드 '같은 파일' 비교는 XMP를 빼고 그림만(`samePng`) · A4 `npm run precheck -- <id>` → `output/publish-check.json`(승인·검증·출력·주의 표현·AI 표시·GPT 이미지·캡션), 작업실 '게시 전 점검' 패널(`GET /products/:id/precheck`). **규칙 버전은 그대로 v1** — 주의 표현 목록이 바뀌었으니 v2로 올릴지 사람 결정(A5) |
 | 2026-11-09 | Claude | `feat/eval-dashboard` (이슈 없음) | **V3 평가 대시보드 + 평가 집계** (**11.10부터 V3 평가 대시보드·평가 진행은 이규동 담당**): `npm run export`가 평가 실행 폴더를 읽을 때 **중단 실행까지 모두** `web/public/data/eval/summary.json`에 모음(`scripts/lib/eval-summary.js`). 알림 원문·금지 표현 글자·체크리스트 인용은 빼고 개수만. 사람 판정은 `eval/judgments.json`(자동 판정 없는 금지 항목만 채움). `/eval` 화면을 다시 만듦: 요약 숫자 5개(실행·1회 통과·핵심 정보·안전성·판정 대기, 필터 따라 재계산), 안전성(경계 입력별 기대 동작 표), 핵심 정보 히트맵, 품질 지표 분포, AI 작업 시간, 검증 오류, 반복 일관성(A6), 규칙 버전 비교(A5), 실행 기록 CSV. 필터: 실행 묶음·규칙 버전·모델(섞이면 알림). eval-spec **v0.2**(7장). 평가 실행기: 보고가 누락 항목을 백틱으로 감싸면 '안 적음'으로 오판하던 것 수정. 화면 시험은 가상 집계 `tests/fixtures/eval-summary.json`(실제 결과 아님). **실제 v1 결과는 평가를 돌린 Mac에서 `npm run export -- --eval-runs ~/git/cardnews-ai/eval/runs`로 만들어야 보임** |
@@ -41,13 +41,14 @@
 
 ## 현재 작업 — 인스타 Unified Login 연결 (Codex, 2026-11-17)
 
-- 초안 PR은 [#99](https://github.com/lgdl24/Cardnews-automation/pull/99), 기반은 `feat/instagram`이다. 메인 반영과 첫 실제 게시 검증은 남아 있다.
+- 초안 PR은 [#99](https://github.com/lgdl24/Cardnews-automation/pull/99), 기반은 `feat/instagram`이다. 첫 실제 게시 검증을 완료했다. 메인 반영과 작업실 게시 패널(B5)·성과 수집(C)이 다음 작업이다.
 - 이슈 #96, 기반 `feat/instagram`의 `0630788`, 작업 브랜치 `fix/96-instagram-unified-login`. 작업 폴더 `/Users/lee/.codex/.chatgpt-projects/g-p-6abb113ccf84819189f417d059c9233f/worktrees/cardnews-instagram`. 원래 `/Users/lee/git/Cardnews-automation`의 실험 변경은 별도 상태다.
 - 사용자가 원래 폴더의 `.env`에 토큰·계정 ID를 입력했다. `IG_API_SETUP=unified`를 추가했고, 개발 폴더는 원래 `.env`를 참조한다. 값은 문서·로그·커밋에 넣지 않는다.
 - 완료한 연결 확인은 `npm run ig -- check`의 `@cardnews_auto_lab` 계정 조회, 게시 권한 2개 승인, 한도 0/100건이다. 토큰과 계정 ID 일치도 확인했다. `prepare`·`publish`가 같은 계정 선택을 사용한다.
-- 검증은 전체 `npm test` 225개, 그중 인스타·게시 전 점검 14개 통과. 기존 제품의 임시 복사본으로 JPEG 5장·캡션 422자를 준비하고 `publish --dry-run`을 실행했다. 기존 PNG 5장의 AI 활용 XMP 누락은 복사본에만 보완했고 그림 데이터 동일성을 확인했다. 점검은 통과 6개·사람 확인 1개(GPT 이미지 1~5번)·실패 0개다.
-- 실제 게시·공개 터널 실행은 아직이다. 원래 젤크림은 `stage=approved`이지만 AI 카드 보고서의 `text_checked`·`design_checked`는 false다. 사람에게 게시할 카드·캡션을 확인받은 뒤 진행한다. 작업실 게시 패널(B5)·성과 수집(C)은 후속이다. 노션 작업 트래커 갱신 필요.
-- 작업 폴더는 `/Users/lee/.codex/.chatgpt-projects/g-p-6abb113ccf84819189f417d059c9233f/worktrees/cardnews-instagram`, 게시 준비 복사본은 `/private/tmp/cardnews-ig-dryrun-m3fqs6bj/products/refreshing-gel-cream/output/instagram`이다. `cloudflared` 설치는 확인했다. 실행 중인 서버·생성 작업 없음. 다음 행동은 변경 PR 검토, 실제 게시할 5장·캡션 확인, 첫 게시 결과와 링크 기록이다.
+- 검증은 전체 `npm test` 227개, 그중 인스타·게시 전 점검 16개 통과. 실제 명령의 이름 충돌은 모의 API를 사용한 `publish` 전체 흐름 회귀 검사로 보강했다. 터널 주소 안내만으로 준비 완료로 판단하지 않고 연결 등록까지 기다리며, DNS 첫 조회 전 15초를 둔다. HTTP 확인에도 10초 제한을 둔다.
+- 사용자가 준비한 젤크림 5장·캡션의 공개 테스트 게시를 승인했다. `https://www.instagram.com/p/Df024mWj53J/`, `media_id=17871458706663424`. Meta API에서 캐러셀 5장·캡션 일치·한도 1/100을 확인했고, 실제 게시 이미지와 준비 JPEG를 비교해 1→2→3→4→5 순서를 확인했다.
+- 기존 PNG의 AI 활용 XMP 누락은 게시 준비 복사본에 보완했다. 원래 제품의 `cards.json`·PNG 5장 해시는 동일함을 확인했다. 실제 게시에 쓴 JPEG·캡션·`published.json`·`verification.json`은 `/Users/lee/git/Cardnews-automation/products/refreshing-gel-cream/output/instagram`에 저장했고, 원래 제품 `log.jsonl`에도 `published` 이벤트를 기록했다. AI 카드 보고서의 개별 검토 플래그는 별도 상태다.
+- 작업 폴더는 `/Users/lee/.codex/.chatgpt-projects/g-p-6abb113ccf84819189f417d059c9233f/worktrees/cardnews-instagram`, 게시 준비 복사본은 `/private/tmp/cardnews-ig-dryrun-m3fqs6bj/products/refreshing-gel-cream/output/instagram`이다. 게시용 이미지 서버와 Cloudflare 터널은 종료했다. 다음 행동은 PR 검토·메인 통합, 작업실 게시 패널·중복 게시 방지·예약, 성과 수집이다. 노션 작업 트래커 갱신 필요.
 
 ## 이전 작업 — 브랜드 무드 (이용석, 2026-11-05)
 

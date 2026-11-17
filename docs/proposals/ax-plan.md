@@ -38,7 +38,7 @@
 | B1 | 캡션 생성: 승인 문구로 캡션·해시태그를 만들고 첫 줄에 'AI 활용'·샘플 표시 | 완료 11.13 `scripts/lib/ig-caption.js` → `output/instagram/caption.txt` (카드 문구만 사용, 새 문구 없음) |
 | B2 | PNG → JPEG 변환(메타데이터 유지), 캐러셀 순서 고정 | 완료 11.13 `scripts/lib/ig-media.js` (JPEG APP1에 같은 XMP) |
 | B3 | 공개 URL: 배포 없이 시연하므로 게시하는 동안만 임시 터널(`cloudflared` 빠른 터널)로 JPEG를 열어 두고, 끝나면 닫음 | 완료 11.13 `scripts/lib/public-url.js` (비밀 경로·지정 파일만). 서버가 생기면 `--base-url` |
-| B4 | 완료 11.13(토큰 시험 전) `npm run ig -- check \| prepare \| publish [--dry-run] \| refresh-token`: 점검 통과 + 최종 승인된 것만, 컨테이너 생성 → 캐러셀 → 게시. 24시간 한도 확인. 결과(`media_id`, 링크)를 제작 기록에 `published` 이벤트로 | 예약은 우리 쪽에서(작업실 대기열) |
+| B4 | 구현 11.13, 첫 실제 게시 확인 11.17. `npm run ig -- check \| prepare \| publish [--dry-run] \| refresh-token`: 점검 통과 + 최종 승인된 것만, 컨테이너 생성 → 캐러셀 → 게시. 24시간 한도 확인. 결과(`media_id`, 링크)를 제작 기록에 `published` 이벤트로 | 예약은 우리 쪽에서(작업실 대기열) |
 | B5 | 작업실 '게시' 패널: 미리보기(캡션 포함) → 게시/예약 → 결과 링크 | 버튼은 최종 승인 후에만 |
 
 ### 연결 확인 (2026-11-17)
@@ -46,7 +46,7 @@
 - `npm run ig -- check`로 계정 조회, Unified Login의 `instagram_basic`·`instagram_content_publish` 승인 여부, 게시 한도를 확인한다. 권한이나 한도 조회가 실패하면 오류로 종료한다.
 - Unified Login은 `graph.facebook.com`에서 명시적인 `IG_USER_ID`로 조회한다. 이 방식의 `/me`는 비즈니스 통합 시스템 사용자다. 기존 Instagram Login은 `graph.instagram.com`의 `/me`를 사용한다. `IG_API_SETUP`을 생략한 기존 환경은 Instagram Login으로 동작한다.
 - 토큰은 Authorization 헤더로 보낸다. Unified Login의 토큰은 `ig refresh-token`에서 변경하지 않는다. 앱 대시보드 재발급 또는 별도 비즈니스 토큰 관리 API 설정이 필요하다.
-- 실제 계정·권한 확인과 임시 카드 복사본의 `publish --dry-run`까지 확인했다. 실제 게시는 게시할 결과를 사람이 확인한 뒤 진행한다. 기존 젤크림 이미지에는 AI 활용 XMP가 없어 복사본에 생성 기록에 맞는 표시를 추가했고, 그림 데이터가 같은지 확인했다.
+- 11.17 사용자 승인 후 젤크림 5장과 캡션을 실제 게시했다. [첫 게시물](https://www.instagram.com/p/Df024mWj53J/)의 캐러셀 5장·캡션 일치·이미지 순서를 확인했다. 기존 젤크림 이미지의 AI 활용 XMP 누락은 게시 준비 복사본에 보완했고 원본 그림 데이터 동일성을 확인했다. 실제 게시에서 발견한 명령 이름 충돌과 Cloudflare 연결·DNS 준비 대기도 수정했다.
 - Meta의 [Unified Login 인증](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-unified-login/authentication), [게시 권한](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-unified-login/permissions), [게시 절차](https://developers.facebook.com/documentation/instagram-platform/content-publishing)를 기준으로 연결한다.
 
 ## C. 성과 되먹임 (목표 11.21)

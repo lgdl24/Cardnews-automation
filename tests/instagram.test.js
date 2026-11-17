@@ -8,8 +8,9 @@ const { EventEmitter } = require('node:events');
 const { createClient, explain, IgError } = require('../scripts/lib/instagram');
 const { buildCaption } = require('../scripts/lib/ig-caption');
 const { withXmpJpeg, readXmpJpeg, buildXmp } = require('../scripts/lib/ai-disclosure');
-const { startFileServer, openTunnel } = require('../scripts/lib/public-url');
+const { startFileServer, openTunnel, waitReachable } = require('../scripts/lib/public-url');
 const { readEnvKeys } = require('../scripts/lib/env-file');
+const { ROOT, makeWorkspace } = require('./helpers');
 const cfg = require('../config/instagram.json');
 
 const TOKEN = 'IGAA-secret-token-123';
@@ -144,6 +145,55 @@ test('통신·처리 오류에서도 토큰을 숨기고 로그인 방식에 맞
   assert.ok(!explain(error).includes('instagram_business_'));
 });
 
+test('publish 명령 전체 흐름: 준비·점검 뒤 계정 확인과 게시 기록까지 연결되고 승인 전에는 차단한다', async () => {
+  const { publish } = require('../scripts/instagram');
+  const { stampProduct } = require('../scripts/lib/ai-disclosure');
+  const ws = makeWorkspace({ from: 'toneup-sunscreen-r1' });
+  fs.mkdirSync(ws.file('output', 'png'), { recursive: true });
+  const data = ws.readCards();
+  for (const card of data.cards) {
+    const name = `card-${String(card.no).padStart(2, '0')}.png`;
+    fs.copyFileSync(path.join(ROOT, 'docs/examples/web-data/projects/toneup-sunscreen-r1/png', name), ws.file('output', 'png', name));
+  }
+  fs.writeFileSync(ws.file('output', 'render-report.json'), JSON.stringify({ results: data.cards.map((card) => ({ no: card.no, issues: [] })) }));
+  stampProduct(ws.file(), { cards: data.cards });
+  const posts = [];
+  let accountChecks = 0;
+  const ig = {
+    apiSetup: 'unified',
+    me: async () => { accountChecks++; return { user_id: '17841', username: 'test_account' }; },
+    permissions: async () => ({ data: ['instagram_basic', 'instagram_content_publish'].map((permission) => ({ permission, status: 'granted' })) }),
+    publishingLimit: async () => ({ data: [{ quota_usage: 0, config: { quota_total: 100 } }] }),
+    publishImages: async (id, urls, caption) => {
+      posts.push({ id, urls, caption });
+      return { media_id: 'media-test', permalink: 'https://www.instagram.com/p/test-post/' };
+    },
+  };
+  const previous = { CARDNEWS_PRODUCTS_DIR: process.env.CARDNEWS_PRODUCTS_DIR, CARDNEWS_NO_LOG: process.env.CARDNEWS_NO_LOG };
+  process.env.CARDNEWS_PRODUCTS_DIR = ws.dir;
+  process.env.CARDNEWS_NO_LOG = '1';
+  try {
+    const result = await publish(ws.id, { ig, baseUrl: 'https://images.example', log: () => {} });
+    assert.equal(result.media_id, 'media-test');
+    assert.equal(accountChecks, 1);
+    assert.equal(posts.length, 1);
+    assert.equal(posts[0].id, '17841');
+    assert.deepEqual(posts[0].urls, data.cards.map((card) => `https://images.example/card-${String(card.no).padStart(2, '0')}.jpg`));
+    assert.match(posts[0].caption, /AI를 활용/);
+    assert.equal(JSON.parse(fs.readFileSync(ws.file('output/instagram/published.json'), 'utf8')).permalink, result.permalink);
+    ws.editCards((cards) => { cards.stage = 'copy'; });
+    await assert.rejects(publish(ws.id, { ig, baseUrl: 'https://images.example', log: () => {} }), /최종 승인/);
+    assert.equal(accountChecks, 1);
+    assert.equal(posts.length, 1);
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    ws.cleanup();
+  }
+});
+
 test('캡션: 첫 줄 AI 활용·샘플 표시, 카드 문구만 사용, 해시태그', () => {
   const data = {
     cards: [
@@ -196,7 +246,12 @@ test('공개용 파일 서버는 비밀 경로의 지정 파일만 주고, 터�
   child.stderr = new EventEmitter();
   child.kill = () => (child.killed = true);
   const p = openTunnel(1234, { spawnFn: () => child });
+  let ready = false;
+  p.then(() => { ready = true; });
   child.stderr.emit('data', 'INF | Your quick Tunnel has been created! Visit it at:\nINF | https://sky-blue-cat.trycloudflare.com\n');
+  await Promise.resolve();
+  assert.equal(ready, false, '주소 안내만으로 터널 준비 완료로 판단하지 않음');
+  child.stderr.emit('data', 'INF Registered tunnel connection connIndex=0\n');
   const t = await p;
   assert.equal(t.url, 'https://sky-blue-cat.trycloudflare.com');
   t.close();
@@ -207,6 +262,23 @@ test('공개용 파일 서버는 비밀 경로의 지정 파일만 주고, 터�
   const q = openTunnel(1, { spawnFn: () => missing });
   missing.emit('error', Object.assign(new Error('spawn cloudflared ENOENT'), { code: 'ENOENT' }));
   await assert.rejects(q, /brew install cloudflared/);
+});
+
+test('공개 주소 확인은 일시적인 DNS 실패를 재시도하고 JPEG 응답을 확인한다', async () => {
+  let calls = 0;
+  const ready = await waitReachable('https://images.example/card.jpg', {
+    initialDelayMs: 0,
+    every: 1,
+    fetchFn: async (url, options) => {
+      calls++;
+      assert.equal(options.method, 'HEAD');
+      assert.ok(options.signal instanceof AbortSignal);
+      if (calls === 1) throw Object.assign(new Error('DNS 대기'), { code: 'ENOTFOUND' });
+      return { ok: true, headers: { get: () => 'image/jpeg' } };
+    },
+  });
+  assert.equal(ready, true);
+  assert.equal(calls, 2);
 });
 
 test('.env에서 필요한 키만 읽고, 환경변수가 먼저', () => {

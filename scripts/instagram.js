@@ -79,13 +79,13 @@ async function check({ log = console.log, ig = client() } = {}) {
   return { me, used, total, permissions: granted };
 }
 
-async function publish(id, { dryRun = false, baseUrl = null, log = console.log } = {}) {
+async function publish(id, { dryRun = false, baseUrl = null, log = console.log, ig = null } = {}) {
   const { run: precheck } = require('./precheck');
   const prepared = await prepare(id, { log });
-  const check = precheck(id);
+  const report = precheck(id);
   const names = prepared.jpgs.map((f) => path.basename(f));
-  if (!check?.ready) {
-    const blockers = (check?.checks || []).filter((c) => c.status === 'fail' || c.status === 'todo').map((c) => `${c.label}: ${c.detail}`);
+  if (!report?.ready) {
+    const blockers = (report?.checks || []).filter((c) => c.status === 'fail' || c.status === 'todo').map((c) => `${c.label}: ${c.detail}`);
     if (!dryRun) throw new Error(`게시 전 점검을 통과하지 못했어요\n- ${blockers.join('\n- ')}`);
     log(`[시험] 실제 게시라면 막혀요:\n- ${blockers.join('\n- ')}`);
   }
@@ -94,8 +94,8 @@ async function publish(id, { dryRun = false, baseUrl = null, log = console.log }
     log('--- 캡션 ---\n' + prepared.caption);
     return { dryRun: true };
   }
-  const ig = client();
-  const { me, used, total } = await check({ ig, log });
+  const api = ig || client();
+  const { me, used, total } = await check({ ig: api, log });
   if (Number.isFinite(used) && Number.isFinite(total) && used >= total) throw new IgError('게시 한도(24시간)에 도달했어요. 한도가 회복된 뒤 다시 시도해 주세요');
   let server = null;
   let tunnel = null;
@@ -111,7 +111,7 @@ async function publish(id, { dryRun = false, baseUrl = null, log = console.log }
       if (!(await waitReachable(urls[0]))) throw new Error('공개 주소에서 이미지가 열리지 않아요 (터널 확인)');
     }
     log(`게시 중: @${me.username} · ${urls.length}장`);
-    const r = await ig.publishImages(me.user_id, urls, prepared.caption);
+    const r = await api.publishImages(me.user_id, urls, prepared.caption);
     const record = { product_id: id, published_at: new Date().toISOString(), account: me.username, media_id: r.media_id, permalink: r.permalink, cards: names.length, key: prepared.post.key };
     fs.writeFileSync(path.join(igDir(id), 'published.json'), JSON.stringify(record, null, 2) + '\n');
     if (process.env.CARDNEWS_NO_LOG !== '1') appendEvent(id, 'published', { job_id: null, channel: 'instagram', media_id: r.media_id, permalink: r.permalink, cards: names.length });

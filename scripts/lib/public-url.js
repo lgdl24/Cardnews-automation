@@ -48,9 +48,11 @@ function openTunnel(port, { bin = process.env.CLOUDFLARED_BIN || 'cloudflared', 
       child.kill();
       reject(new Error('공개 주소(터널)를 여는 데 실패했어요 (시간 초과)'));
     }, timeoutMs);
+    let output = '';
     const onData = (d) => {
-      const m = String(d).match(TUNNEL_RE);
-      if (m) {
+      output = (output + String(d)).slice(-8192);
+      const m = output.match(TUNNEL_RE);
+      if (m && output.includes('Registered tunnel connection')) {
         clearTimeout(timer);
         resolve({ url: m[0], close: () => child.kill() });
       }
@@ -69,10 +71,12 @@ function openTunnel(port, { bin = process.env.CLOUDFLARED_BIN || 'cloudflared', 
 }
 
 /** 공개 주소로 실제 파일이 열리는지 (터널 주소는 몇 초 뒤에 열리기도 해서 재시도) */
-async function waitReachable(url, { tries = 10, every = 2000, fetchFn = fetch } = {}) {
+async function waitReachable(url, { tries = 10, every = 2000, initialDelayMs = 15000, fetchFn = fetch } = {}) {
+  // 새 주소를 등록 직후 조회하면 NXDOMAIN이 캐시될 수 있어 DNS 전파 시간을 먼저 둔다.
+  if (initialDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, initialDelayMs));
   for (let i = 0; i < tries; i++) {
     try {
-      const r = await fetchFn(url, { method: 'HEAD' });
+      const r = await fetchFn(url, { method: 'HEAD', signal: AbortSignal.timeout(10000) });
       if (r.ok && /image\/jpeg/.test(r.headers.get('content-type') || '')) return true;
     } catch {
       /* 다시 */
