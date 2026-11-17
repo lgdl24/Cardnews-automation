@@ -19,6 +19,16 @@
 | 2026-11-10 | Claude | `feat/ax-compliance` (이슈 없음) | **AX 확장 A: 게시 전 점검** (계획 `docs/proposals/ax-plan.md`, A→B 인스타 게시→C 성과 되먹임): A1 주의 표현 '가상 인물·전문가 추천' 분류(개정 화장품법 제13조①4 · 공정위 가상인물 지침, 목록 v2) · A2 GPT 이미지 지시문에 의료인·가운·병원 금지 · A3 출력 PNG에 AI 활용 XMP(IPTC `DigitalSourceType`=compositeWithTrainedAlgorithmicMedia, `cardnews:aiParts` text/text,image) 자동 삽입(`render` 끝, `scripts/lib/ai-disclosure.js`). AI 카드 '같은 파일' 비교는 XMP를 빼고 그림만(`samePng`) · A4 `npm run precheck -- <id>` → `output/publish-check.json`(승인·검증·출력·주의 표현·AI 표시·GPT 이미지·캡션), 작업실 '게시 전 점검' 패널(`GET /products/:id/precheck`). **규칙 버전은 그대로 v1** — 주의 표현 목록이 바뀌었으니 v2로 올릴지 사람 결정(A5) |
 | 2026-11-10 | Claude | #89 · `feat/89-brand-composite` | **브랜드 무드 보완** (이용석): 제품 사진이 있는 카드는 제품을 템플릿 자리에 놓은 바탕을 주고 GPT가 바닥 그림자·반사만 그린 뒤 원본 제품으로 다시 덮음(AI 디자인 카드와 같은 잠금 기준, `ai-bg.json` `baked`→출력이 제품을 다시 얹지 않음, 3번 어긋나면 배경만). 요청문에 제품 대표 색. 이미지 만드는 곳 `CARDNEWS_IMAGE_BACKEND`=`codex`(기본)·`openai`(`OPENAI_API_KEY`). Codex 한도면 카드별 ChatGPT 채팅 요청문 복사→이미지 올리기(`POST .../ai-bg/upload`, `--import`). 배지 대비(브랜드 묶음은 면·배지 짝만 검사)·위쪽 버튼이 전부 다시 만들던 것 수정. 채팅창 자동 조작은 약관상 안 씀 |
 
+## 다음 작업 — 인스타 캡션 개선 #107 (Codex로 넘김, 2026-11-17)
+
+- 이규동 요청: 게시 캡션이 카드 글을 그대로 옮긴 느낌이고 AI 티가 많이 남 → 손보는 작업은 **Codex에서 이어서** 함. 이슈 [#107](https://github.com/lgdl24/Cardnews-automation/issues/107)에 문제·현재 구조·방안·완료 조건 정리.
+- 원인: `scripts/lib/ig-caption.js` `buildCaption()`이 승인된 카드 문구만 순서대로 이어 붙임(첫 줄 🤖 긴 안내문 → 표지 제목·부제 → `✔ 카드 제목` → `· 목록` → `#AI활용 #카드뉴스 #제품명전체`). 표지 부제·2번 카드 본문이 겹치고, 카드용 단정 회피 말투(`~를 목표로 했어요`)가 그대로 옴.
+- 방안: **A** 조립 규칙만 바꾸기(새 문장 없음: 첫 줄 AI 표시 짧게, 중복 제거, 기호 제거, 해시태그 목록 정리) / **B(추천)** 캡션 작성 단계 추가(Claude가 승인 문구 + 입력 원문 근거만으로 300자 안팎 게시 글, 주의 표현 검사, 게시 패널에서 확인). 어느 쪽인지 **사용자 결정 전**.
+- 연결된 곳: 설정 `config/instagram.json` `caption`, 준비 명령 `scripts/instagram.js prepare`(→ `output/instagram/caption.txt`), 게시 관리자 `scripts/lib/ig-publisher.js`(캡션이 버전 해시에 들어감 → 바뀌면 점검·사람 확인 다시), 점검 `scripts/lib/publish-check.js`(`cards.json` `caption.text`가 있으면 우선, **첫 줄에 `AI` 없으면 실패**), 화면 `web/src/screens/studio/PublishPanel.tsx`(보여주기만), 검사 `tests/instagram.test.js`·`tests/ig-publisher.test.js`·`tests/studio-publish-ui.test.js`.
+- 지킬 것: 캡션 편집 화면은 다른 담당 영역(11.17 결정, 생성 규칙 범위는 그 담당과 맞출 것). AI 활용 표시는 첫 줄 유지(옮기려면 AI 기본법 표시 기준 확인). 카드·원문에 없는 효능·수치 금지. 실제 게시·예약은 사용자 승인 뒤에만, `.env` 값은 출력하지 않음.
+- 작업 위치: Codex 인스타 작업 폴더(`/Users/lee/.codex/.chatgpt-projects/g-p-6abb113ccf84819189f417d059c9233f/worktrees/cardnews-instagram`)는 병합된 `fix/96`(`2591330`)에 머물러 있음 → `origin/main`에서 새 브랜치(`feat/107-instagram-caption` 등)로 시작. 그 폴더 `.env`는 원래 폴더 `.env`를 참조.
+- 인스타 쪽 다른 남은 일(위 '11.17 main 병합·정리' 절과 같음): 실제 게시 1회(새 버전) · CLI `publish`와 작업실 게시 기록 통합 · KT 서버 고정 주소·서버 예약 · 노션 트래커 #102·#104·#107 행.
+
 ## 현재 작업 — 11.17 main 병합·정리 (Claude, 2026-11-17)
 
 - 요청(이규동): 깃허브에 올라온 PR 중 병합할 수 있는 것은 병합, 필요 없는 파일 정리. 이 맥의 GitHub 계정 `lgdl24`가 저장소 관리자.
@@ -26,7 +36,7 @@
 - 충돌 처리: `docs/handoff.md` 최근 변경 표는 양쪽 줄 유지(#95는 `feat/94-rules-v2`에 main을 합치는 커밋을 올림). #103은 입력 화면·작업실 상세에서 #92·#89와 겹쳐 두 변경을 합침(최근 변경 표 참고, `.btn.btn-small.file-btn` 작은 버튼 모양 추가, 자료로 채우기는 01 단계 안). #105는 `package.json`·`scripts/render.js`·`scripts/lib/brand.js`·`docs/style-guide.md` 충돌을 양쪽 기능 모두 남기게 해결.
 - 정리: 병합된 작업 폴더 `cardnews-web-ui` 삭제, 이미 지워진 `/private/tmp/cardnews-ui-pr` 기록 정리. main에 이미 들어간 로컬 브랜치 37개 삭제(main에 없는 `feat/3-agent-sdk-poc`·`feat/claude-design-test`·`feat/web-ux-main`·`feat/web-ux-refresh`는 남김), 로컬 `main`을 `origin/main`으로 맞춤. 원격 `feat/102-web-studio-redesign`·`feat/104-instagram-web-publish`·`feat/instagram`·`feat/ax-compliance` 삭제(병합됨, PR 화면에서 복구 가능). 이용석 원격 브랜치와 `fix/96`(Codex 작업 폴더가 추적)·`fix/eval-run`(평가 폴더)은 그대로. 저장소 밖 캡처 폴더는 화면만 남김(`/Users/lee/git/cardnews-web-ui-captures/{before,after,e2e,e2e-ig,ig}`).
 - 건드리지 않음: 원래 폴더 `/Users/lee/git/Cardnews-automation`(`experiment/gpt-all-cards`, 미커밋 변경), Codex 인스타 작업 폴더, `cardnews-ai`(평가 실행 결과), `cardnews-figma`, `~/git`의 `*.bundle`·`repository`(출처 확인 필요).
-- 시험 서버: `/Users/lee/git/cardnews-ig-web`(main 기준)에서 `cd web && CARDNEWS_STUDIO_SANDBOX=/Users/lee/git/cardnews-studio-test ./node_modules/.bin/vite --port 5173 --strictPort --host 127.0.0.1` → http://127.0.0.1:5173/studio. 제품은 복사본(젤크림은 CLI로 이미 게시해 같은 버전 재게시 막힘 + PNG에 AI 활용 메타데이터 없음, 123은 문구 단계). `npm run studio -- --port …`는 npm이 옵션을 vite에 넘기지 못해 루트가 잘못 잡힘. 끄기 `lsof -ti tcp:5173 | xargs kill`. 다 쓰면 `cardnews-studio-test` 폴더 삭제 가능.
+- 시험 서버: `/Users/lee/git/cardnews-ig-web`(main 기준)에서 `cd web && CARDNEWS_STUDIO_SANDBOX=/Users/lee/git/cardnews-studio-test ./node_modules/.bin/vite --port 5173 --strictPort --host 127.0.0.1` → http://127.0.0.1:5173/studio. 제품은 복사본(젤크림은 CLI로 이미 게시해 같은 버전 재게시 막힘 + PNG에 AI 활용 메타데이터 없음, 123은 문구 단계). `npm run studio -- --port …`는 npm이 옵션을 vite에 넘기지 못해 루트가 잘못 잡힘. 끄기 `lsof -ti tcp:5173 | xargs kill`. **11.17 Codex로 넘기며 서버는 종료함**(시험 폴더 `cardnews-studio-test`·작업 폴더 `cardnews-ig-web`은 실제 게시 시험용으로 남김, 다 쓰면 삭제 가능).
 - 남은 일: ① 인스타 실제 게시 1회(새 버전 필요: 시험 폴더에서 다시 출력 → 최종 승인 → 게시, 사용자 승인 뒤) ② CLI `npm run ig -- publish`가 작업실 게시 기록(`ig-publish.json`)을 보게 통합 ③ KT 서버 고정 주소·서버 예약 실행 ④ 노션 작업 트래커 #102·#104 행(노션 쓰기 권한 필요).
 
 ## 현재 작업 — 작업실 인스타 수동·예약 게시 B5 (Claude, 2026-11-17)
