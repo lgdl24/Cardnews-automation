@@ -8,7 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
-| 2026-11-17 | Codex | #107 · `feat/107-instagram-caption` | B 방식으로 승인 근거 기반의 새 게시 글 작성·별도 의미 검토를 추가했어요. 첫 줄 AI 활용·맥락별 태그, 카드/원문/규칙 변경 무효화, CLI·웹·점검 캡션 일치와 사람 재확인을 연결했어요. 편집 UI·실제 게시·예약은 실행하지 않았어요. 아래 #107 절을 확인해요. |
+| 2026-11-17 | Codex | #107 · `feat/107-instagram-caption` · [PR #109](https://github.com/lgdl24/Cardnews-automation/pull/109) | B 방식으로 승인 근거 기반의 새 게시 글 작성·별도 의미 검토를 추가했어요. 첫 줄 AI 활용·맥락별 태그, 카드/원문/규칙 변경 무효화, CLI·웹·점검 캡션 일치와 사람 재확인을 연결했어요. 편집 UI·실제 게시·예약은 실행하지 않았어요. 아래 #107 절을 확인해요. |
 | 2026-11-17 | Claude | PR #91·#93·#95·#98·#99·#101·#103·#105 → `main` | **열린 PR 8개 main 병합 (이규동 결정)**: 이용석 #89·#92·#94·#97·#100, 작업실 개편 #102, 인스타 B1~B4·Unified Login(#96)·B5(#104). 입력 화면은 #92의 01 자료·브랜드 → 02 채운 내용 확인 → 03 제작 조건 구성 위에 #102의 단계별 진행·선택 항목 접기·오류 요약·임시 저장. AI 배경 패널은 #102 접기 구조 + #89 채팅 대체(요청문 복사·이미지 올리기). `render.js`는 AI 활용 메타데이터 + 브랜드 배치 둘 다, `brand.js` 배경 요청문 3종(Codex·채팅·합성) 모두 의료·약사·전문가·흰 가운 금지. 병합 뒤 main: `npm test` 245, `test:web` 30, `test:render` 17, 웹 빌드 통과 |
 | 2026-11-17 | Claude | #104 · `feat/104-instagram-web-publish` (`fix/96` + #102 합침) | **작업실 인스타 수동·예약 게시(B5)**: `scripts/lib/ig-publisher.js`(상태 `products/<id>/output/instagram/ig-publish.json`, 버전 해시, 같은 버전 1회, 결과 불분명→조회 뒤 재시도, 재시작 복원, 예약 30초 확인·놓침 10분), `ig-publish-deps.js`(토큰·터널·JPEG·점검 프로세스), API `/instagram/account`·`/products/:id/instagram/*`, 화면 `PublishPanel.tsx`. 새 환경값 `IG_PUBLIC_BASE_URL`(고정 공개 주소, 나중 KT 서버)·`CARDNEWS_IG_SCHEDULE=off`(예약 확인 끔). 게시 전 점검은 작업실이 별도 프로세스로 실행(시험 폴더도 동작) |
 | 2026-11-17 | Claude | #102 · `feat/102-web-studio-redesign` | **웹 UI 개편 2차**: 디자인 기준 `design-system/cardnews-studio/MASTER.md`(Pretendard 단일·포인트색 1개·상태색 6종 토큰, 기존 `--color-*`는 별칭). 작업실 목록 대표 카드·상태, 제작 진행 5단계·실제 진행/대기/실패 원인·다시 하기, 구성안·카드 검토 결정 막대, 입력 오류 요약·임시 저장(localStorage `cardnews-draft:*`, 이미지 제외). `GET /api/studio/products` 요약에 `thumb`·`png_count`·`card_count`·`last_job` 추가(읽기 전용). 새 검사 `tests/studio-flow-ui.test.js`. 인스타 웹 게시는 제안만 `docs/proposals/instagram-web-publish.md` |
@@ -21,6 +21,8 @@
 
 ## 현재 작업 — 인스타 캡션 개선 #107 (Codex, 2026-11-17)
 
+- PR은 [#109](https://github.com/lgdl24/Cardnews-automation/pull/109)이고 대상은 main이에요. 구현 커밋은 `54443eb`이며 브랜치는 `feat/107-instagram-caption`, 시작 기준은 `origin/main` `a080a36`이에요. 병합은 사용자가 결정해요.
+
 - 사용자 결정은 **B 방식**이에요. 같은 정보를 나열하는 대신 승인 카드·원문 근거로 새 문장을 작성해요. 캡션 편집 UI는 다른 담당 영역이어서 만들지 않아요. AI 활용 표시는 첫 줄에 유지해요.
 - 브랜치는 `feat/107-instagram-caption`이고 기준은 `origin/main`의 `a080a36`이에요. 기존 `fix/96`은 main 병합된 상태로 보존했어요. 원래 `/Users/lee/git/Cardnews-automation`의 실험 변경은 수정하지 않았어요. PR은 준비 중이에요.
 - 구현은 `scripts/lib/ig-caption-writer.js`·`ig-caption-draft.js`, `prompts/instagram-caption.md`예요. `npm run ig -- caption <제품ID> [--force]`와 `prepare`에서 작성해요. 최종 승인 자료만 받고 Claude 작성→구조/근거 ID/수치/주의 표현 검사→별도 Claude 의미 검토 뒤 `output/instagram/caption-draft.json`·`caption.txt`를 저장해요. 실패 시 기존 카드 나열 글로 대체하지 않아요.
@@ -29,7 +31,7 @@
 - 검사 중 최신 main 의존성의 글꼴 누락·원래 폴더를 향한 글꼴 링크를 발견해 이 worktree의 루트·web에서 잠금 파일대로 `npm ci` 했어요. 이후 `npm test` 252개·`npm run test:web` 30개·웹 빌드가 통과했어요. 최종 작성 지시·실제 예시를 반영한 검사도 같은 결과로 통과했어요. 원문만 바뀐 뒤 동일한 캡션을 다시 생성해도 사람 확인 버전이 바뀌는 회귀 검사를 추가했어요.
 - [사용법·전후 예시](instagram-caption.md)에 실제 모델 출력과 시험 자료의 출처를 적었어요. 추가 검사는 `tests/ig-caption.test.js`·`tests/ig-publisher.test.js`와 CLI·기존 표시 전용 게시 패널 검사예요. 실제 제품 대신 임시 사본·가짜 게시 API를 사용해요.
 - 남은 범위는 새 버전 실제 게시 1회(사용자 승인 뒤), CLI publish·작업실 게시 기록 통합, KT 고정 주소·서버 예약, 노션 트래커 #102·#104·#107 행이에요. 이번 작업에서는 진행하지 않아요.
-- 구현·검증을 마쳤어요. 다음은 #107 커밋·push·main 대상 PR을 확인하고 사용자가 리뷰·병합을 결정하는 순서예요. 실제 게시·예약은 이번에 실행하지 않아요.
+- 구현·검증·커밋·push·main 대상 PR 등록을 마쳤어요. 다음은 사용자가 #109를 리뷰·병합 결정한 뒤 승인된 범위만 이어가요. 실제 게시·예약은 이번에 실행하지 않았어요. 실행한 모델·검사 프로세스는 끝났고 이 작업에서 앱 서버·게시 대기는 시작하지 않았어요.
 
 ## 현재 작업 — 11.17 main 병합·정리 (Claude, 2026-11-17)
 
