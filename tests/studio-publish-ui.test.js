@@ -32,7 +32,7 @@ const product = {
   actions: { running: false, can_export: true, last_job_ok: true, can_edit_input: false, can_plan: false, can_approve_plan: false, can_revise_plan: false, can_copy: false, can_approve_final: false, can_revise_final: false },
 };
 const steps = [['preparing', '게시용 이미지(JPEG)·캡션 준비'], ['opening_url', '이미지 공개 주소 열기'], ['uploading', '인스타에 이미지 올리기'], ['carousel', '캐러셀 묶기'], ['publishing', '게시'], ['confirming', '게시 링크 확인']].map(([key, label]) => ({ key, label }));
-const caption = '🤖 AI를 활용해 제작한 카드뉴스예요 · 샘플 게시물이에요\n\n자외선은 막고 톤은 자연스럽게';
+const caption = require('../scripts/lib/ig-caption-draft').formatDraft(require('./fixtures/ig-caption-content.json'), require('../config/instagram.json').caption).text;
 function igStatus(over = {}) {
   return {
     configured: true, version: 'v-abc', approved: true, approved_at: ago(100), caption,
@@ -113,7 +113,7 @@ test('사람 확인 전에는 게시 버튼이 막히고, 확인하면 확인 �
   await dialog.waitFor();
   const text = await dialog.innerText();
   assert.match(text, /@glowif_lab에 카드 5장/);
-  assert.match(text, /캡션 첫 줄: 🤖 AI를 활용/);
+  assert.match(text, /캡션 첫 줄: AI 활용/);
   assert.match(text, /되돌릴 수 없어요/);
   await capture(page, 'confirm');
   await Promise.all([page.waitForResponse((r) => r.url().endsWith('/publish')), dialog.getByRole('button', { name: '게시하기' }).click()]);

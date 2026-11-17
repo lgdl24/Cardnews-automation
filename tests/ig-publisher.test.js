@@ -7,6 +7,7 @@ const { createPublisher } = require('../scripts/lib/ig-publisher');
 const { precheckIn } = require('../scripts/lib/ig-publish-deps');
 const { stampProduct } = require('../scripts/lib/ai-disclosure');
 const { ROOT, makeWorkspace } = require('./helpers');
+const { seedCaption } = require('./caption-helpers');
 
 const PNG_DIR = path.join(ROOT, 'docs/examples/web-data/projects/toneup-sunscreen-r1/png');
 const T0 = Date.parse('2026-11-18T00:00:00Z');
@@ -25,6 +26,7 @@ function approvedWorkspace() {
   fs.writeFileSync(ws.file('output', 'render-report.json'), JSON.stringify({ results: data.cards.map((c) => ({ no: c.no, issues: [] })) }));
   stampProduct(ws.file(), { cards: data.cards });
   fs.appendFileSync(ws.file('log.jsonl'), JSON.stringify({ ts: '2026-11-17T09:00:00.000Z', event: 'final_approved', approved_by: 'human' }) + '\n');
+  seedCaption(ws);
   return ws;
 }
 
@@ -84,9 +86,40 @@ function setup({ ig = fakeIg(), precheck = null, now = { t: T0 }, ...rest } = {}
     sleep: async () => {},
     ...rest,
   });
+  // 기존 게시 상태 검사는 캡션을 사람이 확인한 뒤의 상황으로 시작해요.
+  if (!precheck) {
+    const st = pub.status(ws.id);
+    pub.acknowledge(ws.id, { version: st.version, ids: ['caption_review'] });
+  }
   return { ws, pub, events, ig, opened, now };
 }
 const readState = (ws) => JSON.parse(fs.readFileSync(ws.file('output', 'instagram', 'ig-publish.json'), 'utf8'));
+
+test('캡션이 바뀌면 버전·점검·사람 확인을 다시 받고 원문이 바뀌면 재작성을 안내해요', async (t) => {
+  const { ws, pub, ig } = setup(); t.after(ws.cleanup);
+  const first = pub.status(ws.id);
+  assert.equal(first.can_publish, true);
+  const draft = JSON.parse(JSON.stringify(require('./caption-helpers').content));
+  draft.paragraphs[0].text = '메이크업 전에 바를 선크림을 살펴볼까요?';
+  seedCaption(ws, draft);
+  const changed = pub.status(ws.id);
+  assert.notEqual(changed.version, first.version);
+  assert.match(changed.caption, /살펴볼까요/);
+  assert.equal(changed.can_publish, false);
+  assert.deepEqual(changed.acks, []);
+  assert.throws(() => pub.start(ws.id, { version: first.version }), /바뀌었어요/);
+  assert.throws(() => pub.start(ws.id, { version: changed.version }), /사람 확인/);
+  ws.writeInput(ws.readInput() + '\n원문 수정');
+  const stale = pub.status(ws.id);
+  assert.equal(stale.can_publish, false);
+  assert.match(stale.blockers.join(' '), /캡션을 다시 작성/);
+  seedCaption(ws, draft);
+  const regenerated = pub.status(ws.id);
+  assert.equal(regenerated.caption, changed.caption);
+  assert.notEqual(regenerated.version, changed.version, '같은 문장으로 다시 써도 원문 버전이 바뀌면 재확인해요');
+  assert.deepEqual(regenerated.acks, []);
+  assert.equal(ig.calls.length, 0);
+});
 
 test('지금 게시: 점검 통과한 승인본을 단계별로 게시하고, 기록은 한 번, 같은 버전은 다시 게시하지 않음', async (t) => {
   const { ws, pub, events, ig, opened } = setup();

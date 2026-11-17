@@ -35,7 +35,7 @@
 | 단계 | 할 일 | 비고 |
 |---|---|---|
 | B0 (이규동, 병행) | 테스트용 인스타 **프로페셔널 계정**(크리에이터 가능) · Meta 개발자 앱 · 앱 역할에 계정 추가 · 토큰과 계정 ID를 로컬 `.env`의 `IG_ACCESS_TOKEN`·`IG_USER_ID`에 보관 (Claude는 `.env`를 읽지 않음). 현재 앱은 **Unified Login**이므로 `IG_API_SETUP=unified` 설정 | 11.17 실계정 `@cardnews_auto_lab` 조회·게시 권한·한도 확인. 개발 모드의 앱 역할 계정으로 시험 |
-| B1 | 캡션 생성: 승인 문구로 캡션·해시태그를 만들고 첫 줄에 'AI 활용'·샘플 표시 | 완료 11.13 `scripts/lib/ig-caption.js` → `output/instagram/caption.txt` (카드 문구만 사용, 새 문구 없음) |
+| B1 | 캡션을 새 게시 글로 작성하고 첫 줄에 AI 활용 표시를 유지해요 | 11.13 카드 문구 조립 이후 11.17 #107에서 B 방식을 선택했어요. Claude 작성·별도 근거 검토 → `caption-draft.json`·`caption.txt`를 준비·작업실·점검에서 함께 읽어요. [사용법·전후 예시](../instagram-caption.md)를 확인해요. |
 | B2 | PNG → JPEG 변환(메타데이터 유지), 캐러셀 순서 고정 | 완료 11.13 `scripts/lib/ig-media.js` (JPEG APP1에 같은 XMP) |
 | B3 | 공개 URL: 배포 없이 시연하므로 게시하는 동안만 임시 터널(`cloudflared` 빠른 터널)로 JPEG를 열어 두고, 끝나면 닫음 | 완료 11.13 `scripts/lib/public-url.js` (비밀 경로·지정 파일만). 서버가 생기면 `--base-url` |
 | B4 | 구현 11.13, 첫 실제 게시 확인 11.17. `npm run ig -- check \| prepare \| publish [--dry-run] \| refresh-token`: 점검 통과 + 최종 승인된 것만, 컨테이너 생성 → 캐러셀 → 게시. 24시간 한도 확인. 결과(`media_id`, 링크)를 제작 기록에 `published` 이벤트로 | 예약은 우리 쪽에서(작업실 대기열) |
