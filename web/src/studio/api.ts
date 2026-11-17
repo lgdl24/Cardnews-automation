@@ -114,6 +114,8 @@ export interface ProductSummary {
   png_count?: number;
   /** 마지막으로 끝난 작업 (job_finished 기록) */
   last_job?: { kind: JobKind | null; ok: boolean; error_code: string | null; ts: string } | null;
+  /** 인스타 게시 요약 (게시 기록이 있을 때) */
+  instagram?: { state: IgState | null; published: boolean; permalink: string | null; scheduled_at: string | null; schedule_state: string | null } | null;
 }
 export interface StudioCard {
   no: number;
@@ -338,6 +340,62 @@ export interface PublishCheck {
   checks: { id: string; label: string; status: CheckStatus; detail: string }[];
 }
 export const loadPublishCheck = (id: string) => studioFetch<PublishCheck>(`/products/${encodeURIComponent(id)}/precheck`);
+
+/** 인스타 게시 (B5, #104) — scripts/lib/ig-publisher.js status() */
+export type IgState = 'requested' | 'preparing' | 'opening_url' | 'uploading' | 'carousel' | 'publishing' | 'confirming' | 'published' | 'failed' | 'unknown';
+export interface IgRequest {
+  request_id: string;
+  version: string;
+  trigger: 'manual' | 'schedule';
+  state: IgState;
+  requested_at: string;
+  updated_at: string;
+  finished_at?: string;
+  steps: { key: string; at: string }[];
+  progress: { done: number; total: number } | null;
+  account: string | null;
+  media_id: string | null;
+  permalink: string | null;
+  error: { message: string; code?: number | null } | null;
+}
+export interface IgSchedule {
+  id: string;
+  at: string;
+  version: string;
+  state: 'scheduled' | 'running' | 'done' | 'missed' | 'blocked' | 'failed' | 'unknown' | 'canceled';
+  created_at: string;
+  reason: string | null;
+}
+export interface IgStatus {
+  configured: boolean;
+  version?: string;
+  approved?: boolean;
+  approved_at?: string | null;
+  caption?: string;
+  cards?: { no: number; file: string }[];
+  check?: (PublishCheck | { ready: boolean; checks: PublishCheck['checks'] }) | null;
+  acks?: string[];
+  current?: IgRequest | null;
+  published?: { version: string; media_id: string; permalink: string | null; account: string | null; published_at: string; trigger: string }[];
+  schedule?: IgSchedule | null;
+  can_publish?: boolean;
+  can_schedule?: boolean;
+  blockers: string[];
+  schedule_blockers?: string[];
+  steps?: { key: string; label: string }[];
+  limits?: { schedule_min_minutes: number; schedule_max_days: number; grace_minutes: number };
+  public_url_mode?: 'tunnel' | 'base_url';
+}
+export interface IgAccount {
+  ok: boolean;
+  username?: string;
+  login?: string;
+  used?: number | null;
+  total?: number | null;
+  error?: string;
+  checked_at?: string;
+}
+export const IG_ACTIVE: IgState[] = ['requested', 'preparing', 'opening_url', 'uploading', 'carousel', 'publishing', 'confirming'];
 
 export const pngUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/png/${file}${v ? `?v=${v}` : ''}`;
 export const aiCardUrl = (id: string, file: string, v?: number) => `${BASE}/products/${encodeURIComponent(id)}/files/ai-card/${file}${v ? `?v=${v}` : ''}`;

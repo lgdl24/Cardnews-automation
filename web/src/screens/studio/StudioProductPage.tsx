@@ -16,6 +16,7 @@ import type { Labels } from '../../data/types';
 import { ErrorState, Loading } from '../../components/StateView';
 import { Icon } from '../../components/Icon';
 import { ClaudeStatus, StudioOff } from './StudioCommon';
+import { PublishPanel } from './PublishPanel';
 import './studio.css';
 
 export function StudioProductPage() {
@@ -173,6 +174,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
             <p className="muted">{p.stage === 'approved' ? '승인된 카드예요. 결과 보기 웹에 내보내면 PNG·ZIP으로 받을 수 있어요.' : '한 장씩 문구와 원문 근거를 확인하고, 고칠 카드만 수정 요청하세요.'}</p>
           </div>
           {p.stage === 'approved' && <ExportPanel detail={p} busy={busy} onExport={() => act(`/products/${id}/export`)} />}
+          {p.stage === 'approved' && p.pngs.length > 0 && <PublishPanel detail={p} />}
           <JobNotes job={job} />
           {p.pngs.length === 0 && (
             <div className="notice notice-warn" role="status">
