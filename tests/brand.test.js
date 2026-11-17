@@ -96,6 +96,11 @@ test('배경 요청문: 무드 장면·색·글자 면 자리를 넣고 글자·
   assert.match(p, /No product, bottle/);
   assert.match(p, /No medical/);
   assert.doesNotMatch(brand.bgPrompt(MOOD, 'description'), /upper-left area/);
+  // ChatGPT 채팅용: 같은 내용, Codex 전용 지시($imagegen·파일 저장)는 없음
+  const c = brand.chatPrompt(MOOD, 'cover');
+  assert.match(c, /soft lavender silk/);
+  assert.match(c, /No text, letters, numbers, logos/);
+  assert.doesNotMatch(c, /\$imagegen|out\.png/);
 });
 
 test('배경 신선도: 무드·템플릿이 같으면 그대로 쓰고, 바뀌면 다시 만들 대상', () => {
@@ -125,6 +130,18 @@ test('GPT 사용량 한도·과부하는 다시 시도하지 않고 이유를 �
   assert.equal(usageLimit('ERROR: You’ve hit your usage limit. Upgrade to Pro ... or try again at 1:53 PM.'), 'GPT 사용량 한도예요 (1:53 PM에 다시)');
   assert.match(usageLimit('model is at capacity'), /바빠요/);
   assert.equal(usageLimit('./out.png'), null);
+});
+
+test('브랜드 색 대비: 템플릿이 쓰는 짝(면 위 글자·배지)만 맞추고, 밝은 배지에 어두운 글자면 배지를 어둡게 하지 않음', () => {
+  const { loadConfig } = require('../scripts/lib/common');
+  const { decideColors } = require('../scripts/lib/color-mood');
+  const { theme } = loadConfig({ cond: { 무드: '브랜드' } });
+  const palette = { bg: '#F4E9E6', surface: '#FDFDFD', text: '#1A1A1A', muted: '#6B6B6B', primary: '#FACADA', accent: '#00E1FF', 'on-primary': '#1A1A1A' };
+  const base = brand.brandPalette(theme.color, { palette }).color;
+  const c = decideColors({ mode: '기본', baseColor: base, pairMin: theme.contrast });
+  assert.equal(c.color.primary, '#FACADA', JSON.stringify(c.adjustments));
+  assert.ok(c.checks.find((x) => x.fg === 'on-primary' && x.bg === 'primary').ratio >= 4.5);
+  assert.ok(c.checks.find((x) => x.fg === 'text' && x.bg === 'surface').ratio >= 4.5);
 });
 
 test('브랜드 색: brand_mood.palette가 묶음 기본 색 위에 들어감', () => {
@@ -195,7 +212,7 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
       return { ok: true, job_id: `j-${kind}`, kind, report: null, verify: null, progress: [] };
     },
     aiCardFn: () => { order.push('ai-card'); return { ok: true }; },
-    aiBgFn: (pid, { stale }) => { order.push(`ai-bg:${stale ? 'stale' : 'manual'}`); return new Promise((resolve) => { releaseBg = () => resolve({ ok: true }); }); },
+    aiBgFn: (pid, { stale, card, importFile }) => { order.push(importFile ? `ai-bg:import:${card}` : `ai-bg:${stale ? 'stale' : 'manual'}`); if (importFile) assert.ok(fs.existsSync(importFile), '올린 이미지를 임시 파일로 넘김'); return new Promise((resolve) => { releaseBg = () => resolve({ ok: true }); }); },
     extractFn: async ({ files }) => ({ values: { 제품명: '자료 제품' }, missing: [], warnings: [], files: files.map((f) => f.name) }),
   });
   const server = http.createServer(async (req, res) => { if (!(await studio.handle(req, res))) { res.statusCode = 404; res.end(); } });
@@ -241,14 +258,94 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
     assert.equal(r.status, 409, '만드는 중에는 다시 못 누름');
     releaseBg();
     await new Promise((x) => setTimeout(x, 20));
+    r = await call('POST', '/products/brand-test/ai-bg', { stale: true });
+    assert.equal(r.status, 202);
+    assert.equal(order[order.length - 1], 'ai-bg:stale', '위쪽 버튼은 없는 카드만');
+    releaseBg();
+    await new Promise((x) => setTimeout(x, 20));
     r = await call('POST', '/products/brand-test/ai-bg', { card: 99 });
     assert.equal(r.status, 400);
     r = await call('POST', '/products/brand-test/ai-bg', { card: 2 });
     assert.equal(r.status, 202);
     assert.equal(order[order.length - 1], 'ai-bg:manual');
     releaseBg();
+    await new Promise((x) => setTimeout(x, 20));
+    // ChatGPT 채팅에서 만든 이미지 올리기: 카드별 요청문을 보여주고, 올린 이미지는 --import로 넣음
+    fs.mkdirSync(ws.file('output', 'ai-bg'), { recursive: true });
+    fs.writeFileSync(ws.file('output', 'ai-bg', 'ai-bg.json'), JSON.stringify({ product_hex: '#9BD770', cards: [] }));
+    r = await call('GET', '/products/brand-test');
+    assert.match(r.body.ai_bg.cards[0].prompt, /BACKGROUND ONLY/);
+    assert.match(r.body.ai_bg.cards[0].prompt, /#9BD770/, '채팅용 요청문에도 제품 색');
+    r = await call('POST', '/products/brand-test/ai-bg/upload', { card: 3, data: Buffer.from('not image').toString('base64') });
+    assert.equal(r.status, 400, '이미지가 아니면 거절');
+    const PNG = '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8cfc0f01f0005000201a3d8b1a40000000049454e44ae426082';
+    r = await call('POST', '/products/brand-test/ai-bg/upload', { card: 3, data: Buffer.from(PNG, 'hex').toString('base64') });
+    assert.equal(r.status, 202);
+    assert.equal(order[order.length - 1], 'ai-bg:import:3');
+    releaseBg();
   } finally {
     await new Promise((r) => server.close(r));
     ws.cleanup();
+  }
+});
+
+test('이미지 만드는 곳: 기본은 Codex, CARDNEWS_IMAGE_BACKEND=openai면 OpenAI 이미지 API (키는 출력하지 않음)', async () => {
+  const { imageBackend, runOpenAI } = require('../scripts/ai-bg');
+  assert.equal(imageBackend({}), 'codex');
+  assert.equal(imageBackend({ CARDNEWS_IMAGE_BACKEND: 'openai' }), 'openai');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-openai-'));
+  try {
+    let r = await runOpenAI(dir, 'p', 5, { env: {} });
+    assert.equal(r.code, -1);
+    assert.match(r.out, /OPENAI_API_KEY/);
+    let sent = null;
+    const ok = async (url, init) => { sent = { url, body: JSON.parse(init.body), auth: init.headers.authorization }; return { ok: true, status: 200, json: async () => ({ data: [{ b64_json: Buffer.from('png').toString('base64') }] }) }; };
+    r = await runOpenAI(dir, '배경 요청', 5, { env: { OPENAI_API_KEY: 'sk-test' }, fetchFn: ok });
+    assert.equal(r.code, 0);
+    assert.equal(sent.url, 'https://api.openai.com/v1/images/generations');
+    assert.equal(sent.body.model, 'gpt-image-1');
+    assert.equal(sent.body.prompt, '배경 요청');
+    assert.equal(fs.readFileSync(path.join(dir, 'gen.png'), 'utf8'), 'png');
+    assert.doesNotMatch(JSON.stringify(r), /sk-test/, '결과에 키가 섞이지 않음');
+    const limited = async () => ({ ok: false, status: 429, json: async () => ({ error: { message: 'Rate limit reached' } }) });
+    r = await runOpenAI(dir, 'p', 5, { env: { OPENAI_API_KEY: 'k' }, fetchFn: limited });
+    assert.equal(r.code, 429);
+    assert.match(require('../scripts/ai-bg').usageLimit(r.out), /한도/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('제품 합성 배경: 제품 자리는 템플릿 사진 칸과 같고(아래 가운데), 요청문은 제품 잠금·그림자·글자 금지', () => {
+  // 세로로 긴 제품(1000×1500)을 표지 칸(560,420,460×600)에 contain → 높이 기준, 아래에 붙음
+  const b = brand.productBoxFor('cover', 1000, 1500);
+  assert.equal(b.h, 600);
+  assert.equal(b.w, 400);
+  assert.equal(b.x, 560 + 30);
+  assert.equal(b.y, 420);
+  const half = brand.productBoxFor('cover', 1000, 1500, 540);
+  assert.deepEqual([half.x, half.y, half.w, half.h], [295, 210, 200, 300]);
+  assert.equal(brand.productBoxFor('없는 템플릿', 10, 10), null);
+  const p = brand.compositePrompt(MOOD, 'cover', '#9BD770');
+  assert.match(p, /THE PRODUCT IS LOCKED/);
+  assert.match(p, /contact shadow/);
+  assert.match(p, /#9BD770/);
+  assert.match(p, /No text, letters/);
+  assert.match(brand.bgPrompt(MOOD, 'image', '#9BD770'), /main color #9BD770/);
+});
+
+test('배경 신선도: 제품 사진이 바뀌면 다시 만들고, 제품을 합성한 배경은 baked로 알려줌', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-bg2-'));
+  try {
+    const card = { no: 1, template: 'cover', image: 'a.png' };
+    const data = { brand_mood: MOOD, cards: [card] };
+    const out = brand.aiBgDir(dir);
+    fs.mkdirSync(out, { recursive: true });
+    fs.writeFileSync(path.join(out, 'card-01.png'), 'x');
+    fs.writeFileSync(path.join(out, 'ai-bg.json'), JSON.stringify({ cards: [{ no: 1, ok: true, file: 'card-01.png', baked: true, key: brand.bgKey(MOOD, card) }] }));
+    assert.equal(brand.bgEntries(dir, data).get(1).baked, true);
+    assert.deepEqual(brand.staleBg(dir, { ...data, cards: [{ ...card, image: 'b.png' }] }), [1]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });

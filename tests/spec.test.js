@@ -116,7 +116,6 @@ test('빈 양식은 필수 항목이 모두 INPUT_MISSING으로 잡힌다 (안�
 test('값을 채워 만든 양식은 다시 읽었을 때 같은 값이 나온다', () => {
   const values = {
     제품명: '테스트 크림',
-    '제품 설명': '촉촉한 크림이에요.',
     '주요 특징': ['특징 하나', '특징 둘'],
     '사용 방법': '세안 후 바릅니다.',
     이미지: [{ file: 'main.png', desc: '단독 컷', source: '직접 촬영', usage: '가능' }, { file: 'texture.png', desc: '제형 컷', source: '직접 촬영', usage: '가능', kind: '제형' }],
@@ -126,7 +125,7 @@ test('값을 채워 만든 양식은 다시 읽었을 때 같은 값이 나온�
   const parsed = parseInput(renderInputMd(values));
   assert.equal(parsed.info['제품명'], '테스트 크림');
   assert.equal(parsed.info['주요 특징'], '- 특징 하나\n- 특징 둘');
-  assert.equal(parsed.info['브랜드'], '');
+  assert.equal(parsed.info['브랜드'], undefined, '양식에 없는 칸은 만들지 않음 (v1.6)');
   assert.deepEqual(parsed.images, [{ file: 'main.png', desc: '단독 컷', source: '직접 촬영', usage: '가능', kind: '제품' }, { file: 'texture.png', desc: '제형 컷', source: '직접 촬영', usage: '가능', kind: '제형' }]);
   assert.equal(parsed.cardCount, 5);
 });

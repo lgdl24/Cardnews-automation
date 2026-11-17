@@ -3,7 +3,10 @@
 // 항목 정의는 config/input-form.json, 지시문 패턴은 config/input-safety.json
 const fs = require('fs');
 const path = require('path');
-const { paths, loadInput, moodInputOf, createReport, printReport, requireProductId } = require('./lib/common');
+const { paths, loadInput, moodInputOf, designCatalog, createReport, printReport, requireProductId } = require('./lib/common');
+const { COLOR_MODES } = require('./lib/color-mood');
+const AUTO_DESIGN = '자동 추천';
+const LEGACY_REQUIRED = { '제품 정보': ['제품 설명'] };
 const { loadForm, requiredFields, findField, findInstructionLike } = require('./lib/input-form');
 const { limitLines } = require('./lib/limits');
 const { brandDir, brandUrlOf, checkBrandUrl } = require('./lib/brand');
@@ -17,7 +20,14 @@ function checkInput(productId) {
   }
   const form = loadForm();
 
-  for (const [group, keys] of Object.entries(requiredFields(form))) {
+  // 예전 양식(v1.5 이하)으로 만든 입력은 예전 필수 항목도 그대로 검사 (평가 입력·이전 제품의 결과가 바뀌지 않게)
+  // v1.6부터 '제품 설명'은 '주요 특징'에 합쳐졌지만, '## 제품 설명' 칸이 있는 입력이면 비었을 때 INPUT_MISSING
+  const required = requiredFields(form);
+  for (const [group, keys] of Object.entries(LEGACY_REQUIRED)) {
+    const g = input.groups[group];
+    if (g) for (const key of keys) if (key in g && !(required[group] || []).includes(key)) (required[group] = required[group] || []).splice(0, 0, key);
+  }
+  for (const [group, keys] of Object.entries(required)) {
     const g = input.groups[group];
     if (!g) {
       report.error('INPUT_MISSING', `# ${group}`, '큰 제목이 없어요 (양식의 # 제목을 지우지 마세요)');
@@ -42,15 +52,15 @@ function checkInput(productId) {
     }
   }
 
-  const colorRule = findField(form, '카드 색');
+  // 카드 색·무드: 입력 양식에서는 뺐지만(v1.5, 브랜드 URL·자료로 무드를 읽음) 예전 입력·평가 입력에 적힌 값은 계속 읽으므로 값만 검사
   const colorRaw = ((input.cond && input.cond['카드 색']) || '').split('\n')[0].trim();
-  if (colorRule && colorRaw && !colorRule.options.includes(colorRaw)) {
-    report.warn('## 카드 색', `"${colorRaw}"는 고를 수 없는 값이에요. ${colorRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 색으로 만들어요)`);
+  if (colorRaw && !COLOR_MODES.includes(colorRaw)) {
+    report.warn('## 카드 색', `"${colorRaw}"는 고를 수 없는 값이에요. ${COLOR_MODES.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 색으로 만들어요)`);
   }
 
-  const moodRule = findField(form, '무드');
+  const moodOptions = [...designCatalog().map((d) => d.id), AUTO_DESIGN];
   const { key: moodKey, value: moodRaw } = moodInputOf(input);
-  if (moodRule && moodRaw && !moodRule.options.includes(moodRaw)) report.warn(`## ${moodKey}`, `${moodRule.options.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 묶음으로 만들어요)`);
+  if (moodRaw && !moodOptions.includes(moodRaw)) report.warn(`## ${moodKey}`, `${moodOptions.join(' 또는 ')} 중 하나로 써주세요 (지금은 기본 묶음으로 만들어요)`);
 
   // 브랜드 URL (무드 '브랜드'): 형식만 봄. 페이지는 구성안 작업 전에 brand-snapshot이 한 번 찍음
   const brandUrl = brandUrlOf(input);

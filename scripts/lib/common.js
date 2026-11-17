@@ -81,6 +81,8 @@ function loadConfig(input = null, data = null) {
     if (own.color) theme.color = { ...theme.color, ...own.color };
     if (own.font && own.font.files) theme.font = { ...theme.font, files: { ...theme.font.files, ...own.font.files } };
     if (own.contrast) theme.contrast = { ...own.contrast };
+    // 제목용 세리프 글꼴 (브랜드 묶음 editorial·immersive 배치, --font-serif): { family, files: { 굵기: { 글자 묶음: 파일 } } }
+    if (own.serif) theme.serif = own.serif;
   }
   return {
     templates,
