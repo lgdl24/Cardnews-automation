@@ -313,8 +313,12 @@
 .file-btn .muted { font-weight: 400; font-size: 13px; }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .file-btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
-.materials-fill { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+.materials-fill { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); border-radius: var(--radius); background: var(--accent-soft); }
 .materials-fill .file-btn { background: var(--surface); min-height: 64px; flex-direction: row; }
+/* AI 배경 카드의 '이미지 올리기'는 큰 업로드 칸이 아닌 작은 버튼 (#89 채팅 대체) */
+.btn.btn-small.file-btn { width: auto; min-height: 32px; padding: 0 12px; flex-direction: row; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font-weight: 500; font-size: 13px; }
+.btn.btn-small.file-btn.is-disabled { opacity: .45; pointer-events: none; }
+@media (max-width: 760px) { .btn.btn-small.file-btn { min-height: 36px; } }
 .form-actions { position: sticky; bottom: 12px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 12px 12px 18px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line-strong); box-shadow: var(--shadow-float); }
 .form-actions-note { font-size: 13px; color: var(--text-2); flex: 1 1 240px; }
 .error-summary { padding: 14px 16px; border-radius: var(--radius); background: var(--st-failed-bg); color: var(--st-failed); }

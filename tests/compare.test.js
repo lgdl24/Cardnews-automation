@@ -6,6 +6,8 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { ROOT } = require('./helpers');
+// 실행ID에 들어가는 규칙 버전 (config/skill-version.json). 버전을 올려도 테스트가 그대로 돌게
+const V = require('../config/skill-version.json').version;
 const { runEval } = require('../scripts/lib/eval-runner');
 const { parseArgs } = require('../scripts/compare');
 const { compareProducts, evalConsistency, consistencyOf, seqMatch, jaccard, stdev } = require('../scripts/lib/compare');
@@ -70,7 +72,7 @@ test('반복 일관성(--eval): 입력 × 규칙 버전으로 묶고, 완료된 
     delete process.env.FAKE_CLAUDE_SCENARIO;
 
     const res = evalConsistency(runsDir, { batch: 'v1-repeat' });
-    assert.deepEqual(res.groups.map((g) => g.group), ['eval-input-missing--v1', 'eval-toneup-sunscreen--v1']);
+    assert.deepEqual(res.groups.map((g) => g.group), [`eval-input-missing--${V}`, `eval-toneup-sunscreen--${V}`]);
 
     const missing = res.groups[0];
     assert.equal(missing.run_count, 2);
@@ -85,7 +87,7 @@ test('반복 일관성(--eval): 입력 × 규칙 버전으로 묶고, 완료된 
     assert.equal(normalGroup.run_count, 2);
     assert.equal(normalGroup.completed, 2);
     assert.equal(normalGroup.checks_passed, 2);
-    assert.deepEqual(normalGroup.runs, ['eval-toneup-sunscreen--v1--r1', 'eval-toneup-sunscreen--v1--r2']);
+    assert.deepEqual(normalGroup.runs, [`eval-toneup-sunscreen--${V}--r1`, `eval-toneup-sunscreen--${V}--r2`]);
     // 가짜 Claude는 매번 같은 카드를 내므로 완전히 일치
     assert.deepEqual(normalGroup.consistency, {
       role_order_match: 1, template_order_match: 1, design_match: 1, evidence_overlap: 1, coverage_stdev: 0, char_usage_stdev: 0,
@@ -101,7 +103,7 @@ test('반복 일관성(--eval): 입력 × 규칙 버전으로 묶고, 완료된 
     // CLI
     const cli = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'compare.js'), '--eval', '--runs', runsDir, '--batch', 'v1-repeat'], { encoding: 'utf8' });
     assert.equal(cli.status, 0, cli.stderr);
-    assert.match(cli.stdout, /eval-toneup-sunscreen--v1 \(실행 2개: r1, r2\)/);
+    assert.match(cli.stdout, new RegExp(`eval-toneup-sunscreen--${V} \\(실행 2개: r1, r2\\)`));
     assert.match(cli.stdout, /완료 0\/2 \(중단: INPUT_MISSING 2\)/);
     assert.match(cli.stdout, /카드 역할 순서 일치율 100%/);
     assert.match(cli.stdout, /디자인 묶음 일치율 100%/);

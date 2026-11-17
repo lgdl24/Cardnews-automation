@@ -1,11 +1,16 @@
 {
   "_comment": "규칙 버전. CLAUDE.md, .claude/skills/, config/의 기준(글자 수·주의 표현 등)을 바꿔 결과에 영향이 생기면 버전을 올리고 history에 바뀐 점을 적습니다. 모든 제작 기록(log.jsonl)에 이 값이 함께 남아 Skill 버전 비교(A5)에 쓰입니다.",
-  "version": "v1",
+  "version": "v2",
   "history": [
     {
       "version": "v1",
       "date": "2026-10-10",
       "changes": "기본 규칙: CLAUDE.md(두 실행 방식, 작업 단위, 입력 자료 취급), cardnews-content·cardnews-render Skill, 템플릿 글자 수 기준 초안, 주의 표현 목록 초안"
+    },
+    {
+      "version": "v2",
+      "date": "2026-11-17",
+      "changes": "문구 흐름: 정보 나열형 → 문제 제시 → 해결. 1번 표지 제목은 원문 사용감·상황을 뒤집은 소비자 문제(근거 ID를 evidence·intent에), 2번은 그 답, 마지막은 다시 묶음. 질환·기능성 단어를 문제로 쓰지 않음, 해결 단정('고민 끝'·'해결해요') 금지 (docs/style-guide.md '문제 제시 → 해결', cardnews-content Skill 2·3·5단계)"
     }
   ]
 }
