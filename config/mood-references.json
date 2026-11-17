@@ -1,0 +1,179 @@
+{
+  "_comment": "뷰티 카드뉴스 템플릿 레퍼런스. 사람이 고른 비슷한 무드의 카드뉴스 템플릿(핀터레스트·비핸스·템플릿 사이트·팀 시안)에서 이미지·글자·로고는 가져오지 않고 디자인 특징만 글로 옮긴 것입니다. 사용자가 고르는 카테고리가 아닙니다. 구성안 작업에서 브랜드 페이지(스냅샷)의 분위기와 'mood' 단어가 가장 가까운 레퍼런스 1~2개를 Claude가 찾아 brand_mood의 장면·사진 연출·색 쓰는 법에 참고합니다. 색 값은 항상 브랜드 페이지에서 가져옵니다. 설명: docs/designs/mood-references.md",
+  "version": "0.2",
+  "updated_at": "2026-11-17",
+  "common": {
+    "principles": [
+      "에디토리얼 타이포: 제목은 크고 가늘게, 본문은 작은 산세리프. 굵기 대비로 위계를 만듦",
+      "색은 3개 안팎: 배경은 브랜드 색의 아주 옅은 톤, 주색은 한 단어·작은 요소에만",
+      "제품이 주인공: 크게 두고 그림자만 부드럽게. 소품은 장면을 돕는 정도로",
+      "여백: 화면의 40% 이상 비움. 상자·테두리 대신 가는 선(1~2px)으로 구분",
+      "작은 디테일: 작은 영문 캡션, 페이지 번호, 가는 구분선",
+      "시리즈 변주: 같은 규칙 안에서 글자·제품 위치만 바꿈"
+    ],
+    "avoid": [
+      "구·받침·진한 그라데이션 같은 장식 덧붙이기",
+      "사람·손·얼굴, 의사·약사·가운·병원·주사·의료기기 (개정 화장품법 제13조①4, A2)",
+      "원문에 없는 인증 마크·수상 배지·수치",
+      "레퍼런스의 브랜드 이름·로고·패키지·문구"
+    ]
+  },
+  "references": [
+    {
+      "id": "editorial-silk",
+      "title": "에디토리얼 실크 (뷰티 템플릿 사이트·프리미엄 스킨케어 광고)",
+      "source": { "kind": "template-site", "url": "https://studio.swiperjs.com/templates/beauty-cosmetics", "seen_at": "2026-10-20" },
+      "mood": ["차분", "고급", "여백", "에디토리얼", "따뜻한 중성색", "세리프"],
+      "layout": "표지는 제목 위 가운데·제품 가운데 받침 위, 특징 카드는 글자 왼쪽·제품 오른쪽으로 변주, 가는 구분선과 페이지 번호",
+      "type": "가는 세리프 제목(영문 한 단어 이탤릭), 작은 산세리프 본문",
+      "color_usage": "배경은 브랜드 색의 가장 옅은 톤, 글자는 짙은 갈색 계열, 주색은 한 단어에만 (본 예: #F5EDE4 · #2A201A · #C97B63)",
+      "photo_style": "정면, 부드럽고 긴 그림자, 은은한 반사",
+      "scene": "Softly draped ivory silk fabric with gentle diagonal window light, resting on a smooth warm-toned marble pedestal, cream and taupe tones, shallow depth of field, calm and airy.",
+      "avoid": ["금박·반짝이 남발", "진한 그라데이션과 장식 도형"],
+      "in_repo": "프리미엄"
+    },
+    {
+      "id": "clean-block",
+      "title": "클린 블록 (팀 무드 가이드 10.20)",
+      "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-20" },
+      "mood": ["정돈", "담백", "쿨톤", "미니멀", "신뢰"],
+      "layout": "격자와 가는 선, 제목 크게·본문 짧게, 원문 수치·시험 조건은 각주 자리",
+      "type": "산세리프, 숫자는 굵게",
+      "color_usage": "흰색·쿨 그레이 바탕에 브랜드 주색 한 가지",
+      "photo_style": "위에서 약간 내려다본 각도, 또렷하지만 짧은 그림자, 차가운 주광",
+      "scene": "Minimal arrangement of clean white acrylic cubes and frosted glass blocks on a pale cool-grey surface, crisp soft shadows, cool even daylight, orderly and quiet.",
+      "avoid": ["실험실 유리기구·현미경·피펫·가운·병원 같은 의료·실험 소품 (의약품 오인)", "원문에 없는 % 수치·그래프"],
+      "in_repo": null
+    },
+    {
+      "id": "natural-linen",
+      "title": "내추럴 린넨 (팀 무드 가이드 10.20)",
+      "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-20" },
+      "mood": ["자연스러운", "부드러운", "따뜻한", "종이 질감", "어스톤"],
+      "layout": "종이 질감 바탕, 둥근 산세리프 제목, 소문자 영문 캡션",
+      "type": "둥근 산세리프",
+      "color_usage": "오트·베이지 바탕에 브랜드의 초록·갈색 계열을 주색으로",
+      "photo_style": "자연광, 옆에서 들어오는 따뜻한 빛, 마른 잎 그림자",
+      "scene": "Natural linen cloth and recycled kraft paper on a light oak surface, soft shadows of dried leaves, warm natural morning light, muted oat and sage tones.",
+      "avoid": ["원문 근거 없이 잎·풀 소품으로 '천연·비건' 인상 주기 (인증·성분 사실 오인)", "인증 마크를 그려 넣기"],
+      "in_repo": null
+    },
+    {
+      "id": "water-fresh",
+      "title": "워터 프레시 (팀 시안 02 '블루 나이트' 계열)",
+      "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-27" },
+      "mood": ["산뜻", "맑은", "투명", "수분", "파스텔 블루"],
+      "layout": "위쪽은 장면과 제품을 담은 연출 띠, 아래는 연한 면에 짙은 글자로 정돈",
+      "type": "부드러운 산세리프",
+      "color_usage": "브랜드의 가장 옅은 푸른 톤을 바탕으로, 글자는 남색 계열",
+      "photo_style": "밝고 투명한 빛, 물방울 반사",
+      "scene": "Clear water ripples and small droplets on a smooth glass surface, soft sky-blue gradient light, fresh, airy and bright.",
+      "avoid": ["원문에 없는 보습 지속 시간 같은 수치를 그림으로 암시", "과한 물 튐"],
+      "in_repo": "연출"
+    },
+    {
+      "id": "sunlight-shadow",
+      "title": "햇빛 그림자 (팀 무드 가이드 10.20)",
+      "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-20" },
+      "mood": ["밝은", "경쾌", "여름", "선명", "하이라이트"],
+      "layout": "대각선 빛, 굵은 제목, 원문 표기(SPF·PA 등) 배지 자리",
+      "type": "굵은 산세리프",
+      "color_usage": "흰 바탕에 브랜드의 하늘색·노랑 계열을 강하게",
+      "photo_style": "강한 하이라이트, 선명한 그림자",
+      "scene": "Bright summer sunlight casting palm-leaf shadow patterns across a smooth white plaster wall and pale sand, strong clean highlights, clear blue and warm yellow tones.",
+      "avoid": ["사람·탄 피부", "'하루 종일'처럼 원문에 없는 지속 시간 암시"],
+      "in_repo": null
+    },
+    {
+      "id": "big-type",
+      "title": "빅 타이포 (팀 시안 10 '블루 타이프')",
+      "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-27" },
+      "mood": ["대담", "단순", "그래픽", "한 가지 색"],
+      "layout": "흰 바탕에 제목을 줄마다 폭에 맞춰 아주 크게, 특징 카드는 주색 면 전체에 흰 글자",
+      "type": "굵은 산세리프, 한 줄 4~7자",
+      "color_usage": "흰색 + 브랜드 주색 한 가지만",
+      "photo_style": "작은 제품 컷이나 제형 클로즈업",
+      "scene": "Plain seamless white studio backdrop with a single soft gradient of one brand color, very clean and graphic, no props.",
+      "avoid": ["문구가 긴 카드", "색 여러 개 섞기"],
+      "in_repo": "타이포"
+    },
+    {
+      "id": "pop-block",
+      "title": "팝 컬러블록 (팀 시안 06 '듀 팝')",
+      "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-27" },
+      "mood": ["발랄", "생기", "컬러풀", "젊은", "경쾌"],
+      "layout": "색면과 큰 원, 흰 둥근 패널, 제품을 기울여 크게",
+      "type": "굵고 둥근 산세리프",
+      "color_usage": "브랜드의 선명한 색 2~3개를 색면으로",
+      "photo_style": "제품을 기울여 크게, 짧은 그림자",
+      "scene": "Playful flat color-block backdrop with large soft circles in vivid coral, pink and lime, smooth matte paper finish, bright even light.",
+      "avoid": ["차분한 더마 느낌의 브랜드에 쓰기", "항목 문구가 긴 카드"],
+      "in_repo": "팝"
+    },
+    {
+      "id": "sage-serif-poster",
+      "title": "세이지 세리프 포스터 (핀터레스트, 스킨케어 그래픽 포스터)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1098174690415179831/", "seen_at": "2026-11-17" },
+      "mood": ["차분", "자연스러운", "에디토리얼", "세리프", "세이지 그린", "여백"],
+      "layout": "아주 큰 세리프 영문 한 단어가 제품 뒤에 겹쳐 깔림, 제품은 가운데 제형 자국 위, 왼쪽에 작은 아이콘+두 단어 설명 세로 줄, 오른쪽에 이탤릭+세리프 부제와 짧은 본문, 아래 작은 캡션",
+      "type": "높은 대비의 세리프(큰 단어), 이탤릭 스크립트 한 단어, 작은 대문자 산세리프 캡션",
+      "color_usage": "아이보리 바탕 + 브랜드의 짙은 초록 계열 한 가지를 큰 글자·작은 버튼에, 금색은 용기에만",
+      "photo_style": "위에서 내려다본 정면, 제형 자국 위에 제품, 잎 그림자가 비스듬히",
+      "scene": "Smooth swirl of white cream on a warm ivory surface with one fresh green leaf and a soft diagonal leaf shadow, gentle natural daylight, airy and calm.",
+      "avoid": ["원문에 없는 효능 아이콘 늘어놓기 (아이콘 옆 말은 원문 특징만)", "잎 소품으로 '천연' 인상 주기"],
+      "in_repo": null
+    },
+    {
+      "id": "olive-editorial-frame",
+      "title": "올리브 에디토리얼 프레임 (핀터레스트, 에디토리얼 스킨케어 4장 세트)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1082271354231543677/", "seen_at": "2026-11-17" },
+      "mood": ["차분", "고급", "에디토리얼", "올리브", "따뜻한 중성색"],
+      "layout": "카드마다 크림색 면을 가는 사각 프레임으로 띄우고, 가는 세리프 제목 두 줄 + 아주 작은 본문, 브랜드 소문자 로고는 아래 가운데. 네 장이 배치만 바꿔 이어짐",
+      "type": "가는 세리프 제목(줄 간격 좁게), 작은 산세리프 본문",
+      "color_usage": "짙은 올리브·갈색 사진 면 위에 크림 면, 글자는 짙은 갈색",
+      "photo_style": "잎·돌 같은 자연 재질 클로즈업, 따뜻하고 어두운 톤",
+      "scene": "Close-up of large dark olive leaves and smooth warm stones in soft shade, deep green and brown tones, quiet and moody.",
+      "avoid": ["얼굴·눈 클로즈업 사진 (사람 금지)", "프레임 선을 굵게"],
+      "in_repo": null
+    },
+    {
+      "id": "single-drop-macro",
+      "title": "한 방울 매크로 (핀터레스트, 럭셔리 스킨케어 소셜 디자인)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1148488342520313161/", "seen_at": "2026-11-17" },
+      "mood": ["고급", "몰입", "어두운", "따뜻한", "미니멀"],
+      "layout": "화면 전체가 흐린 배경, 가운데 큰 이탤릭 세리프 한 단어, 그 위아래에 작은 대문자 한 줄씩, 맨 아래 작은 두 줄 캡션",
+      "type": "큰 이탤릭 세리프 한 단어 + 넓은 자간의 작은 대문자",
+      "color_usage": "브랜드 색의 가장 어두운 톤을 흐린 배경으로, 글자는 흰색 하나",
+      "photo_style": "얕은 피사계 심도, 액체 한 방울에만 초점",
+      "scene": "A single clear liquid droplet suspended above a smooth warm stone, very shallow depth of field, dark warm blurred background with soft golden bokeh.",
+      "avoid": ["손·피부 클로즈업 (사람 금지)", "글자 여러 줄 (한 단어가 주인공)"],
+      "in_repo": null
+    },
+    {
+      "id": "pearl-glow-luxe",
+      "title": "진주 글로우 럭스 (핀터레스트, 럭셔리 스킨케어 글로우)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1045820344737613381/", "seen_at": "2026-11-17" },
+      "mood": ["고급", "화사", "샴페인", "부드러운 빛", "우아"],
+      "layout": "위에 큰 세리프 단어 + 겹치는 스크립트 단어, 제품은 가운데 투명 원형 받침 위, 양옆에 작은 아이콘 세로 줄",
+      "type": "세리프 + 스크립트 겹침, 작은 대문자 캡션",
+      "color_usage": "샴페인·크림 그라데이션 바탕, 금색 계열은 가는 선·아이콘에만",
+      "photo_style": "역광 같은 부드러운 빛, 투명 받침의 반사",
+      "scene": "Soft champagne and cream gradient backdrop with a few pearls and an open seashell on a clear round acrylic pedestal, warm glowing backlight, elegant and luminous.",
+      "avoid": ["금박·반짝이 남발", "순위·수상 배지"],
+      "in_repo": null
+    },
+    {
+      "id": "pale-blue-hydration-grid",
+      "title": "페일 블루 수분 그리드 (핀터레스트, 스킨케어 광고 소셜 세트)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1126322188130975295/", "seen_at": "2026-11-17" },
+      "mood": ["산뜻", "맑은", "미니멀", "쿨톤", "수분"],
+      "layout": "9칸 피드처럼 카드마다 역할이 다름: 제형 자국 사진, 남색 면에 세 단어 세리프 제목, 물방울 클로즈업, 질문 한 줄 카드",
+      "type": "세리프 제목 세 단어(마침표로 끊음), 작은 산세리프",
+      "color_usage": "아주 옅은 블루 그레이 바탕 + 브랜드의 짙은 남색 면 한 장",
+      "photo_style": "가까이 찍은 물방울·버블, 차가운 부드러운 빛",
+      "scene": "Macro of tiny clear bubbles and water droplets on a pale blue-grey glass surface, cool soft light, clean and minimal.",
+      "avoid": ["원문에 없는 수분 수치·지속 시간", "얼굴 사진"],
+      "in_repo": null
+    }
+  ]
+}
