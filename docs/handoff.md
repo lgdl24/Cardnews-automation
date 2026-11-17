@@ -8,7 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
-| 2026-11-17 | Claude | `feat/web-studio-redesign` (이슈 미생성, PR 준비) | **웹 UI 개편 2차**: 디자인 기준 `design-system/cardnews-studio/MASTER.md`(Pretendard 단일·포인트색 1개·상태색 6종 토큰, 기존 `--color-*`는 별칭). 작업실 목록 대표 카드·상태, 제작 진행 5단계·실제 진행/대기/실패 원인·다시 하기, 구성안·카드 검토 결정 막대, 입력 오류 요약·임시 저장(localStorage `cardnews-draft:*`, 이미지 제외). `GET /api/studio/products` 요약에 `thumb`·`png_count`·`card_count`·`last_job` 추가(읽기 전용). 새 검사 `tests/studio-flow-ui.test.js`. 인스타 웹 게시는 제안만 `docs/proposals/instagram-web-publish.md` |
+| 2026-11-17 | Claude | #102 · `feat/102-web-studio-redesign` | **웹 UI 개편 2차**: 디자인 기준 `design-system/cardnews-studio/MASTER.md`(Pretendard 단일·포인트색 1개·상태색 6종 토큰, 기존 `--color-*`는 별칭). 작업실 목록 대표 카드·상태, 제작 진행 5단계·실제 진행/대기/실패 원인·다시 하기, 구성안·카드 검토 결정 막대, 입력 오류 요약·임시 저장(localStorage `cardnews-draft:*`, 이미지 제외). `GET /api/studio/products` 요약에 `thumb`·`png_count`·`card_count`·`last_job` 추가(읽기 전용). 새 검사 `tests/studio-flow-ui.test.js`. 인스타 웹 게시는 제안만 `docs/proposals/instagram-web-publish.md` |
 | 2026-11-09 | Claude | `feat/eval-dashboard` (이슈 없음) | **V3 평가 대시보드 + 평가 집계** (**11.10부터 V3 평가 대시보드·평가 진행은 이규동 담당**): `npm run export`가 평가 실행 폴더를 읽을 때 **중단 실행까지 모두** `web/public/data/eval/summary.json`에 모음(`scripts/lib/eval-summary.js`). 알림 원문·금지 표현 글자·체크리스트 인용은 빼고 개수만. 사람 판정은 `eval/judgments.json`(자동 판정 없는 금지 항목만 채움). `/eval` 화면을 다시 만듦: 요약 숫자 5개(실행·1회 통과·핵심 정보·안전성·판정 대기, 필터 따라 재계산), 안전성(경계 입력별 기대 동작 표), 핵심 정보 히트맵, 품질 지표 분포, AI 작업 시간, 검증 오류, 반복 일관성(A6), 규칙 버전 비교(A5), 실행 기록 CSV. 필터: 실행 묶음·규칙 버전·모델(섞이면 알림). eval-spec **v0.2**(7장). 평가 실행기: 보고가 누락 항목을 백틱으로 감싸면 '안 적음'으로 오판하던 것 수정. 화면 시험은 가상 집계 `tests/fixtures/eval-summary.json`(실제 결과 아님). **실제 v1 결과는 평가를 돌린 Mac에서 `npm run export -- --eval-runs ~/git/cardnews-ai/eval/runs`로 만들어야 보임** |
 | 2026-11-05 | Claude | #89 · `feat/89-brand-mood` (#84 위) | **브랜드 무드 (A안)** (이용석): 입력 `브랜드 URL`(무드를 비우면 묶음 `브랜드`) → 구성안 작업 전 상세페이지 스냅샷 `brand/`(`npm run brand`, 작업실 자동) → 구성안 작업이 `cards.json` `brand_mood`(색 7개·분위기·배경 장면·근거, 묶음 `브랜드`면 필수) → 문구 작업 뒤 카드별 GPT **배경만** `output/ai-bg/`(`npm run ai-bg`, 작업실 자동, `CARDNEWS_AI_BG=off`로 끔) → 출력이 실제 제품 사진·문구를 얹음. 묶음 `브랜드`는 AI 디자인 카드(GPT 글자)를 안 씀. 작업실 입력 '자료로 채우기'(`POST /api/studio/extract`, PDF·이미지·글 → 제품 정보 초안, 저장은 사람). 입력 양식 v1.4, `cards.schema` `brand_mood`, 템플릿 `templates/brand/`. 평가 입력에는 URL이 없어 v1 기준선 영향 없음. 문서 `docs/research/brand-mood.md` |
 | 2026-11-05 | Claude | #84 · `fix/84-studio-usability` | **최신 main 합침 + AI 디자인 카드 Windows 수정** (이용석): `ai-card.js`의 `defaultCodexBin()` — `CODEX_BIN` → Windows npm 설치 위치의 `codex.js`(node로 실행) → `codex` 순(Windows는 `codex.cmd`라 spawn이 못 찾던 것). 생성 이미지 경로를 `C:\...\generated_images\...`도 찾게 함(기존 테스트가 Windows에서 실패). 피그마 자동 넣기는 #84의 `defaultClaudeBin()`을 그대로 써서 Windows에서도 claude를 찾음. Codex 실제 이미지 생성은 미확인 |
@@ -22,7 +22,7 @@
 ## 현재 작업 — 웹 UI·UX 개편 2차 (Claude, 2026-11-17)
 
 - 요청: UI/UX Pro Max로 작업실 디자인·UX 개선(젊은 산세리프, 밝게/어둡게, 카드 중심 검토, 간결한 입력·승인 동선, 실제 진행·대기·실패 표시) → 검증 → 인스타 웹 게시 후속 설계 제안. 지시: `docs/web-design-claude-brief.md`.
-- 작업 폴더·브랜치: `/Users/lee/git/cardnews-web-ui`, `feat/web-studio-redesign`, 기준 `origin/main` `eaee2e4`. upstream 없음, **push·PR 안 함**(사용자 확인 대기). 이 PC에 `gh`가 없어 GitHub 이슈도 만들지 못함 → 이슈 생성 후 브랜치 이름을 `feat/<번호>-web-studio-redesign`으로 바꾸고 커밋 메시지에 번호를 붙일 것.
+- 이슈·작업 폴더·브랜치: [#102](https://github.com/lgdl24/Cardnews-automation/issues/102), `/Users/lee/git/cardnews-web-ui`, `feat/102-web-studio-redesign`(push함), 기준 `origin/main` `eaee2e4`. PR 리뷰 이용석(`dldydtjr0450`), 병합은 이규동. 이 맥에는 `gh`를 brew로 설치했고 GitHub 로그인은 git 키체인 값을 `GH_TOKEN`으로 넘겨 씀(토큰에 `read:org`가 없어 `gh auth login`·일부 GraphQL은 실패 → `gh api` REST 사용). 이슈 생성 전 커밋이라 커밋 메시지에는 `#102`가 없음.
 - 원래 폴더 `/Users/lee/git/Cardnews-automation`(`experiment/gpt-all-cards`)의 미커밋 변경은 건드리지 않음. 그 폴더의 로컬 준비 파일 중 `.claude/skills/ui-ux-pro-max/`, `docs/web-design-claude-brief.md`, `docs/prompts/claude-web-redesign.md`만 복사해 첫 커밋. 그 폴더의 11.17 Codex 인계 기록(인스타 첫 게시 등)은 원래 폴더 `docs/handoff.md`에만 있음.
 - 커밋: `3f86bd4` 스킬·지시 / `7bcb342` 토큰·서체·틀 / `fac88f7` 작업실 화면·API 요약 / `f80b238` 검사 / `186a9aa` 진행 위치 이동·시간 표기 / 8e9764a 인계·제안 문서.
 - 바뀐 파일: `web/src/styles/{global,workspace}.css`, `web/src/components/{components.css,Header,ThemeControl,Icon}.tsx`, `web/src/screens/studio/*`, 새 `web/src/studio/status.ts`, `web/src/studio/api.ts`(요약 타입·연결 끊김 5초 재시도), `scripts/lib/studio-api.js`(목록 요약 필드만), 라이브러리·가이드·비교·평가 화면의 영문 장식 라벨, `tests/{studio-flow-ui,workspace-ui,studio-api}.test.js`, `package.json` test:web.
@@ -32,7 +32,7 @@
 - 발견·수정: 모션 감소 설정에서 `transition-duration`만 줄이면 기본 `transition-property: all` 때문에 화면 폭이 순간 전환돼 넘침 검사가 실패 → 전환 자체를 끔. 스튜디오 CSS가 전역보다 먼저 번들되므로 공통 부품(예: `.spinner-xs`)은 `components.css`에 둘 것. `.detail-head`는 결과 보기 상세가 쓰므로 작업실은 `.studio-detail-head`.
 - 미완료·확인 필요: 실제 Claude로 한 번 사용해 보며 문구·순서 의견 받기, 노션 작업 트래커 갱신, 공동 UI 파일이라 양쪽 화면 담당 리뷰. 평가 대시보드는 토큰만 따라가고 구조는 그대로.
 - 실행 중 작업: 없음(검사용 임시 서버는 모두 종료).
-- 다음: ① GitHub 이슈 생성 → 브랜치 이름 정리 → push·PR(리뷰 상대 팀원, 병합은 이규동) ② `docs/proposals/instagram-web-publish.md`의 결정 5가지 확인 ③ 결정 뒤 인스타 브랜치 통합(게시 전 점검 패널을 새 접기 패널 구조로)과 B5 서버 상태·중복 방지부터 구현.
+- 다음: ① PR 리뷰 반영·노션 작업 트래커에 #102 행 추가(이번 세션에서 노션 쓰기 권한 거부됨) ② `docs/proposals/instagram-web-publish.md`의 결정 5가지 확인 ③ 결정 뒤 인스타 브랜치 통합(게시 전 점검 패널을 새 접기 패널 구조로)과 B5 서버 상태·중복 방지부터 구현.
 
 ## 현재 작업 — 브랜드 무드 (이용석, 2026-11-05)
 
