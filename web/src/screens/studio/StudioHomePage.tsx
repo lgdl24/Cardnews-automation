@@ -108,7 +108,10 @@ function ProductTile({ p, s }: { p: ProductSummary; s: WorkStatus }) {
         {p.thumb ? (
           <img src={pngUrl(p.id, p.thumb.file, p.thumb.v)} alt="" loading="lazy" width={1080} height={1080} />
         ) : (
-          <span className="studio-tile-empty"><Icon name="image" size={22} />{p.stage === 'input' || p.stage === 'plan' ? '카드 만들기 전' : '카드 이미지 없음'}</span>
+          <span className="studio-tile-empty">
+            {p.running ? <span className="spinner spinner-sm" aria-hidden="true" /> : <Icon name={p.queued ? 'clock' : s.tone === 'failed' ? 'alert' : 'image'} size={22} />}
+            {p.running ? 'Claude가 작업 중' : p.queued ? '차례를 기다리는 중' : s.tone === 'failed' ? '작업이 끝나지 못함' : p.stage === 'input' || p.stage === 'plan' ? '카드 만들기 전' : '카드 이미지 없음'}
+          </span>
         )}
         {p.png_count ? <span className="studio-tile-count">{p.png_count}장</span> : null}
       </div>
