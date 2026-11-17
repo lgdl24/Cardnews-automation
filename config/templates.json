@@ -238,11 +238,13 @@
     },
     "브랜드": {
       "_defaults": { "colorMode": "기본" },
-      "_theme": { "color": { "bg": "#F4F1EC", "surface": "#FFFFFF", "text": "#26221F", "muted": "#5E5650", "primary": "#3F3A36", "accent": "#E4DDD3", "on-primary": "#FFFFFF" }, "contrast": { "text/bg": 1, "text/accent": 1, "muted/bg": 1, "muted/accent": 1, "primary/accent": 1 } },
+      "_theme": { "color": { "bg": "#F4F1EC", "surface": "#FFFFFF", "text": "#26221F", "muted": "#5E5650", "primary": "#3F3A36", "accent": "#E4DDD3", "on-primary": "#FFFFFF" }, "contrast": { "text/bg": 1, "text/accent": 1, "muted/bg": 1, "muted/accent": 1, "primary/accent": 1 }, "font": { "files": { "300": "node_modules/pretendard/dist/web/static/woff2/Pretendard-Light.woff2" } }, "serif": { "family": "Nanum Myeongjo", "files": { "700": { "korean": "node_modules/@fontsource/nanum-myeongjo/files/nanum-myeongjo-korean-700-normal.woff2", "latin": "node_modules/@fontsource/nanum-myeongjo/files/nanum-myeongjo-latin-700-normal.woff2" }, "800": { "korean": "node_modules/@fontsource/nanum-myeongjo/files/nanum-myeongjo-korean-800-normal.woff2", "latin": "node_modules/@fontsource/nanum-myeongjo/files/nanum-myeongjo-latin-800-normal.woff2" } } } },
       "_notes": [
         "카드 색은 구성안 작업에서 정한 brand_mood.palette를 써요(없으면 이 묶음 기본 색). 글자는 모두 surface 면·primary 배지 위에 놓여서 그 짝만 대비 4.5를 출력이 맞춰요(bg·accent는 배경 그라데이션이라 _theme.contrast에서 1)",
         "배경은 문구 작업 뒤 GPT가 카드마다 만들어요(글자·제품 없는 장면, npm run ai-bg). 글자는 반투명 면 위에 코드로 얹어요",
-        "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요"
+        "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요",
+        "카드 배치는 brand_mood.layout(panel·editorial·immersive, 참고한 레퍼런스의 layout_id). 글자 칸 규칙은 배치와 상관없이 같아요",
+        "display(선택): 배치가 editorial·immersive일 때 크게 까는 영문 장식 단어 하나(예: Light). 그 카드 근거 원문의 한 단어를 영어로 옮긴 것만 쓰고, Best·Perfect 같은 평가·최상급 말은 쓰지 않아요. panel 배치에서는 보이지 않아요"
       ],
       "_measured": "2026-11-05 · Pretendard · Chromium. 측정 최대(전체/한 줄): cover.title 24/9, cover.subtitle 34/18, cover.badge 14/14, image.title 33/17, image.caption 52/28, description.title 34/18, description.items 49/25(긴 단어로 채우면 32/16까지 통과)",
       "cover": {
@@ -250,7 +252,8 @@
         "fields": {
           "title": { "required": true, "maxChars": 24, "maxCharsPerLine": 8, "maxLines": 3 },
           "subtitle": { "required": false, "maxChars": 28, "maxCharsPerLine": 14, "maxLines": 2 },
-          "badge": { "required": false, "maxChars": 8, "maxCharsPerLine": 8, "maxLines": 1 }
+          "badge": { "required": false, "maxChars": 8, "maxCharsPerLine": 8, "maxLines": 1 },
+          "display": { "required": false, "maxChars": 10, "maxCharsPerLine": 10, "maxLines": 1 }
         },
         "image": "optional", "trimImage": true, "roles": ["cover", "closing"]
       },
@@ -258,7 +261,8 @@
         "label": "이미지 강조형", "file": "templates/brand/image.html",
         "fields": {
           "title": { "required": true, "maxChars": 26, "maxCharsPerLine": 13, "maxLines": 2 },
-          "caption": { "required": false, "maxChars": 40, "maxCharsPerLine": 20, "maxLines": 2 }
+          "caption": { "required": false, "maxChars": 40, "maxCharsPerLine": 20, "maxLines": 2 },
+          "display": { "required": false, "maxChars": 10, "maxCharsPerLine": 10, "maxLines": 1 }
         },
         "image": "required", "trimImage": true, "roles": ["feature", "detail", "usage"]
       },
@@ -266,7 +270,8 @@
         "label": "설명형", "file": "templates/brand/description.html",
         "fields": {
           "title": { "required": true, "maxChars": 26, "maxCharsPerLine": 13, "maxLines": 2 },
-          "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 32, "maxCharsPerLine": 16, "maxLines": 2 }
+          "items": { "required": true, "maxItems": 3, "minItems": 1, "maxCharsPerItem": 32, "maxCharsPerLine": 16, "maxLines": 2 },
+          "display": { "required": false, "maxChars": 10, "maxCharsPerLine": 10, "maxLines": 1 }
         },
         "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
       }

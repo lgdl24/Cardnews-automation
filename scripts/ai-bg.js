@@ -16,7 +16,7 @@ const { paths, readJson, loadInput, requireProductId, designRecord } = require('
 const { pad, launchBrowser } = require('./lib/card-html');
 const { runCodex, generatedPath, lockScore, LOCK, PAGE_FNS } = require('./ai-card');
 const { representativeColor, readPixels } = require('./lib/color-mood');
-const { BRAND_DESIGN, aiBgDir, bgPrompt, chatPrompt, compositePrompt, PRODUCT_FRAME, productBoxFor, bgKey, readBgReport, staleBg } = require('./lib/brand');
+const { BRAND_DESIGN, aiBgDir, bgPrompt, chatPrompt, compositePrompt, frameFor, layoutOf, productBoxFor, bgKey, readBgReport, staleBg } = require('./lib/brand');
 
 const FINAL = 1080;
 
@@ -81,8 +81,8 @@ async function runOpenAI(cwd, prompt, timeoutSec, { env = process.env, fetchFn =
 // → 제품 자리를 원본과 비교(잠금 점수, ai-card.js와 같은 기준) → 원본 제품 픽셀을 다시 덮어 저장. 출력은 제품 사진을 다시 얹지 않음(baked)
 async function makeCompositeBg({ page, card, mood, cut, dir, tries, timeoutSec, log, productHex }) {
   const BASE = 1024;
-  const box = productBoxFor(card.template, cut.w, cut.h, BASE);
-  const finalBox = productBoxFor(card.template, cut.w, cut.h, FINAL);
+  const box = productBoxFor(card.template, cut.w, cut.h, BASE, layoutOf(mood));
+  const finalBox = productBoxFor(card.template, cut.w, cut.h, FINAL, layoutOf(mood));
   const prompt = compositePrompt(mood, card.template, productHex);
   const record = { no: card.no, template: card.template, key: bgKey(mood, card), ok: false, file: null, source: 'codex', baked: false, tries: [] };
   for (let t = 1; t <= tries; t++) {
@@ -193,7 +193,7 @@ async function run(id, { only = null, staleOnly = false, tries = 2, render = tru
         const hex = (prod || (await productOf(firstImage)) || {}).hex || null;
         let r = null;
         // 제품을 넣어 합성은 Codex(이미지 편집)일 때만. OpenAI API·제품 없는 카드는 배경만
-        if (prod && backend === 'codex' && PRODUCT_FRAME[card.template]) {
+        if (prod && backend === 'codex' && frameFor(card.template, layoutOf(data.brand_mood))) {
           r = await makeCompositeBg({ page, card, mood: data.brand_mood, cut: prod.cut, dir, tries: Math.max(tries, 3), timeoutSec, log, productHex: hex });
           if (!r.ok && !r.stop) {
             log(`  ${card.no}번: 제품이 계속 어긋나 배경만 만들어요 (제품은 출력이 얹음)`);

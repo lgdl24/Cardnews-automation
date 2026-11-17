@@ -17,8 +17,14 @@ function buildThemeCss(theme, htmlDir) {
     const url = path.relative(htmlDir, path.join(paths.root, rel)).split(path.sep).join('/');
     return `@font-face { font-family: '${theme.font.family}'; font-weight: ${weight}; font-display: block; src: url('${url}') format('woff2'); }`;
   });
+  // 세리프(theme.serif): 글자 묶음(korean·latin)마다 unicode-range로 나눠 읽음
+  const RANGES = { korean: 'U+1100-11FF, U+3000-303F, U+3130-318F, U+AC00-D7AF, U+FF00-FFEF', latin: 'U+0000-00FF, U+0131, U+0152-0153, U+2000-206F, U+20AC, U+2122' };
+  const rel = (f) => path.relative(htmlDir, path.join(paths.root, f)).split(path.sep).join('/');
+  const serifFaces = theme.serif ? Object.entries(theme.serif.files).flatMap(([weight, subsets]) => Object.entries(subsets).map(([subset, f]) =>
+    `@font-face { font-family: '${theme.serif.family}'; font-weight: ${weight}; font-display: block; src: url('${rel(f)}') format('woff2'); unicode-range: ${RANGES[subset] || 'U+0000-FFFF'}; }`)) : [];
   const vars = Object.entries(theme.color).map(([k, v]) => `--color-${k}: ${v};`).join(' ');
-  return `${faces.join('\n')}\n:root { ${vars} --font-family: '${theme.font.family}'; }`;
+  const serifVar = theme.serif ? ` --font-serif: '${theme.serif.family}';` : '';
+  return `${[...faces, ...serifFaces].join('\n')}\n:root { ${vars} --font-family: '${theme.font.family}';${serifVar} }`;
 }
 
 // extraImages: 입력에서 용도가 제형·배경인 사진 파일명 { texture, scene } (#74). 묶음 템플릿이 {{texture}}·{{scene}} 자리에 넣고, 없으면 대체 모양
