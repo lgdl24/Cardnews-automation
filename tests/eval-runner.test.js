@@ -6,6 +6,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { ROOT } = require('./helpers');
+// 실행ID에 들어가는 규칙 버전 (config/skill-version.json). 버전을 올려도 테스트가 그대로 돌게
+const V = require('../config/skill-version.json').version;
 const { runEval, planRuns, loadVariant, keyInfoMetrics, judgeForbidden, overallPass } = require('../scripts/lib/eval-runner');
 const { fillPrompt } = require('../scripts/lib/job-runner');
 const { parseArgs } = require('../scripts/eval');
@@ -57,17 +59,17 @@ test('실행 계획: 실행ID 규칙, 묶음 이름 필수, 없는 입력·이�
   try {
     const runs = planRuns({ inputIds: [], batch: 'v1-base', repeat: 2, from: 1, inputsDir: s.inputsDir, runsDir: s.runsDir });
     assert.deepEqual(runs.map((r) => r.runId), [
-      'eval-input-missing--v1--r1', 'eval-input-missing--v1--r2',
-      'eval-toneup-sunscreen--v1--r1', 'eval-toneup-sunscreen--v1--r2',
+      `eval-input-missing--${V}--r1`, `eval-input-missing--${V}--r2`,
+      `eval-toneup-sunscreen--${V}--r1`, `eval-toneup-sunscreen--${V}--r2`,
     ]);
     const v = planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-quote-rule', from: 3, inputsDir: s.inputsDir, runsDir: s.runsDir, variantsDir: s.variantsDir });
-    assert.equal(v[0].runId, 'eval-toneup-sunscreen--v1-no-quote-rule--r3');
+    assert.equal(v[0].runId, `eval-toneup-sunscreen--${V}-no-quote-rule--r3`);
     // 정의가 없는 비교판은 규칙이 그대로라 이름만 다른 결과가 되므로 시작 전에 멈춤
     assert.throws(() => planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-such', inputsDir: s.inputsDir, runsDir: s.runsDir, variantsDir: s.variantsDir }), /비교판 정의가 없어요/);
     assert.throws(() => planRuns({ inputIds: [], batch: '', inputsDir: s.inputsDir, runsDir: s.runsDir }), /--batch/);
     assert.throws(() => planRuns({ inputIds: ['eval-nothing'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /평가 입력이 없거나/);
     assert.throws(() => planRuns({ inputIds: ['toneup'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /eval-로 시작/);
-    fs.mkdirSync(path.join(s.runsDir, 'eval-toneup-sunscreen--v1--r1'), { recursive: true });
+    fs.mkdirSync(path.join(s.runsDir, `eval-toneup-sunscreen--${V}--r1`), { recursive: true });
     assert.throws(() => planRuns({ inputIds: ['eval-toneup-sunscreen'], batch: 'x', inputsDir: s.inputsDir, runsDir: s.runsDir }), /이미 있는 실행/);
   } finally {
     s.cleanup();
@@ -91,7 +93,7 @@ test('비교판 정의: description·files 필수, 규칙 문서와 평가 지�
     fs.writeFileSync(path.join(empty, 'variant.json'), JSON.stringify({}));
     assert.throws(() => loadVariant(s.variantsDir, 'empty'), /description/);
     // 지시문: 비교판에 있으면 그것을, 없으면 원래 지시문을 씀
-    const vars = { product_id: 'eval-x--v1--r1' };
+    const vars = { product_id: `eval-x--${V}--r1` };
     assert.match(fillPrompt({ mode: 'eval', kind: 'copy', vars, overlayDir: v.filesDir }), /\(비교판 지시문\)/);
     assert.doesNotMatch(fillPrompt({ mode: 'eval', kind: 'plan', vars, overlayDir: v.filesDir }), /비교판/);
   } finally {
@@ -106,7 +108,7 @@ test('비교판 실행: 작업 폴더의 CLAUDE.md가 바뀌고 저장소 규칙
     const { results } = await runEval({ ...s.opts, inputIds: ['eval-toneup-sunscreen'], batch: 'a8', variant: 'no-quote-rule', keep: true });
     const { result: r, schemaErrors } = results[0];
     assert.deepEqual(schemaErrors, []);
-    assert.equal(r.run_id, 'eval-toneup-sunscreen--v1-no-quote-rule--r1');
+    assert.equal(r.run_id, `eval-toneup-sunscreen--${V}-no-quote-rule--r1`);
     assert.equal(r.variant, 'no-quote-rule');
     assert.match(r.notes, /비교판 no-quote-rule: 원문 인용 규칙을 뺀 판/);
     assert.equal(r.outcome.result, '완료');
@@ -146,7 +148,7 @@ test('정상 입력: 구성안 → 평가 승인 → 문구·출력, result.json
     assert.deepEqual(schemaErrors, []);
     assert.equal(path.basename(file), 'result.json');
     assert.ok(fs.existsSync(file));
-    assert.equal(r.run_id, 'eval-toneup-sunscreen--v1--r1');
+    assert.equal(r.run_id, `eval-toneup-sunscreen--${V}--r1`);
     assert.equal(r.batch, 'v1-base');
     assert.equal(r.input_source, '가상');
     assert.equal(r.model, 'fake-model');
@@ -266,7 +268,7 @@ test('완료된 평가 실행은 웹 데이터로 kind: eval 프로젝트가 되
     delete process.env.FAKE_CLAUDE_SCENARIO;
 
     const targets = evalTargets(s.runsDir);
-    assert.deepEqual(targets.map((t) => t.id), ['eval-toneup-sunscreen--v1--r1']);
+    assert.deepEqual(targets.map((t) => t.id), [`eval-toneup-sunscreen--${V}--r1`]);
 
     const out = path.join(s.dir, 'web');
     const config = path.join(s.dir, 'export.json');
@@ -274,13 +276,13 @@ test('완료된 평가 실행은 웹 데이터로 kind: eval 프로젝트가 되
     const r = exportWebData({ config, evalRuns: s.runsDir, exportedAt: '2026-10-20T00:00:00.000Z' });
     assert.deepEqual(r.schemaErrors, []);
     assert.deepEqual(r.excluded, []);
-    assert.deepEqual(r.exported, ['eval-toneup-sunscreen--v1--r1']);
+    assert.deepEqual(r.exported, [`eval-toneup-sunscreen--${V}--r1`]);
     const index = JSON.parse(fs.readFileSync(path.join(out, 'index.json'), 'utf8'));
     const p = index.projects[0];
     assert.equal(p.kind, 'eval');
     assert.equal(p.stage, 'copy');
     assert.equal(p.label, '평가 · v1-base · r1');
-    assert.deepEqual(p.eval, { input_id: 'eval-toneup-sunscreen', run_id: 'eval-toneup-sunscreen--v1--r1', repeat: 1, variant: null });
+    assert.deepEqual(p.eval, { input_id: 'eval-toneup-sunscreen', run_id: `eval-toneup-sunscreen--${V}--r1`, repeat: 1, variant: null });
     assert.ok(fs.existsSync(path.join(out, 'projects', p.id, 'png', 'card-01.png')));
     // 제품 폴더 위치는 원래대로
     assert.equal(process.env.CARDNEWS_PRODUCTS_DIR, undefined);
