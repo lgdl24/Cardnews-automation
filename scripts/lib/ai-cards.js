@@ -4,6 +4,7 @@
 //   - 적용: output/png/card-NN.png 를 AI 카드로 바꾸고, 템플릿 출력은 output/ai-card/template-card-NN.png 로 보관
 //   render.js(다시 출력해도 AI 카드 유지), ai-card.js(만든 뒤 바로 적용), 작업실·피그마 내보내기가 같이 씀
 const crypto = require('crypto');
+const { samePng } = require('./ai-disclosure');
 const fs = require('fs');
 const path = require('path');
 
@@ -45,7 +46,8 @@ function staleTargets(productDir, cards) {
   return aiTargets(cards).filter((no) => !freshRecord(productDir, cards.find((c) => c.no === no), report));
 }
 
-const sameFile = (a, b) => fs.existsSync(a) && fs.existsSync(b) && fs.readFileSync(a).equals(fs.readFileSync(b));
+// 출력 PNG에는 AI 표시 메타데이터(XMP)를 넣으므로 그림만 비교
+const sameFile = samePng;
 
 // output/png 에 AI 카드 넣기. only: 이 번호들만 (render.js --card N)
 function applyAiCards(productDir, cards, { only = null } = {}) {

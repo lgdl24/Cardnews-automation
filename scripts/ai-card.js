@@ -53,6 +53,7 @@ Add this Korean text EXACTLY, spelled exactly as written, nothing more, in the $
 ${textLines(copy)}
 Typography: clean modern Korean sans-serif, bold headline, high contrast and easy to read. The text must not touch the product.
 Do not add any other words, numbers, claims, logos, watermarks or people.
+Nothing medical: no doctors, pharmacists or experts, no white coats, clinics, hospitals, pharmacies or medical equipment.
 
 Use ONLY the built-in image generation tool, in a single generation. Do not write or run any code or scripts, do not draw text or composite images yourself, and do not post-process the generated image. Just copy the generated file to ./out.png.
 

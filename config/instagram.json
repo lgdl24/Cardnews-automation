@@ -1,0 +1,14 @@
+{
+  "_doc": "인스타그램 게시 설정 (docs/proposals/ax-plan.md B단계). 토큰은 여기 두지 않고 .env의 IG_ACCESS_TOKEN",
+  "api_base": "https://graph.instagram.com",
+  "api_version": "v27.0",
+  "caption": {
+    "disclosure": "🤖 AI를 활용해 제작한 카드뉴스예요",
+    "sample_note": "샘플 게시물이에요 (실제 판매 광고가 아니에요)",
+    "hashtags": ["AI활용", "카드뉴스"],
+    "max_chars": 2200
+  },
+  "jpeg_quality": 92,
+  "carousel_max": 10,
+  "status_poll": { "interval_ms": 3000, "timeout_ms": 120000 }
+}

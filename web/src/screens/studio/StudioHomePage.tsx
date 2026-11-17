@@ -119,6 +119,12 @@ function ProductTile({ p, s }: { p: ProductSummary; s: WorkStatus }) {
         <span className={`pill pill-${s.tone}`}>{s.label}</span>
         <strong className="studio-tile-name">{p.name}</strong>
         <span className="studio-tile-meta">{[p.brand, p.id].filter(Boolean).join(' · ')}</span>
+        {p.instagram && (p.instagram.scheduled_at || p.instagram.published || p.instagram.state === 'unknown') && (
+          <span className="studio-tile-ig">
+            <Icon name={p.instagram.scheduled_at ? 'clock' : p.instagram.state === 'unknown' ? 'alert' : 'external'} size={14} />
+            {p.instagram.state === 'unknown' ? '인스타 게시 확인 필요' : p.instagram.scheduled_at ? `인스타 예약 ${new Date(p.instagram.scheduled_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '인스타 게시 완료'}
+          </span>
+        )}
         <span className="studio-tile-foot">
           <span className="muted num">{formatDateTime(p.updated_at)}</span>
           <span className="next-action">{s.next}<Icon name="arrow" size={16} /></span>

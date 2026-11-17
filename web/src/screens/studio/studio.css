@@ -371,3 +371,72 @@
   .event-log li { grid-template-columns: 1fr; gap: 0; }
   .export-panel .action-bar { width: 100%; }
 }
+
+
+/* ── 인스타 게시 (B5, #104) */
+.ig-panel { margin-top: 16px; padding: 20px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); display: grid; gap: 14px; }
+.ig-panel.is-active { border-color: color-mix(in srgb, var(--st-running) 45%, var(--line)); }
+.ig-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ig-head .panel-title { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.ig-head .muted { font-size: 14px; }
+.ig-account { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-2); font-size: 14px; }
+.ig-account-error { display: inline-flex; align-items: center; gap: 6px; color: var(--st-failed); font-weight: 600; }
+.ig-progress { padding: 14px 16px; border-radius: var(--radius-sm); background: var(--st-running-bg); color: var(--text); }
+.ig-progress-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--st-running); }
+.ig-progress-head .muted { margin-left: auto; }
+.ig-progress .spinner { border-color: color-mix(in srgb, var(--st-running) 25%, transparent); border-top-color: var(--st-running); }
+.ig-steps { margin: 12px 0 8px; }
+.ig-steps .is-todo { opacity: .55; }
+.ig-steps .is-todo .job-timeline-dot { background: var(--surface); border: 1px solid var(--line-strong); }
+.ig-progress > .muted { font-size: 13px; }
+.ig-result { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius-sm); font-size: 14px; overflow-wrap: anywhere; }
+.ig-result > svg { flex: none; margin-top: 2px; }
+.ig-result > div { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.ig-result.is-done { background: var(--st-done-bg); }
+.ig-result.is-done > svg, .ig-result.is-done strong { color: var(--st-done); }
+.ig-result.is-unknown, .ig-result.is-failed { background: var(--st-failed-bg); }
+.ig-result.is-unknown > svg, .ig-result.is-unknown strong, .ig-result.is-failed > svg, .ig-result.is-failed strong { color: var(--st-failed); }
+.ig-schedule { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--st-queued-bg); color: var(--st-queued); font-size: 14px; }
+.ig-schedule > svg { flex: none; margin-top: 2px; }
+.ig-schedule > div { flex: 1; display: grid; gap: 4px; min-width: 0; }
+.ig-schedule .muted { color: inherit; opacity: .85; font-size: 13px; }
+.ig-schedule-missed, .ig-schedule-blocked, .ig-schedule-failed, .ig-schedule-unknown { background: var(--st-failed-bg); color: var(--st-failed); }
+.ig-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.ig-cards li { position: relative; }
+.ig-cards img, .ig-cards .card-missing { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.ig-cards .num { position: absolute; left: 6px; top: 6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; background: rgb(10 12 16 / 66%); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.ig-caption { margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); font-family: var(--font); font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; }
+.ig-check-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ig-check-head .panel-subtitle { margin: 0; }
+.check-list { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
+.check-item { display: grid; grid-template-columns: 22px minmax(90px, 140px) 76px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 14px; }
+.check-mark { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; }
+.check-label { font-weight: 600; }
+.check-word { font-size: 12px; font-weight: 700; }
+.check-detail { color: var(--text-2); overflow-wrap: anywhere; font-size: 13px; }
+.check-pass .check-mark { background: var(--st-done-bg); color: var(--st-done); }
+.check-pass .check-word { color: var(--st-done); }
+.check-warn { background: var(--st-queued-bg); }
+.check-warn .check-mark, .check-warn .check-word { color: var(--st-queued); }
+.check-fail { background: var(--st-failed-bg); }
+.check-fail .check-mark, .check-fail .check-word { color: var(--st-failed); }
+.check-todo .check-mark, .check-todo .check-word { color: var(--text-2); }
+.check-ack { min-height: 32px; font-size: 13px; white-space: nowrap; }
+.ig-actions { display: grid; gap: 8px; }
+.ig-actions .action-bar { margin-top: 0; }
+.ig-blockers { margin: 0; padding: 10px 12px 10px 28px; border-radius: var(--radius-sm); background: var(--surface-2); font-size: 13px; color: var(--text-2); display: grid; gap: 2px; }
+.ig-schedule-form { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; padding: 12px; border-radius: var(--radius-sm); border: 1px dashed var(--line-strong); }
+.ig-schedule-form .field { flex: 1 1 260px; }
+.ig-confirm p { color: var(--text); overflow-wrap: anywhere; }
+.ig-confirm p + p { color: var(--text-2); margin-top: 6px; }
+.studio-tile-ig { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--accent-soft-fg); }
+@media (max-width: 760px) {
+  .ig-panel { padding: 14px; }
+  .ig-head { flex-direction: column-reverse; gap: 8px; }
+  .check-item { grid-template-columns: 22px minmax(0, 1fr) auto; }
+  .check-detail { grid-column: 2 / -1; }
+  .check-ack { grid-column: 2 / -1; justify-self: start; }
+  .ig-actions .btn { flex: 1 1 auto; }
+  .ig-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .ig-cards .num { left: 3px; top: 3px; min-width: 16px; height: 16px; font-size: 11px; }
+}

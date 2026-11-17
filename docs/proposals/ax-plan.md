@@ -1,0 +1,65 @@
+# AX 확장 계획 — 준법 검사 → 인스타 자동 게시 → 성과 되먹임 (2026-11-10, 이규동 결정)
+
+카드뉴스 제작 파이프라인을 "만들고 끝"에서 **검증 → 승인 → 게시 → 성과 → 다음 제작**까지 잇는 AX 흐름으로 넓힙니다.
+오브젠 AX-CRM의 고리(세그먼트 → 캠페인 설계 → **콘텐츠 생성** → 시뮬레이션 → 성과 → 재설계, 최종 검증은 마케터)에서 우리 프로젝트는 '콘텐츠 생성'을 맡고, 그 앞뒤(준법 게이트·게시·성과)를 붙입니다.
+
+```
+입력 → 구성안 → 문구 → 출력 ─▶ A. 게시 전 점검(준법·AI 표시) ─▶ 사람 최종 승인 ─▶ B. 인스타 게시 ─▶ C. 성과 수집 ─▶ 대시보드·v3 규칙 후보
+```
+
+## 근거 (조사 2026-11-10)
+
+| 근거 | 내용 | 이 계획에서 |
+|---|---|---|
+| 개정 화장품법 제13조①4 (2026.4.23 국회 통과, 공포 6개월 후 시행 · 보도 기준 11.27) | AI로 만든 실제와 구분하기 어려운 가상 음향·이미지·영상으로 의사·치과의사 등 전문가가 추천·보증·사용하는 것처럼 오인하게 하는 광고 금지 | A1·A2 |
+| 식약처 단속 (SBS Biz 11.5) | 올해 7월까지 AI 생성(의심) 부당광고 166건. 가상 피부과 원장 추천, 근거 없는 '약국 입점' | A1 |
+| 공정위 추천·보증 지침 개정 (2026 하반기) | AI 가상인물이 추천하면 '가상인물' 표시 | A2(가상인물 자체를 쓰지 않음) |
+| AI 기본법 제31조 (2026.1.22 시행, 계도 1년 이상) | 생성형 AI 결과물은 AI 생성임을 식별할 수 있게 표시. 외부로 내보내는 결과물은 메타데이터·디지털 워터마크 | A3 |
+| Meta AI 라벨 | C2PA·IPTC 메타데이터의 'AI 생성' 정보를 읽어 라벨 | A3·B |
+| Instagram API (Instagram 로그인) | 페이스북 페이지 없이 프로페셔널 계정으로 게시. 캐러셀 최대 10장, JPEG만, 공개 URL에서 가져감, 24시간 100건(캐러셀 1건), 예약 기능 없음 | B |
+| Instagram 인사이트 | 노출수(impressions)는 2025.3 폐지 → 조회수(views). 공유·저장 등 | C |
+| BCG 2026 (CMO 300명) | 에이전트를 업무 흐름에 넣은 기업 32%, 자율 다중 에이전트 8%. 사람 감독 + 에이전트 | 전체(사람 승인 게이트 유지) |
+
+## A. 게시 전 점검: 준법 + AI 표시 (목표 11.13)
+
+| 단계 | 할 일 | 결과물 | 상태 |
+|---|---|---|---|
+| A1 | 주의 표현에 '가상 인물·전문가 추천' 묶음 추가 (약사·전문의·원장·한의사·치과의사·가상 인물·약국 입점 등) | `config/caution-expressions.json` v2 | 완료 11.10 |
+| A2 | GPT 이미지 지시문(AI 카드·브랜드 배경)에 사람·의료인·가운·병원·의료기기 금지를 명시 | `scripts/ai-card.js`, `scripts/lib/brand.js` | 완료 11.10 |
+| A3 | 출력 PNG에 AI 표시 메타데이터(XMP: IPTC `DigitalSourceType`, 만든 도구, 'AI 활용' 설명) 자동 삽입. GPT 이미지가 들어간 카드와 템플릿 카드를 구분 | `scripts/lib/ai-disclosure.js`, 출력 단계 | 완료 11.10 |
+| A4 | `npm run precheck -- <제품ID>`: 게시 전 점검표(검증 오류 0, [주의] 판단, AI 표시 메타데이터, AI 카드 글자 확인, 캡션 표시 문구) → `output/publish-check.json`. B의 게시 조건 | `scripts/precheck.js`, `scripts/lib/publish-check.js`, 작업실 '게시 전 점검' 패널 | 완료 11.10 |
+| A5 | 규칙 v2로 올리고(사람 결정) v2 평가 묶음 실행 → 대시보드 '규칙 버전 비교'(A5)에 v1 vs v2 | `config/skill-version.json`, 평가 결과 | A1~A4 후 |
+
+## B. 인스타 자동 게시 (목표 11.18)
+
+| 단계 | 할 일 | 비고 |
+|---|---|---|
+| B0 (이규동, 병행) | 테스트용 인스타 **프로페셔널 계정**(크리에이터 가능) · Meta 개발자 앱 · 앱 역할에 계정 추가 · 토큰과 계정 ID를 로컬 `.env`의 `IG_ACCESS_TOKEN`·`IG_USER_ID`에 보관 (Claude는 `.env`를 읽지 않음). 현재 앱은 **Unified Login**이므로 `IG_API_SETUP=unified` 설정 | 11.17 실계정 `@cardnews_auto_lab` 조회·게시 권한·한도 확인. 개발 모드의 앱 역할 계정으로 시험 |
+| B1 | 캡션 생성: 승인 문구로 캡션·해시태그를 만들고 첫 줄에 'AI 활용'·샘플 표시 | 완료 11.13 `scripts/lib/ig-caption.js` → `output/instagram/caption.txt` (카드 문구만 사용, 새 문구 없음) |
+| B2 | PNG → JPEG 변환(메타데이터 유지), 캐러셀 순서 고정 | 완료 11.13 `scripts/lib/ig-media.js` (JPEG APP1에 같은 XMP) |
+| B3 | 공개 URL: 배포 없이 시연하므로 게시하는 동안만 임시 터널(`cloudflared` 빠른 터널)로 JPEG를 열어 두고, 끝나면 닫음 | 완료 11.13 `scripts/lib/public-url.js` (비밀 경로·지정 파일만). 서버가 생기면 `--base-url` |
+| B4 | 구현 11.13, 첫 실제 게시 확인 11.17. `npm run ig -- check \| prepare \| publish [--dry-run] \| refresh-token`: 점검 통과 + 최종 승인된 것만, 컨테이너 생성 → 캐러셀 → 게시. 24시간 한도 확인. 결과(`media_id`, 링크)를 제작 기록에 `published` 이벤트로 | 예약은 우리 쪽에서(작업실 대기열) |
+| B5 | 작업실 '게시' 패널: 미리보기(캡션 포함) → 게시/예약 → 결과 링크 | 구현 11.17 #104: 수동·예약 게시, 상태 저장·복원, 같은 버전 중복 방지, 결과 불분명 시 조회 뒤 재시도. 실제 게시 확인은 사용자 승인 뒤. `docs/proposals/instagram-web-publish.md` |
+
+### 연결 확인 (2026-11-17)
+
+- `npm run ig -- check`로 계정 조회, Unified Login의 `instagram_basic`·`instagram_content_publish` 승인 여부, 게시 한도를 확인한다. 권한이나 한도 조회가 실패하면 오류로 종료한다.
+- Unified Login은 `graph.facebook.com`에서 명시적인 `IG_USER_ID`로 조회한다. 이 방식의 `/me`는 비즈니스 통합 시스템 사용자다. 기존 Instagram Login은 `graph.instagram.com`의 `/me`를 사용한다. `IG_API_SETUP`을 생략한 기존 환경은 Instagram Login으로 동작한다.
+- 토큰은 Authorization 헤더로 보낸다. Unified Login의 토큰은 `ig refresh-token`에서 변경하지 않는다. 앱 대시보드 재발급 또는 별도 비즈니스 토큰 관리 API 설정이 필요하다.
+- 11.17 사용자 승인 후 젤크림 5장과 캡션을 실제 게시했다. [첫 게시물](https://www.instagram.com/p/Df024mWj53J/)의 캐러셀 5장·캡션 일치·이미지 순서를 확인했다. 기존 젤크림 이미지의 AI 활용 XMP 누락은 게시 준비 복사본에 보완했고 원본 그림 데이터 동일성을 확인했다. 실제 게시에서 발견한 명령 이름 충돌과 Cloudflare 연결·DNS 준비 대기도 수정했다.
+- Meta의 [Unified Login 인증](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-unified-login/authentication), [게시 권한](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-unified-login/permissions), [게시 절차](https://developers.facebook.com/documentation/instagram-platform/content-publishing)를 기준으로 연결한다.
+
+## C. 성과 되먹임 (목표 11.21)
+
+| 단계 | 할 일 |
+|---|---|
+| C1 | `npm run insights`: 게시물별 조회수·도달·좋아요·댓글·저장·공유를 정해진 시점(게시 후 1h·24h·72h)에 수집 → `products/<id>/insights.jsonl` |
+| C2 | 웹 데이터·대시보드에 '게시 성과' 영역: 게시물별 지표, 카드 구성(템플릿·무드·AI 카드 여부)·주의 표현 수와 나란히 |
+| C3 | 성과 요약을 다음 구성안 작업의 참고 자료로(입력 자료와 구분, 사실 근거로는 쓰지 않음) → v3 규칙 후보 |
+
+## 한계·주의
+
+- 실사용자·광고비가 없어 게시 성과는 표본이 아주 작음 → C는 '흐름이 닫힌다'를 보이는 시연 + 지표 설계가 핵심이고, 통계적 결론을 내지 않음.
+- 주의 표현 검사는 글자 비교라 표현을 바꾸면 놓칠 수 있음 → [주의]는 사람 판단으로 남기고, 게시는 사람 최종 승인 후에만.
+- 법 해석은 보도·안내서 기준이며 법률 자문이 아님.
+- Meta 앱을 공개(라이브)로 돌리려면 앱 검수가 필요할 수 있음 → 시연은 개발 모드의 테스트 계정으로.

@@ -157,7 +157,7 @@ Composition: ${hintFor(mood, templateKey)}${harmony}
 STRICT RULES:
 - No text, letters, numbers, logos, watermarks, labels or signs anywhere.
 - No product, bottle, tube, jar, box or any packaging. No people, hands or faces.
-- No medical, clinical, hospital, injection or before/after imagery. No certification badges.
+- No medical, clinical, hospital, pharmacy, injection or before/after imagery: no doctors, pharmacists or experts, no white coats, no medical equipment. No certification badges.
 - Photographic, clean, premium skincare advertising look.`;
 }
 
@@ -220,7 +220,7 @@ Composition: ${hintFor(mood, templateKey)}
 STRICT RULES:
 - No text, letters, numbers, logos, watermarks or signs anywhere (other than the product's own label, unchanged).
 - No other product, bottle, tube, jar or packaging. No people, hands or faces.
-- No medical, clinical, hospital, injection or before/after imagery. No certification badges.
+- No medical, clinical, hospital, pharmacy, injection or before/after imagery: no doctors, pharmacists or experts, no white coats, no medical equipment. No certification badges.
 
 Use ONLY the built-in image generation tool, in a single generation. Do not write or run any code or scripts and do not post-process the image. Just copy the generated file to ./out.png.
 

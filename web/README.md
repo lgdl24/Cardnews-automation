@@ -34,7 +34,7 @@ npm run web:build        # 타입 검사 + 빌드 → web/dist/
 | `/compare?a=<id>&b=<id>` | V4 버전 비교 (권장) | 이용석 | `src/screens/version-compare/` |
 | `/studio` | S1 작업실: 제품 목록·Claude Code 상태 (로컬만) | 이규동 | `src/screens/studio/StudioHomePage.tsx` |
 | `/studio/new` · `/studio/:id/edit` | S2 새 제작·입력 고치기 (로컬만) | 이규동 | `src/screens/studio/ProductFormPage.tsx` |
-| `/studio/:id` | S3 제작 진행: 작업 진행·구성안 확인·카드 확인·승인·수정 요청·내보내기 (로컬만) | 이규동 | `src/screens/studio/StudioProductPage.tsx` |
+| `/studio/:id` | S3 제작 진행: 작업 진행·구성안 확인·카드 확인·승인·수정 요청·내보내기·인스타 게시/예약 (로컬만) | 이규동 | `src/screens/studio/StudioProductPage.tsx` |
 
 V2 카드 결과(#15)는 크게 보기(`?card=3`으로 공유, ←·→·Esc), PNG 개별·ZIP 묶음 다운로드(브라우저에서 만듦, `src/lib/zip.ts`), 이미지 출처 표, 글자-이미지 겹침 경고까지 있습니다. V2 제작 과정(#17)은 요약 숫자, 단계별 시간 막대(AI 처리/사람 검토), 품질 지표, 작업별 결과, 제작 기록 타임라인(검증 오류·승인 주체·수정 요청 유형·메모)을 보여줍니다.
 
@@ -85,3 +85,8 @@ web/
 - Vercel: 프로젝트 Root Directory `web`, Build Command `npm run build`, Output Directory `dist`. `vercel.json`이 `/projects/...` 같은 주소를 새로고침해도 화면이 열리게 합니다.
 - 데이터는 커밋된 `web/public/data/`로 배포되므로, 새 결과를 보이려면 `npm run export` → `npm run web:build` → **`npm run check:web`** → 커밋 → 배포 순서입니다.
 - `npm run check:web`(배포 전 점검)은 오류가 있으면 종료 코드 1이에요. 웹 데이터 규격에 없는 파일·목록에 없는 프로젝트 폴더·빠진 PNG(`DEPLOY_FILE`), 스키마(`SCHEMA_ERROR`), 비밀 값 형태(`SECRET`, 값은 출력 안 함), 카드에 쓴 이미지의 사용 가능 여부가 '가능'이 아님(`IMAGE_RIGHTS`), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등을 봐요. 소스 맵은 경고만.
+
+
+## 인스타 게시 (로컬 작업실만, #104)
+
+최종 승인한 제품의 상세 화면에서 인스타에 지금 게시하거나 예약해요. 저장소 `.env`의 `IG_ACCESS_TOKEN`·`IG_USER_ID`·`IG_API_SETUP`이 필요하고, 토큰은 로컬 서버에서만 쓰여 화면·응답에 나오지 않아요. 이미지 공개 주소는 기본으로 게시하는 동안만 `cloudflared` 임시 터널을 열고(`brew install cloudflared`), `.env`에 `IG_PUBLIC_BASE_URL`을 두면 그 고정 주소를 써요. 예약은 작업실 서버가 시각에 실행하므로 그 시각에 컴퓨터와 `npm run studio`가 켜져 있어야 해요(`CARDNEWS_IG_SCHEDULE=off`로 예약 확인 끔). 배포된 정적 사이트에는 게시 기능이 없어요.
