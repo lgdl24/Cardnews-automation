@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { JOB_LABEL, studioFetch, usePolling, useStudioStatus, type JobsOverview } from '../../studio/api';
+import { formatElapsed } from '../../studio/status';
 import './studio.css';
 
 function useNow(active: boolean) {
@@ -40,9 +41,7 @@ function JobBar() {
             <span>
               <strong>{r.name}</strong> {JOB_LABEL[r.kind]} 중
             </span>
-            <span className="job-bar-time">
-              {Math.floor(sec / 60)}분 {String(sec % 60).padStart(2, '0')}초
-            </span>
+            <span className="job-bar-time">{formatElapsed(sec)}</span>
           </Link>
         )}
         {queue.length > 0 && (

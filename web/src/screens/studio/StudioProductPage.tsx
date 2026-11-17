@@ -73,6 +73,8 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
       if (r.product) setData(r.product);
       else if (r.id) setData(r as ProductDetail);
       refresh();
+      // 작업을 시작·예약한 요청이면 진행 상태가 보이는 맨 위로 (검토하던 위치에 머물면 진행이 안 보임)
+      if (/\/(jobs|approve|revisions|render)$/.test(path) && method === 'POST') window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
       return true;
     } catch (e) {
       setActionError((e as Error).message);
