@@ -152,7 +152,23 @@ function createPublisher({
     h.update(JSON.stringify(data.cards || []));
     for (const c of cards) if (!missing.includes(c.no)) h.update(fs.readFileSync(c.path));
     h.update(caption);
-    return { ok: true, data, cards, missing, caption, approved: data.stage === 'approved', approvedAt, version: h.digest('hex').slice(0, 16) };
+    return { ok: true, data, cards, missing, caption, approved: data.stage === 'approved', approvedAt, version: h.digest('hex').slice(0, 16), legacy: legacyOf(id, cards) };
+  }
+  // 터미널 명령(npm run ig -- publish)으로 게시한 기록 output/instagram/published.json
+  // 그 뒤로 cards.json·카드 PNG가 바뀌지 않았으면 같은 콘텐츠로 보고 다시 게시하지 않음 (보수적으로 판단)
+  function legacyOf(id, cards) {
+    const rec = readJsonIf(path.join(dirOf(id), 'output', 'instagram', 'published.json'));
+    if (!rec || !rec.published_at) return null;
+    const at = Date.parse(rec.published_at);
+    const files = [path.join(dirOf(id), 'cards.json'), ...cards.map((c) => c.path)];
+    const unchanged = files.every((f) => {
+      try {
+        return fs.statSync(f).mtimeMs <= at;
+      } catch {
+        return true;
+      }
+    });
+    return { media_id: rec.media_id, permalink: rec.permalink || null, account: rec.account || null, published_at: rec.published_at, same: unchanged };
   }
   // 게시 전 점검의 '게시 캡션' 항목은 caption.txt를 읽음 → 화면을 열 때 같은 캡션을 써 둠
   function writeCaption(id, caption) {
@@ -187,6 +203,7 @@ function createPublisher({
       if (left.length) out.push(`'사람 확인' 항목을 확인해 주세요: ${check.checks.filter((c) => left.includes(c.id)).map((c) => c.label).join(', ')}`);
     }
     if (s.published.some((p) => p.version === snap.version)) out.push('이 버전은 이미 게시했어요. 카드를 고쳐 새 버전이 되어야 다시 게시할 수 있어요');
+    else if (snap.legacy && snap.legacy.same) out.push(`이 카드는 이미 터미널 명령으로 게시했어요 (${snap.legacy.permalink || snap.legacy.media_id}). 카드를 고쳐 새 버전이 되어야 다시 게시할 수 있어요`);
     if (s.current && ACTIVE.has(s.current.state)) out.push('게시가 진행 중이에요');
     if (s.current && s.current.state === 'unknown') out.push('지난 게시가 실제로 됐는지 먼저 확인해야 해요 (게시 여부 확인)');
     if (running && running.id !== id) out.push('다른 제품을 게시하는 중이에요. 끝난 뒤에 해 주세요');
@@ -212,7 +229,7 @@ function createPublisher({
       check,
       acks: s.acks && s.acks.version === snap.version ? s.acks.ids : [],
       current: s.current,
-      published: s.published,
+      published: [...s.published, ...(snap.legacy && !s.published.some((p) => p.media_id === snap.legacy.media_id) ? [{ version: snap.legacy.same ? snap.version : 'cli', media_id: snap.legacy.media_id, permalink: snap.legacy.permalink, account: snap.legacy.account, published_at: snap.legacy.published_at, trigger: 'cli' }] : [])],
       history: s.history.slice(0, 5),
       schedule: s.schedule,
       can_publish: blockers.length === 0,

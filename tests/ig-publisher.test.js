@@ -300,3 +300,23 @@ test('작업실 API: 상태·계정·게시·예약 경로, 쓰기 요청은 작
   assert.equal((await call('POST', `/products/${ws.id}/instagram/publish`, { version })).status, 409, '같은 버전 다시 게시 거절');
   assert.equal((await call('GET', `/products/${ws.id}/instagram/nope`)).status, 404);
 });
+
+test('터미널 명령으로 이미 게시한 카드(published.json)는 바뀌지 않았으면 다시 게시하지 않음', (t) => {
+  const { ws, pub } = setup();
+  t.after(() => ws.cleanup());
+  const file = ws.file('output', 'instagram', 'published.json');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ published_at: new Date(Date.now() + 60000).toISOString(), media_id: 'cli-1', permalink: 'https://www.instagram.com/p/cli/', account: 'cardnews_auto_lab' }));
+  let st = pub.status(ws.id);
+  assert.equal(st.can_publish, false);
+  assert.ok(st.blockers.some((b) => /터미널 명령으로 게시/.test(b)));
+  assert.equal(st.published[0].trigger, 'cli');
+  assert.equal(st.published[0].version, st.version);
+  assert.throws(() => pub.start(ws.id, { version: st.version }), /터미널 명령/);
+  assert.throws(() => pub.schedule(ws.id, { version: st.version, at: new Date(T0 + 3600e3).toISOString() }), /터미널 명령/);
+  // 게시 뒤에 카드를 다시 출력했으면 새 콘텐츠로 봄
+  fs.writeFileSync(file, JSON.stringify({ published_at: '2020-01-01T00:00:00Z', media_id: 'cli-1', permalink: null }));
+  st = pub.status(ws.id);
+  assert.equal(st.can_publish, true, st.blockers.join(' / '));
+  assert.equal(st.published[0].version, 'cli');
+});
