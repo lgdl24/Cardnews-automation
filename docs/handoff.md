@@ -41,6 +41,7 @@
 
 ## 현재 작업 — 인스타 Unified Login 연결 (Codex, 2026-11-17)
 
+- 초안 PR은 [#99](https://github.com/lgdl24/Cardnews-automation/pull/99), 기반은 `feat/instagram`이다. 메인 반영과 첫 실제 게시 검증은 남아 있다.
 - 이슈 #96, 기반 `feat/instagram`의 `0630788`, 작업 브랜치 `fix/96-instagram-unified-login`. 작업 폴더 `/Users/lee/.codex/.chatgpt-projects/g-p-6abb113ccf84819189f417d059c9233f/worktrees/cardnews-instagram`. 원래 `/Users/lee/git/Cardnews-automation`의 실험 변경은 별도 상태다.
 - 사용자가 원래 폴더의 `.env`에 토큰·계정 ID를 입력했다. `IG_API_SETUP=unified`를 추가했고, 개발 폴더는 원래 `.env`를 참조한다. 값은 문서·로그·커밋에 넣지 않는다.
 - 완료한 연결 확인은 `npm run ig -- check`의 `@cardnews_auto_lab` 계정 조회, 게시 권한 2개 승인, 한도 0/100건이다. 토큰과 계정 ID 일치도 확인했다. `prepare`·`publish`가 같은 계정 선택을 사용한다.
