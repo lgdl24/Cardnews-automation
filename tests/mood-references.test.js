@@ -56,3 +56,13 @@ test('배치(panel·editorial·immersive)마다 템플릿 3장이 있고, 제품
     }
   }
 });
+
+test('브랜드 묶음의 세리프 글꼴 파일이 있다 (npm install로 받는 @fontsource/nanum-myeongjo)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const serif = require('../config/templates.json')._designs['브랜드']._theme.serif;
+  assert.ok(serif && serif.family);
+  for (const subsets of Object.values(serif.files)) {
+    for (const f of Object.values(subsets)) assert.ok(fs.existsSync(path.join(__dirname, '..', f)), f);
+  }
+});
