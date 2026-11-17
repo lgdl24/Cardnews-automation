@@ -7,6 +7,8 @@ const { readDisclosure } = require('./ai-disclosure');
 const { appliedNumbers, readReport } = require('./ai-cards');
 const { bgFiles } = require('./brand');
 const { findCautions } = require('./metrics');
+const { FILE, readCaption, inspectText } = require('./ig-caption-draft');
+const CAPTION_CFG = require('../../config/instagram.json').caption;
 
 const pad = (n) => String(n).padStart(2, '0');
 const readJsonIf = (file) => {
@@ -44,7 +46,14 @@ function latestRender(outDir) {
 function publishCheck({ productDir, data, validation, caution, sourceText = '' }) {
   // 게시 캡션: npm run ig -- prepare 가 만든 output/instagram/caption.txt (cards.json에 caption이 있으면 그것)
   const captionFile = path.join(productDir, 'output', 'instagram', 'caption.txt');
-  const captionText = data.caption?.text ?? (fs.existsSync(captionFile) ? fs.readFileSync(captionFile, 'utf8') : null);
+  let draft = null;
+  const hasDraft = fs.existsSync(path.join(productDir, 'output', 'instagram', FILE));
+  if (hasDraft) {
+    try {
+      draft = readCaption({ productDir, data, inputText: fs.readFileSync(path.join(productDir, 'input.md'), 'utf8'), cfg: CAPTION_CFG, caution });
+    } catch { draft = { text: '', errors: ['캡션 근거 원문을 읽지 못했어요'] }; }
+  }
+  const captionText = draft ? draft.text : data.caption?.text ?? (fs.existsSync(captionFile) ? fs.readFileSync(captionFile, 'utf8') : null);
   const checks = [];
   const add = (id, label, status, detail, extra = {}) => checks.push({ id, label, status, detail, ...extra });
   const cards = data.cards || [];
@@ -106,9 +115,15 @@ function publishCheck({ productDir, data, validation, caution, sourceText = '' }
     );
 
   // 7) 게시 캡션 (B1에서 만듦)
-  if (!captionText) add('caption', '게시 캡션', 'todo', '캡션이 아직 없어요 (npm run ig -- prepare 로 만들어요)');
+  if (draft?.errors.length) add('caption', '게시 캡션', 'fail', draft.errors.join(' · '));
+  else if (!captionText) add('caption', '게시 캡션', 'todo', '캡션이 아직 없어요 (npm run ig -- caption <제품ID>로 작성해 주세요)');
   else if (!/AI/.test(captionText.split('\n')[0] || '')) add('caption', '게시 캡션', 'fail', "캡션 첫 줄에 'AI 활용' 표시 문구가 없어요");
-  else add('caption', '게시 캡션', 'pass', `캡션 ${captionText.trim().length}자, 첫 줄에 AI 활용 표시`);
+  else {
+    const checked = inspectText(captionText, sourceText, caution);
+    if (checked.errors.length) add('caption', '게시 캡션', 'fail', checked.errors.join(' · '));
+    else add('caption', '게시 캡션', checked.cautions.length ? 'warn' : 'pass', `캡션 ${captionText.trim().length}자, 첫 줄에 AI 활용 표시${checked.cautions.length ? ' · 원문에 있는 주의 표현은 직접 확인해 주세요' : ''}`);
+    if (draft || data.caption?.text) add('caption_review', '게시 글 근거·말투 확인', 'warn', '카드와 다른 문장으로 작성했어요. 문장·해시태그의 의미, 효능 단정과 가상 제품 안내를 직접 확인해 주세요');
+  }
 
   const ready = !checks.some((c) => c.status === 'fail' || c.status === 'todo');
   return { ready, counts: Object.fromEntries(['pass', 'warn', 'fail', 'todo'].map((s) => [s, checks.filter((c) => c.status === s).length])), checks };

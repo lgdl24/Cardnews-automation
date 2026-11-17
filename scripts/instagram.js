@@ -1,5 +1,6 @@
 // 인스타그램 연동 (docs/proposals/ax-plan.md B단계)
 //   npm run ig -- check                     토큰으로 계정·게시 한도 확인 (토큰은 출력하지 않음)
+//   npm run ig -- caption <제품ID> [--force] 게시 글 작성·근거 검토 (게시하지 않아요)
 //   npm run ig -- prepare <제품ID>          캡션(output/instagram/caption.txt) + JPEG(AI 활용 XMP 유지)
 //   npm run ig -- publish <제품ID> [--dry-run] [--base-url <https 주소>]
 //        게시 전 점검이 '게시 가능'인 것만. 공개 주소는 cloudflared 빠른 터널(기본) 또는 --base-url(이미 파일을 공개해 둔 서버)
@@ -8,10 +9,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { paths, loadInput } = require('./lib/common');
+const { paths } = require('./lib/common');
 const { readEnvKeys } = require('./lib/env-file');
 const { createClient, explain, IgError } = require('./lib/instagram');
-const { buildCaption } = require('./lib/ig-caption');
+const { resolveCaption } = require('./lib/ig-caption');
+const { generateCaption } = require('./lib/ig-caption-writer');
 const { toJpegs } = require('./lib/ig-media');
 const { startFileServer, openTunnel, waitReachable } = require('./lib/public-url');
 const { appendEvent } = require('./lib/events');
@@ -19,14 +21,6 @@ const { appendEvent } = require('./lib/events');
 const cfg = require('../config/instagram.json');
 const igDir = (id) => paths.product(id, 'output', 'instagram');
 const pad = (n) => String(n).padStart(2, '0');
-
-function productName(id) {
-  try {
-    return loadInput(id)?.groups?.['제품 정보']?.['제품명'] || null;
-  } catch {
-    return null;
-  }
-}
 
 function readCards(id) {
   return JSON.parse(fs.readFileSync(paths.product(id, 'cards.json'), 'utf8'));
@@ -40,12 +34,17 @@ function postKey(pngs, caption) {
   return h.digest('hex').slice(0, 16);
 }
 
-async function prepare(id, { log = console.log } = {}) {
+async function captionOf(id, { force = false, ask } = {}) {
+  return generateCaption({ productDir: paths.product(id), data: readCards(id), inputText: fs.readFileSync(paths.product(id, 'input.md'), 'utf8'), cfg: cfg.caption, caution: require('../config/caution-expressions.json'), force, ask });
+}
+
+async function prepare(id, { log = console.log, generate = true, ask } = {}) {
   const data = readCards(id);
   const pngs = data.cards.map((c) => paths.product(id, 'output', 'png', `card-${pad(c.no)}.png`));
   const missing = pngs.filter((f) => !fs.existsSync(f));
   if (missing.length) throw new Error(`출력 PNG가 없어요: ${missing.map((f) => path.basename(f)).join(', ')} (npm run render 먼저)`);
-  const caption = buildCaption(data, cfg.caption, { productName: productName(id) });
+  const caption = generate ? await captionOf(id, { ask }) : resolveCaption(data, cfg.caption, { productDir: paths.product(id), caution: require('../config/caution-expressions.json') });
+  if (caption.errors.length) throw new Error(caption.errors.join(' · '));
   const dir = igDir(id);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'caption.txt'), caption.text + '\n');
@@ -81,7 +80,8 @@ async function check({ log = console.log, ig = client() } = {}) {
 
 async function publish(id, { dryRun = false, baseUrl = null, log = console.log, ig = null } = {}) {
   const { run: precheck } = require('./precheck');
-  const prepared = await prepare(id, { log });
+  // 게시 순간에는 새 글을 만들지 않아요. prepare/caption으로 작성하고 먼저 확인해요.
+  const prepared = await prepare(id, { log, generate: false });
   const report = precheck(id);
   const names = prepared.jpgs.map((f) => path.basename(f));
   if (!report?.ready) {
@@ -145,7 +145,12 @@ async function main(argv) {
   };
   if (cmd === 'check') return check();
   if (cmd === 'refresh-token') return refreshToken();
-  if (!id || !/^[a-z0-9-]+$/.test(id)) throw new Error('사용법: npm run ig -- check | prepare <제품ID> | publish <제품ID> [--dry-run] [--base-url URL] | refresh-token');
+  if (!id || !/^[a-z0-9-]+$/.test(id)) throw new Error('사용법: npm run ig -- check | caption <제품ID> [--force] | prepare <제품ID> | publish <제품ID> [--dry-run] [--base-url URL] | refresh-token');
+  if (cmd === 'caption') {
+    const result = await captionOf(id, { force: rest.includes('--force') });
+    console.log(`게시 글을 작성했어요 (${result.chars}자). 게시 전에 내용을 확인해 주세요.\n\n${result.text}`);
+    return result;
+  }
   if (cmd === 'prepare') return prepare(id);
   if (cmd === 'publish') return publish(id, { dryRun: rest.includes('--dry-run'), baseUrl: opt('--base-url') });
   throw new Error(`알 수 없는 명령: ${cmd}`);
@@ -158,4 +163,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { prepare, publish, check, refreshToken, postKey, main };
+module.exports = { prepare, captionOf, publish, check, refreshToken, postKey, main };

@@ -12,6 +12,7 @@ const { startFileServer, openTunnel, waitReachable } = require('../scripts/lib/p
 const { readEnvKeys } = require('../scripts/lib/env-file');
 const { ROOT, makeWorkspace } = require('./helpers');
 const cfg = require('../config/instagram.json');
+const { seedCaption } = require('./caption-helpers');
 
 const TOKEN = 'IGAA-secret-token-123';
 
@@ -157,6 +158,7 @@ test('publish 명령 전체 흐름: 준비·점검 뒤 계정 확인과 게시 �
   }
   fs.writeFileSync(ws.file('output', 'render-report.json'), JSON.stringify({ results: data.cards.map((card) => ({ no: card.no, issues: [] })) }));
   stampProduct(ws.file(), { cards: data.cards });
+  seedCaption(ws);
   const posts = [];
   let accountChecks = 0;
   const ig = {
@@ -179,7 +181,7 @@ test('publish 명령 전체 흐름: 준비·점검 뒤 계정 확인과 게시 �
     assert.equal(posts.length, 1);
     assert.equal(posts[0].id, '17841');
     assert.deepEqual(posts[0].urls, data.cards.map((card) => `https://images.example/card-${String(card.no).padStart(2, '0')}.jpg`));
-    assert.match(posts[0].caption, /AI를 활용/);
+    assert.match(posts[0].caption.split('\n')[0], /AI 활용/);
     assert.equal(JSON.parse(fs.readFileSync(ws.file('output/instagram/published.json'), 'utf8')).permalink, result.permalink);
     ws.editCards((cards) => { cards.stage = 'copy'; });
     await assert.rejects(publish(ws.id, { ig, baseUrl: 'https://images.example', log: () => {} }), /최종 승인/);
@@ -194,7 +196,7 @@ test('publish 명령 전체 흐름: 준비·점검 뒤 계정 확인과 게시 �
   }
 });
 
-test('캡션: 첫 줄 AI 활용·샘플 표시, 카드 문구만 사용, 해시태그', () => {
+test('이전 조립 방식 비교: 안내·카드 목록·해시태그를 이어 붙여요', () => {
   const data = {
     cards: [
       { no: 1, copy: { title: '가볍게\n촉촉하게', subtitle: '수분 젤 크림' } },
@@ -203,11 +205,11 @@ test('캡션: 첫 줄 AI 활용·샘플 표시, 카드 문구만 사용, 해시�
   };
   const c = buildCaption(data, cfg.caption, { productName: '오션 젤 크림 (평가용 가상 제품)' });
   const lines = c.text.split('\n');
-  assert.match(lines[0], /AI를 활용해 제작/);
-  assert.match(lines[0], /샘플 게시물/);
+  assert.match(lines[0], /AI 활용/);
+  assert.match(lines[0], /샘플 콘텐츠/);
   assert.ok(c.text.includes('가볍게 촉촉하게\n수분 젤 크림'));
   assert.ok(c.text.includes('✔ 이렇게 발라요\n· 적당량을 덜어요\n· 펴 발라요'));
-  assert.deepEqual(c.hashtags, ['AI활용', '카드뉴스', '오션젤크림']);
+  assert.deepEqual(c.hashtags, ['뷰티', '스킨케어', '오션젤크림']);
   assert.ok(buildCaption(data, { ...cfg.caption, max_chars: 40 }).text.length <= 40);
 });
 

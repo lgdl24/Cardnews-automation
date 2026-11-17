@@ -33,4 +33,17 @@ function buildCaption(data, cfg, { productName = null } = {}) {
   return { text, chars: text.length, hashtags };
 }
 
-module.exports = { buildCaption, cardLines };
+// 게시에 쓰는 캡션은 한 곳에서 골라요. buildCaption은 이전 캡션 비교용으로만 남겨요.
+function resolveCaption(data, cfg, { productDir, caution }) {
+  const fs = require('fs');
+  const path = require('path');
+  const { readCaption } = require('./ig-caption-draft');
+  try {
+    const inputText = fs.readFileSync(path.join(productDir, 'input.md'), 'utf8');
+    const draft = readCaption({ productDir, data, inputText, cfg, caution });
+    if (draft) return draft;
+  } catch { /* 원문이 없으면 캡션을 새로 쓰지 않아요. */ }
+  return { text: '', chars: 0, hashtags: [], errors: ['게시 글을 먼저 작성해 주세요: npm run ig -- caption <제품ID>'] };
+}
+
+module.exports = { buildCaption, cardLines, resolveCaption };

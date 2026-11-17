@@ -12,8 +12,8 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { parseInput, readJson } = require('./common');
-const { buildCaption } = require('./ig-caption');
+const { resolveCaption } = require('./ig-caption');
+const CAUTION = require('../../config/caution-expressions.json');
 const { explain, IgError } = require('./instagram');
 
 const CFG = require('../../config/instagram.json');
@@ -120,13 +120,6 @@ function createPublisher({
   }
 
   // ── 버전: 최종 승인 시각 + 카드 문구 + PNG + 캡션
-  function productName(id) {
-    try {
-      return (parseInput(fs.readFileSync(path.join(dirOf(id), 'input.md'), 'utf8')).info['제품명'] || '').split('\n')[0] || null;
-    } catch {
-      return null;
-    }
-  }
   function lastFinalApproval(id) {
     let ts = null;
     try {
@@ -145,14 +138,17 @@ function createPublisher({
     if (!data) return { ok: false, reason: '카드 데이터(cards.json)가 없어요' };
     const cards = (data.cards || []).map((c) => ({ no: c.no, file: `card-${pad(c.no)}.png`, path: path.join(dirOf(id), 'output', 'png', `card-${pad(c.no)}.png`) }));
     const missing = cards.filter((c) => !fs.existsSync(c.path)).map((c) => c.no);
-    const caption = buildCaption(data, CFG.caption, { productName: productName(id) }).text;
+    const draft = resolveCaption(data, CFG.caption, { productDir: dirOf(id), caution: CAUTION });
+    const caption = draft.text;
     const approvedAt = data.stage === 'approved' ? lastFinalApproval(id) : null;
     const h = crypto.createHash('sha1');
     h.update(String(approvedAt));
     h.update(JSON.stringify(data.cards || []));
     for (const c of cards) if (!missing.includes(c.no)) h.update(fs.readFileSync(c.path));
     h.update(caption);
-    return { ok: true, data, cards, missing, caption, approved: data.stage === 'approved', approvedAt, version: h.digest('hex').slice(0, 16), legacy: legacyOf(id, cards) };
+    h.update(String(draft.key || ''));
+    h.update(JSON.stringify(draft.errors));
+    return { ok: true, data, cards, missing, caption, captionErrors: draft.errors, approved: data.stage === 'approved', approvedAt, version: h.digest('hex').slice(0, 16), legacy: legacyOf(id, cards) };
   }
   // 터미널 명령(npm run ig -- publish)으로 게시한 기록 output/instagram/published.json
   // 그 뒤로 cards.json·카드 PNG가 바뀌지 않았으면 같은 콘텐츠로 보고 다시 게시하지 않음 (보수적으로 판단)
@@ -192,6 +188,7 @@ function createPublisher({
     const out = [];
     if (!configured()) out.push('인스타 연결 정보(.env의 IG_ACCESS_TOKEN·IG_USER_ID)가 없어요');
     if (!snap.approved) out.push('최종 승인한 뒤에 게시할 수 있어요');
+    out.push(...snap.captionErrors);
     if (snap.missing.length) out.push(`카드 이미지가 없어요: ${snap.missing.join('·')}번`);
     if (!check) out.push('게시 전 점검을 하지 못했어요');
     else {
