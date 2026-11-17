@@ -21,9 +21,9 @@ const cases = [
   },
   {
     name: '필수 항목 내용이 비어 있으면 INPUT_MISSING',
-    edit: (ws) => ws.editInput((t) => replaceSection(t, '제품 설명', '')),
+    edit: (ws) => ws.editInput((t) => replaceSection(t, '주요 특징', '')),
     expect: ['INPUT_MISSING'],
-    where: '## 제품 설명',
+    where: '## 주요 특징',
   },
   {
     name: '양식 안내 문구만 남아 있으면 비어 있는 것으로 본다',

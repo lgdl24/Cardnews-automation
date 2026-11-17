@@ -41,7 +41,11 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
   const navigate = useNavigate();
   const fields = useMemo(() => form.groups.flatMap((g) => g.fields), [form]);
   const imageField = fields.find((f) => f.type === 'images');
-  const defaults = useMemo<Values>(() => Object.fromEntries(fields.filter((f) => f.type === 'choice' && f.required && f.options?.length).map((f) => [f.key, f.options![0]!])), [fields]);
+  // 기본값: 필수 선택 칸은 첫 값, 양식에 default가 있으면(카드 수 5) 미리 채움
+  const defaults = useMemo<Values>(() => Object.fromEntries([
+    ...fields.filter((f) => f.type === 'choice' && f.required && f.options?.length).map((f) => [f.key, f.options![0]!]),
+    ...fields.filter((f) => f.default !== undefined).map((f) => [f.key, String(f.default)]),
+  ]), [fields]);
   const [productId, setProductId] = useState(editId ?? '');
   const [values, setValues] = useState<Values>(defaults);
   const [images, setImages] = useState<ImageRow[]>([]);
@@ -128,7 +132,7 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
       const why = el.validity.valueMissing ? '입력이 필요해요' : el.validity.patternMismatch ? '형식이 맞지 않아요' : el.validity.typeMismatch ? '주소 형식이 맞지 않아요' : el.validity.rangeOverflow || el.validity.rangeUnderflow ? '허용 범위를 벗어났어요' : el.validationMessage;
       if (el.id) list.push({ id: el.id, text: `${name}: ${why}` });
     }
-    if (imageField?.required && images.length === 0) list.push({ id: 'image-add', text: `${imageField.key}: 한 장 이상 추가해 주세요` });
+    if (imageField?.required && images.length === 0) list.push({ id: 'image-add', text: `${imageField.label ?? imageField.key}: 한 장 이상 추가해 주세요` });
     return list;
   };
 
@@ -163,22 +167,56 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
     }
   };
 
+  // 화면 순서 (#92 입력 간소화 v1.6): 01 자료·브랜드(제품ID·자료로 채우기·브랜드 URL·제품 사진)
+  // → 02 채운 내용 확인(제품 정보·콘텐츠 목적) → 03 제작 조건(나머지)
+  const SOURCE_KEYS = ['브랜드 URL'];
+  const REVIEW_COND_KEYS = ['콘텐츠 목적'];
+  const sourceGroup = form.groups.find((g) => g.source);
+  const sourceFields = fields.filter((f) => SOURCE_KEYS.includes(f.key) || f.type === 'images');
+  const reviewFields = [...(sourceGroup?.fields ?? []).filter((f) => f.type !== 'images'), ...fields.filter((f) => REVIEW_COND_KEYS.includes(f.key))];
+  const condFields = fields.filter((f) => !sourceFields.includes(f) && !reviewFields.includes(f));
+
   if (loading) return <div className="page"><Loading /></div>;
   if (loadError) return <div className="page"><ErrorState error={loadError} /></div>;
 
-  const required = fields.filter((f) => f.required);
-  const requiredDone = required.filter((f) => (f.type === 'images' ? images.length > 0 : filled(values[f.key]))).length + (filled(productId) ? 1 : 0);
-  const requiredTotal = required.length + 1;
-  const groupProgress = (g: FormDef['groups'][number]) => {
-    const req = g.fields.filter((f) => f.required);
-    return { done: req.filter((f) => (f.type === 'images' ? images.length > 0 : filled(values[f.key]))).length, total: req.length };
+  const done = (f: FormField) => (f.type === 'images' ? images.length > 0 : filled(values[f.key]));
+  const steps = [
+    { id: 'step-source', title: '01 자료·브랜드', fields: sourceFields, extra: 1, extraDone: filled(productId) ? 1 : 0 },
+    { id: 'step-review', title: '02 채운 내용 확인', fields: reviewFields, extra: 0, extraDone: 0 },
+    { id: 'step-cond', title: '03 제작 조건', fields: condFields, extra: 0, extraDone: 0 },
+  ];
+  const progress = (s: (typeof steps)[number]) => {
+    const req = s.fields.filter((f) => f.required);
+    return { done: req.filter(done).length + s.extraDone, total: req.length + s.extra };
+  };
+  const requiredDone = steps.reduce((n, s) => n + progress(s).done, 0);
+  const requiredTotal = steps.reduce((n, s) => n + progress(s).total, 0);
+
+  const renderField = (f: FormField) => (f.type === 'images'
+    ? <ImagesField key={f.key} field={f} images={images} setImages={(fn) => { setImages(fn); setDirty(true); }} addFiles={addFiles} submitted={submitted} />
+    : <Field key={f.key} field={f} value={values[f.key] ?? ''} onChange={(v) => set(f.key, v)} />);
+  // 필수·선택지·이미지는 바로 보이고, 나머지 선택 글 칸은 접음(채워져 있으면 펼침)
+  const renderStep = (list: FormField[]) => {
+    const main = list.filter((f) => f.required || f.type === 'choice' || f.type === 'images');
+    const extra = list.filter((f) => !main.includes(f));
+    return (
+      <>
+        {main.map(renderField)}
+        {extra.length > 0 && (
+          <details className="optional-fields" open={extra.some((f) => filled(values[f.key]))}>
+            <summary>선택 항목 {extra.length}개 <span className="muted">· {extra.map((f) => f.label ?? f.key).join(', ')}</span></summary>
+            <div>{extra.map(renderField)}</div>
+          </details>
+        )}
+      </>
+    );
   };
 
   return (
     <div className="page page-narrow">
       <Link to={editId ? `/studio/${editId}` : '/studio'} className="back-link"><Icon name="back" size={16} /> {editId ? '제작으로 돌아가기' : '작업실'}</Link>
       <h1 className="page-title">{editId ? '입력 고치기' : '새 제작'}</h1>
-      <p className="page-desc">제품 정보는 카드 문구의 원문이 돼요. 원문에 없는 효능·수치는 카드에 쓰지 않아요. 저장만으로 생성 작업이 시작되지는 않아요.</p>
+      <p className="page-desc">자료(PDF·이미지·글)나 공식몰 주소와 제품 사진만 넣으면 나머지 칸은 자동으로 채워요. 제품 정보는 카드 문구의 원문이 되고, 원문에 없는 효능·수치는 카드에 쓰지 않아요. 저장만으로 생성 작업이 시작되지는 않아요.</p>
 
       {draft && (
         <div className="notice notice-info draft-banner" role="status">
@@ -192,21 +230,19 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
 
       <div className="form-layout">
         <nav className="form-outline" aria-label="입력 단계">
-          <a href="#product-id"><span>제품 이름표</span><span className={`outline-count${filled(productId) ? ' outline-done' : ''}`}>{filled(productId) ? <Icon name="check" size={14} /> : '1'}</span></a>
-          {form.groups.map((g, i) => {
-            const pr = groupProgress(g);
+          {steps.map((s) => {
+            const pr = progress(s);
+            const complete = pr.done === pr.total;
             return (
-              <a key={g.title} href={`#form-group-${i}`}>
-                <span>{g.title}</span>
-                <span className={`outline-count${pr.done === pr.total ? ' outline-done' : ''}`}>{pr.done === pr.total ? <Icon name="check" size={14} /> : `${pr.done}/${pr.total}`}</span>
+              <a key={s.id} href={`#${s.id}`}>
+                <span>{s.title}</span>
+                <span className={`outline-count${complete ? ' outline-done' : ''}`}>{complete ? <Icon name="check" size={14} /> : `${pr.done}/${pr.total}`}</span>
               </a>
             );
           })}
         </nav>
 
         <div className="studio-form">
-          {!editId && <MaterialsFill fields={fields} onFill={(v) => { setValues((prev) => ({ ...prev, ...v })); setDirty(true); }} onAddImages={(files) => addFiles(files)} />}
-
           <form id="product-form" className={`studio-form${submitted ? ' was-submitted' : ''}`} onSubmit={submit} noValidate onChangeCapture={() => setDirty(true)}>
             {problems.length > 0 && (
               <div className="error-summary" role="alert" tabIndex={-1} ref={summaryRef}>
@@ -214,9 +250,11 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
                 <ul>{problems.map((p) => <li key={p.id + p.text}><a href={`#${p.id}`} onClick={(e) => { e.preventDefault(); const el = document.getElementById(p.id); el?.focus(); el?.scrollIntoView({ block: 'center' }); }}>{p.text}</a></li>)}</ul>
               </div>
             )}
-            <fieldset className="form-group" id="product-id">
-              <legend>제품 이름표</legend>
-              <label className="field">
+
+            {/* 01 사람이 넣는 것: 제품ID·자료·공식몰 주소·제품 사진 */}
+            <fieldset className="form-group" id="step-source">
+              <legend>01 자료·브랜드</legend>
+              <label className="field" id="product-id">
                 <span className="field-label"><span className="field-label-text">제품ID</span> <em className="req">필수</em></span>
                 <input
                   id="field-product-id"
@@ -233,31 +271,22 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
                 <span className="field-error" aria-hidden="true"><Icon name="alert" size={14} /> 영문 소문자·숫자·하이픈으로 입력해 주세요</span>
                 <span className="field-guide">영문 소문자·숫자·하이픈. 같은 제품을 다시 찾는 고유 이름이에요. 저장한 뒤에는 바꿀 수 없어요.</span>
               </label>
+              {!editId && <MaterialsFill fields={fields} onFill={(v) => { setValues((prev) => ({ ...prev, ...v })); setDirty(true); }} onAddImages={(files) => addFiles(files)} />}
+              {sourceFields.map(renderField)}
             </fieldset>
 
-            {form.groups.map((g, i) => {
-              const main = g.fields.filter((f) => f.required || f.type === 'choice' || f.type === 'images');
-              const extra = g.fields.filter((f) => !main.includes(f));
-              return (
-                <fieldset key={g.title} className="form-group" id={`form-group-${i}`}>
-                  <legend>{g.title}</legend>
-                  {g.source && <p className="form-group-desc">여기 적은 문장만 카드 문구의 근거로 써요.</p>}
-                  {main.map((f) =>
-                    f.type === 'images' ? (
-                      <ImagesField key={f.key} field={f} images={images} setImages={(fn) => { setImages(fn); setDirty(true); }} addFiles={addFiles} submitted={submitted} />
-                    ) : (
-                      <Field key={f.key} field={f} value={values[f.key] ?? ''} onChange={(v) => set(f.key, v)} />
-                    ),
-                  )}
-                  {extra.length > 0 && (
-                    <details className="optional-fields" open={extra.some((f) => filled(values[f.key]))}>
-                      <summary>선택 항목 {extra.length}개 <span className="muted">· {extra.map((f) => f.key).join(', ')}</span></summary>
-                      <div>{extra.map((f) => <Field key={f.key} field={f} value={values[f.key] ?? ''} onChange={(v) => set(f.key, v)} />)}</div>
-                    </details>
-                  )}
-                </fieldset>
-              );
-            })}
+            {/* 02 자동으로 채운 내용 확인: 제품 정보는 카드 문구의 원문이 됨 */}
+            <fieldset className="form-group" id="step-review">
+              <legend>02 채운 내용 확인</legend>
+              <p className="form-group-desc">'자료로 채우기'가 채운 내용을 자료와 대조해 고쳐 주세요. 여기 적은 문장만 카드 문구의 근거로 써요. 자료가 없으면 직접 적어도 돼요.</p>
+              {renderStep(reviewFields)}
+            </fieldset>
+
+            {/* 03 제작 조건 (남은 칸) */}
+            <fieldset className="form-group" id="step-cond">
+              <legend>03 제작 조건</legend>
+              {renderStep(condFields)}
+            </fieldset>
 
             {error && <p className="notice notice-error" role="alert" id="form-error">{error}</p>}
             <div className="form-actions">
@@ -332,9 +361,9 @@ function MaterialsFill({ fields, onFill, onAddImages }: { fields: FormField[]; o
   };
   const sec = started ? Math.round((now - started) / 1000) : 0;
   return (
-    <section className="form-group materials-fill" aria-labelledby="materials-title">
+    <section className="materials-fill" aria-labelledby="materials-title">
       <div>
-        <h2 id="materials-title" className="panel-title">자료로 빠르게 채우기 <em className="opt">선택</em></h2>
+        <h2 id="materials-title" className="panel-title">자료로 채우기 <em className="opt">선택</em></h2>
         <p className="field-guide">제품 소개 PDF·이미지·글을 올리면 Claude가 읽고 '제품 정보' 칸을 채워요. 자료에 적힌 문장만 옮기고, 없는 내용은 비워 둬요. <strong>채워진 내용은 원문과 대조해 확인한 뒤 저장해 주세요.</strong></p>
       </div>
       <label className="btn file-btn">
@@ -375,7 +404,7 @@ function Field({ field: f, value, onChange }: { field: FormField; value: string;
   return (
     <div className="field">
       <label className="field-label" htmlFor={id}>
-        <span className="field-label-text">{f.key}</span> {f.required ? <em className="req">필수</em> : <em className="opt">선택</em>}
+        <span className="field-label-text">{f.label ?? f.key}</span> {f.required ? <em className="req">필수</em> : <em className="opt">선택</em>}
       </label>
       {f.type === 'choice' ? (
         <select id={id} value={value} onChange={(e) => onChange(e.target.value)} required={f.required} aria-describedby={guide ? guideId : undefined}>
@@ -420,7 +449,7 @@ function ImagesField({ field: f, images, setImages, addFiles, submitted }: {
   return (
     <div className="field">
       <span className="field-label">
-        <span className="field-label-text">{f.key}</span> {f.required ? <em className="req">필수</em> : <em className="opt">선택</em>}
+        <span className="field-label-text">{f.label ?? f.key}</span> {f.required ? <em className="req">필수</em> : <em className="opt">선택</em>}
         {images.length > 0 && <span className="muted num">{images.length}장</span>}
       </span>
       {images.length > 0 && (

@@ -10,6 +10,8 @@ export type JobKind = 'plan' | 'copy' | 'revise';
 
 export interface FormField {
   key: string;
+  /** 화면에 보일 이름 (없으면 key). 예: 주요 특징 → 제품 설명·주요 특징 */
+  label?: string;
   required: boolean;
   type: 'text' | 'paragraph' | 'list' | 'images' | 'number' | 'choice' | 'url';
   guide: string;
@@ -20,6 +22,8 @@ export interface FormField {
   options?: string[];
   min?: number;
   max?: number;
+  /** 새 제작 화면에 미리 채울 값 (카드 수 5) */
+  default?: string | number;
 }
 export interface FormDef {
   groups: { title: string; source: boolean; fields: FormField[] }[];
@@ -290,12 +294,14 @@ export interface BrandMood {
 /** AI 배경 (scripts/ai-bg.js) 실행 상태와 카드별 결과 */
 export interface AiBgInfo {
   auto: boolean;
+  /** 이미지 만드는 곳: codex(로컬 Codex CLI) | openai(배포용 OpenAI 이미지 API) */
+  backend: 'codex' | 'openai';
   running: boolean;
   run: { card: number | null; auto: boolean; started_at: string; finished_at: string | null; ok: boolean | null; progress: string[] } | null;
   made_at: string | null;
   has_mood: boolean;
   stale: number[];
-  cards: { no: number; template: string; ok: boolean; current: boolean; file: string | null; v: number; tries: { try: number; sec: number; error?: string }[] }[];
+  cards: { no: number; template: string; ok: boolean; current: boolean; source: 'codex' | 'openai' | 'chat' | null; file: string | null; v: number; tries: { try: number; sec: number; error?: string }[]; prompt: string | null }[];
 }
 /** 자료로 입력 칸 채우기 결과 (POST /extract) */
 export interface ExtractResult {

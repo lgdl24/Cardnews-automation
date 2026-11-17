@@ -20,8 +20,10 @@
 .brand-description.role-usage .desc__item::after { content:'STEP ' counter(points); position:absolute; left:100px; top:20px; font-size:30px; font-weight:800; color:var(--color-muted); }
 .brand-description.no-image .brand__photo { display:none; }
 .brand-description.no-image .brand__panel { max-height:900px; }
+/* 배경에 실제 제품이 이미 합성됨(그림자·반사 포함) → 제품 사진을 다시 얹지 않음 */
+.has-baked .brand__photo { display:none; }
 </style>
-<article class="card brand brand-description role-{{role}} {{imageClass}} {{sceneClass}}">
+<article class="card brand brand-description role-{{role}} {{imageClass}} {{sceneClass}} {{bakedClass}}">
   <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
   <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
   <span class="pager">{{page}} / {{total}}</span>

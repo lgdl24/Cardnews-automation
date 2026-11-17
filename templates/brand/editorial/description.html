@@ -1,0 +1,34 @@
+<style>
+/* 브랜드 무드 · 에디토리얼 설명형: 왼쪽 위 영문 세리프 단어, 오른쪽 위 작은 제품, 아래는 밝게 바랜 장면 위에
+   이탤릭 번호(01·02·03)와 가는 선으로 나눈 항목. 제품 자리는 BRAND_LAYOUTS.editorial.frames.description과 같게 */
+.card.brand { padding:0; background:linear-gradient(160deg, var(--color-bg) 0%, var(--color-accent) 100%); }
+.brand__scene { position:absolute; inset:0; overflow:hidden; }
+.brand__scene-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+.has-scene .brand__scene-img { display:block; }
+.ed__veil { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, transparent 0%, transparent 28%, color-mix(in srgb, var(--color-surface) 82%, transparent) 44%, color-mix(in srgb, var(--color-surface) 92%, transparent) 58%, color-mix(in srgb, var(--color-surface) 92%, transparent) 100%); }
+.ed__display { position:absolute; left:64px; top:76px; max-width:690px; z-index:1; overflow:hidden; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:150px; line-height:1; letter-spacing:-0.02em; white-space:nowrap; color:color-mix(in srgb, var(--color-primary) 72%, var(--color-surface)); }
+.brand__photo { position:absolute; display:block; object-fit:contain; object-position:center bottom; z-index:2; filter:drop-shadow(0 20px 18px rgb(0 0 0 / .2)); }
+.brand-description .brand__photo { left:780px; top:70px; width:230px; height:300px; }
+.brand-description.no-image .brand__photo, .has-baked .brand__photo { display:none; }
+.ed__pager { position:absolute; right:72px; bottom:24px; z-index:3; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:26px; color:var(--color-muted); }
+.ed__body { position:absolute; left:72px; right:72px; bottom:64px; z-index:3; }
+.ed__label { display:flex; align-items:center; gap:18px; width:680px; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:30px; color:var(--color-primary); }
+.ed__label::after { content:''; flex:1; height:1.5px; background:color-mix(in srgb, var(--color-text) 30%, transparent); }
+.ed-description__title { font-family:var(--font-serif), var(--font-family), serif; margin-top:18px; width:680px; font-size:62px; font-weight:800; line-height:1.2; letter-spacing:-0.02em; max-height:140px; color:var(--color-text); }
+.ed-description__items { margin:36px 0 0; padding:0; list-style:none; counter-reset:points; }
+.ed .desc__item { position:relative; display:flex; gap:28px; padding:28px 0; border-top:1.5px solid color-mix(in srgb, var(--color-text) 22%, transparent); counter-increment:points; }
+.ed .desc__item::before { content:'0' counter(points); flex:none; width:70px; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:44px; line-height:1.1; color:var(--color-primary); }
+.ed .desc__text { display:block; font-size:38px; font-weight:400; line-height:1.34; max-height:102px; color:var(--color-text); }
+</style>
+<article class="card brand brand-description ed role-{{role}} {{imageClass}} {{sceneClass}} {{bakedClass}}">
+  <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
+  <div class="ed__veil" aria-hidden="true"></div>
+  <div class="ed__display" aria-hidden="true">{{display}}</div>
+  <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
+  <span class="ed__pager">{{page}} / {{total}}</span>
+  <div class="ed__body">
+    <div class="ed__label">{{sectionLabel}}</div>
+    <h1 class="ed-description__title" data-fit>{{title}}</h1>
+    <ol class="ed-description__items">{{items}}</ol>
+  </div>
+</article>

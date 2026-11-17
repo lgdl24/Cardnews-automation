@@ -1,0 +1,32 @@
+<style>
+/* 브랜드 무드 · 몰입형 표지 (레퍼런스 single-drop-macro 등): 어두운 장면 위 가운데 정렬. 큰 이탤릭 영문 단어 하나가 주인공,
+   흰 글자, 아래 가운데 작은 제품. 제품 자리는 BRAND_LAYOUTS.immersive.frames.cover와 같게 */
+.card.brand { padding:0; background:linear-gradient(170deg, var(--color-text) 0%, color-mix(in srgb, var(--color-text) 70%, var(--color-primary)) 100%); }
+.brand__scene { position:absolute; inset:0; overflow:hidden; }
+.brand__scene-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+.has-scene .brand__scene-img { display:block; }
+.im__veil { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, rgb(0 0 0 / .5) 0%, rgb(0 0 0 / .38) 58%, rgb(0 0 0 / .12) 100%); }
+.im__top { position:absolute; left:0; right:0; top:70px; z-index:3; text-align:center; }
+.im__badge { display:inline-block; padding:0 22px; height:44px; border:1.5px solid rgb(255 255 255 / .85); border-radius:22px; font-size:23px; font-weight:600; line-height:41px; letter-spacing:.06em; color:#fff; }
+.im__badge:empty { display:none; }
+.im__display { position:absolute; left:0; right:0; top:150px; z-index:2; text-align:center; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:200px; line-height:1; white-space:nowrap; overflow:hidden; color:#fff; }
+.im__text { position:absolute; left:120px; right:120px; top:370px; z-index:3; text-align:center; }
+.im-cover__title { font-family:var(--font-serif), var(--font-family), serif; font-size:62px; font-weight:800; line-height:1.2; letter-spacing:-0.02em; max-height:224px; color:#fff; }
+.im-cover__copy { margin-top:20px; font-size:30px; font-weight:300; line-height:1.42; max-height:86px; color:rgb(255 255 255 / .9); }
+.brand__photo { position:absolute; display:block; object-fit:contain; object-position:center bottom; z-index:2; filter:drop-shadow(0 22px 22px rgb(0 0 0 / .45)); }
+.brand-cover .brand__photo { left:400px; top:720px; width:280px; height:300px; }
+.brand-cover.no-image .brand__photo, .has-baked .brand__photo { display:none; }
+.im__pager { position:absolute; right:64px; bottom:48px; z-index:3; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:26px; color:rgb(255 255 255 / .85); }
+</style>
+<article class="card brand brand-cover im role-{{role}} {{imageClass}} {{sceneClass}} {{bakedClass}}">
+  <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
+  <div class="im__veil" aria-hidden="true"></div>
+  <div class="im__top"><span class="im__badge">{{badge}}</span></div>
+  <div class="im__display" aria-hidden="true">{{display}}</div>
+  <div class="im__text">
+    <h1 class="im-cover__title" data-fit>{{title}}</h1>
+    <div class="im-cover__copy" data-fit>{{subtitle}}</div>
+  </div>
+  <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
+  <span class="im__pager">{{page}} / {{total}}</span>
+</article>

@@ -15,7 +15,21 @@
 | 5. 구성안 확인 | 사람 | 작업실 '브랜드 무드' 패널에서 화면·색·장면·근거 확인 후 승인 | |
 | 6. 문구·출력 | 문구 작업 (Claude) | 지금과 같음. 브랜드 색으로 출력 | `output/png` |
 | 7. GPT 배경 | 작업실이 문구 작업 뒤 자동 (`npm run ai-bg -- <ID>`) | 카드마다 `brand_mood.scene`·색·글자 면 자리로 요청 → 글자·제품 없는 배경 → 다시 출력 | `output/ai-bg/card-NN.png` |
+| 7'. 채팅으로 대신 (한도일 때) | 사람 | Codex가 ChatGPT 사용량 한도에 걸리면 작업실 'AI 배경'에서 카드별 **요청문 복사** → ChatGPT 채팅에 붙여 넣기 → 받은 이미지를 **이미지 올리기**. CLI는 `npm run ai-bg -- <ID> --prompts`·`--import N <파일>`. 채팅창을 자동으로 조작하지는 않음(약관) | `output/ai-bg/card-NN.png` (`source: chat`) |
 | 8. 최종 승인 | 사람 | 배경에 글자·로고가 섞였는지 눈으로 확인 (섞였으면 그 카드만 다시) | |
+
+## 제품과 배경을 한 장면으로 (제품 잠금 합성)
+
+제품 사진이 있는 카드(표지·이미지형)는 배경을 먼저 만들고 제품을 붙이면 그림자·반사·바닥이 안 맞아 떠 보여요. 그래서 Codex일 때는 **제품을 템플릿 사진 칸 자리에 놓은 바탕**을 주고 GPT가 주변 장면·바닥 그림자·반사만 그리게 해요. 받은 뒤 제품 자리를 원본과 비교(AI 디자인 카드와 같은 잠금 기준: 색 차이 18·이동 4px 이하)하고, 원본 제품 픽셀로 다시 덮어요. 이런 배경은 `ai-bg.json`에 `baked: true`로 남고 출력은 제품 사진을 다시 얹지 않아요. 3번 시도해도 어긋나면 배경만 만들고 제품은 출력이 얹어요. 요청문에는 제품 대표 색도 넣어 배경 색을 제품과 맞춰요(제품 없는 카드 포함).
+
+## 이미지 만드는 곳
+
+| 설정 `CARDNEWS_IMAGE_BACKEND` | 쓰는 곳 | 비용 |
+|---|---|---|
+| `codex` (기본) | 로컬 시연·개발. 내 컴퓨터의 Codex CLI(OpenAI 공식 도구) | ChatGPT 요금제 사용량 안, API 요금 없음. 한도에 걸리면 남은 카드는 멈추고 채팅 대체(요청문 복사 → 이미지 올리기) |
+| `openai` | 배포·기업에서 쓸 때. OpenAI 이미지 API(`OPENAI_API_KEY`, 모델 `OPENAI_IMAGE_MODEL` 기본 `gpt-image-1`) | 장당 요금 |
+
+ChatGPT 채팅창을 프로그램이 조작하는 방식은 쓰지 않아요(OpenAI 이용 약관이 자동화된 방법으로 결과를 가져오는 것을 금지, 계정 정지 위험). 채팅은 사람이 직접 할 때만 써요.
 
 ## 보안·법규
 
@@ -30,7 +44,7 @@
 | 파일 | 내용 |
 |---|---|
 | `scripts/brand-snapshot.js` | 스냅샷 (`npm run brand`) |
-| `scripts/ai-bg.js` | 카드별 GPT 배경 + 다시 출력 (`npm run ai-bg`, `--card N`·`--stale`·`--no-render`) |
+| `scripts/ai-bg.js` | 카드별 GPT 배경 + 다시 출력 (`npm run ai-bg`, `--card N`·`--stale`·`--no-render`, 채팅용 `--prompts`·`--import N <파일>`) |
 | `scripts/lib/brand.js` | 주소 검사, `brand_mood` 검사, 브랜드 색, 배경 요청문·신선도 key |
 | `scripts/lib/extract-input.js` | 자료로 채우기 (`POST /api/studio/extract`) |
 | `templates/brand/*.html` | 묶음 `브랜드`: 카드 전체 배경 + 실제 제품 사진 + 반투명 글자 면 |
