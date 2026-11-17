@@ -76,6 +76,27 @@ test('가상 전문가 추천 표현·AI 표시 누락·검증 오류·승인 �
   }
 });
 
+test('이전 실험의 생성 기록이 없어도 이미지 메타데이터에 기록된 GPT 사용은 검토 항목으로 남긴다', () => {
+  const s = setup();
+  try {
+    stampProduct(s.dir, { productId: 'demo', cards: s.data.cards, imageCards: [2] });
+    const result = publishCheck({
+      productDir: s.dir,
+      data: { ...s.data, caption: { text: 'AI 활용 · 수분 크림' } },
+      validation: { errors: [] },
+      caution,
+    });
+    const imageCheck = result.checks.find((item) => item.id === 'ai_image');
+    assert.equal(imageCheck.status, 'warn');
+    assert.match(imageCheck.detail, /AI 디자인 카드 2번/);
+    assert.match(imageCheck.detail, /2번 미확인/);
+    assert.equal(status(result).ai_label, 'pass');
+    assert.equal(result.ready, true, 'GPT 이미지 확인은 기존과 같이 사람 판단 항목으로 남음');
+  } finally {
+    s.cleanup();
+  }
+});
+
 test('작업실 API: GET /products/:id/precheck 는 점검 결과를, 점검할 수 없으면 404', async () => {
   const http = require('node:http');
   const { createStudio } = require('../scripts/lib/studio-api');

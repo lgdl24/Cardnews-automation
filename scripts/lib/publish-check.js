@@ -77,13 +77,17 @@ function publishCheck({ productDir, data, validation, caution, sourceText = '' }
   else add('caution', '광고 주의 표현', 'pass', '주의 표현 0건 (개정 화장품법 가상 전문가 추천 포함)');
 
   // 5) AI 활용 표시 메타데이터 (AI 기본법 제31조)
-  const unstamped = cards.filter((c) => fs.existsSync(pngOf(c.no)) && !readDisclosure(fs.readFileSync(pngOf(c.no)))).map((c) => c.no);
+  const available = cards.filter((c) => fs.existsSync(pngOf(c.no)));
+  const disclosures = new Map(available.map((c) => [c.no, readDisclosure(fs.readFileSync(pngOf(c.no)))]));
+  const unstamped = available.filter((c) => !disclosures.get(c.no)).map((c) => c.no);
   if (missing.length === cards.length) add('ai_label', 'AI 활용 표시', 'todo', '출력 뒤에 확인해요');
   else if (unstamped.length) add('ai_label', 'AI 활용 표시', 'fail', `메타데이터가 없어요: ${unstamped.join('·')}번 (npm run render로 다시 출력)`);
   else add('ai_label', 'AI 활용 표시', 'pass', '모든 카드에 AI 활용 메타데이터(IPTC DigitalSourceType)가 있어요');
 
   // 6) GPT 이미지가 들어간 카드: 그린 글자·사람 이미지 확인
-  const aiCards = appliedNumbers(productDir, cards);
+  // 이전 실험의 생성 기록 키가 달라도 출력에 기록된 GPT 이미지 사용 여부는 유지한다.
+  const metadataImages = cards.filter((c) => disclosures.get(c.no)?.parts.includes('image')).map((c) => c.no);
+  const aiCards = [...new Set([...appliedNumbers(productDir, cards), ...metadataImages])].sort((a, b) => a - b);
   const bgCards = [...bgFiles(productDir, data).keys()];
   const report = readReport(productDir);
   const unchecked = aiCards.filter((no) => !(report?.cards || []).find((c) => c.no === no)?.text_checked);

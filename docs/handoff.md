@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-17 | Codex | #96 · `fix/96-instagram-unified-login` (`feat/instagram` 위) | Unified Login 지원. `.env`의 `IG_API_SETUP=unified`·`IG_USER_ID`로 `graph.facebook.com`의 계정 ID를 조회. `check`·`publish`에서 게시 권한·한도 확인, 일반 요청은 Bearer 헤더 사용, 통신 오류도 토큰 숨김. 기존 Instagram Login 기본값 유지. Unified 토큰의 기존 Instagram 갱신 경로 차단. 이전 실험 이미지도 출력 메타데이터의 GPT 사용 표시를 읽어 사람 확인 항목으로 남김. 실계정 연결 성공, 실제 게시 전 |
 | 2026-11-13 | Claude | `feat/instagram` (`feat/ax-compliance` 위) | **인스타 연동 B1~B4 (실계정 시험 전)**: `npm run ig -- check`(토큰으로 계정·24시간 한도) · `prepare <id>`(캡션 `output/instagram/caption.txt` — 카드 문구만, 첫 줄 AI 활용·샘플 표시 / JPEG 변환, PNG의 AI 활용 XMP를 JPEG APP1로) · `publish <id> [--dry-run] [--base-url]`(게시 전 점검 '게시 가능'만 → 비밀 경로 파일 서버 + `cloudflared` 빠른 터널 → 카드별 컨테이너 → 캐러셀 → 게시 → `published.json`·`published` 이벤트) · `refresh-token`(.env의 토큰 줄만 교체). 토큰은 `.env`의 `IG_ACCESS_TOKEN`, 출력·오류 메시지에 안 나옴. 설정 `config/instagram.json`(API v27.0). 이벤트 규격 v0.4. 다음: 실계정 첫 게시 → 작업실 '게시' 패널(B5) → 성과 수집(C) |
 | 2026-11-10 | Claude | `feat/ax-compliance` (이슈 없음) | **AX 확장 A: 게시 전 점검** (계획 `docs/proposals/ax-plan.md`, A→B 인스타 게시→C 성과 되먹임): A1 주의 표현 '가상 인물·전문가 추천' 분류(개정 화장품법 제13조①4 · 공정위 가상인물 지침, 목록 v2) · A2 GPT 이미지 지시문에 의료인·가운·병원 금지 · A3 출력 PNG에 AI 활용 XMP(IPTC `DigitalSourceType`=compositeWithTrainedAlgorithmicMedia, `cardnews:aiParts` text/text,image) 자동 삽입(`render` 끝, `scripts/lib/ai-disclosure.js`). AI 카드 '같은 파일' 비교는 XMP를 빼고 그림만(`samePng`) · A4 `npm run precheck -- <id>` → `output/publish-check.json`(승인·검증·출력·주의 표현·AI 표시·GPT 이미지·캡션), 작업실 '게시 전 점검' 패널(`GET /products/:id/precheck`). **규칙 버전은 그대로 v1** — 주의 표현 목록이 바뀌었으니 v2로 올릴지 사람 결정(A5) |
 | 2026-11-09 | Claude | `feat/eval-dashboard` (이슈 없음) | **V3 평가 대시보드 + 평가 집계** (**11.10부터 V3 평가 대시보드·평가 진행은 이규동 담당**): `npm run export`가 평가 실행 폴더를 읽을 때 **중단 실행까지 모두** `web/public/data/eval/summary.json`에 모음(`scripts/lib/eval-summary.js`). 알림 원문·금지 표현 글자·체크리스트 인용은 빼고 개수만. 사람 판정은 `eval/judgments.json`(자동 판정 없는 금지 항목만 채움). `/eval` 화면을 다시 만듦: 요약 숫자 5개(실행·1회 통과·핵심 정보·안전성·판정 대기, 필터 따라 재계산), 안전성(경계 입력별 기대 동작 표), 핵심 정보 히트맵, 품질 지표 분포, AI 작업 시간, 검증 오류, 반복 일관성(A6), 규칙 버전 비교(A5), 실행 기록 CSV. 필터: 실행 묶음·규칙 버전·모델(섞이면 알림). eval-spec **v0.2**(7장). 평가 실행기: 보고가 누락 항목을 백틱으로 감싸면 '안 적음'으로 오판하던 것 수정. 화면 시험은 가상 집계 `tests/fixtures/eval-summary.json`(실제 결과 아님). **실제 v1 결과는 평가를 돌린 Mac에서 `npm run export -- --eval-runs ~/git/cardnews-ai/eval/runs`로 만들어야 보임** |
@@ -38,7 +39,16 @@
 | 2026-10-20 | Claude | #41 · `feat/41-v2-plan-evidence` | **V2 구성안·근거 화면 (이용석)**: `web/src/screens/project-detail/tabs/PlanEvidenceTab.tsx` + `plan-evidence.css`(클래스 `pe-`). 핵심 메시지·근거 칩(마우스 올리면 원문), 카드 번호(`?card=N`, 카드 결과 탭과 같은 이름), 왼쪽 카드 PNG / 오른쪽 카드 구성 → 문구 칸별 글자 수·[주의] 강조(`cautions[].fields`) → 연결된 원문 → [주의] 목록(원문 포함 여부)·글자 수 막대 → 수정 요청 이력, 아래 구성안 표·구성안 수정 이력·[참고] 안 쓴 원문. 보기 전용. #33(v0.2) 위에 쌓음. 공통 파일은 안 고침 |
 | 2026-10-20 | Claude | #51 · `feat/51-check-web` | **배포 전 점검 `npm run check:web`**: 웹 데이터·빌드 결과에서 `DEPLOY_FILE`(규격 밖 파일, `index.json`에 없는 프로젝트 폴더, 빠진 PNG·대표 카드), `SCHEMA_ERROR`, `SECRET`(키·토큰 형태, 값은 출력 안 함), `IMAGE_RIGHTS`(카드에 쓴 이미지 사용 가능 여부가 '가능'이 아님 — '확인 중'도 오류), 빌드 결과의 `.env`·`input.md`·`log.jsonl` 등. 오류면 종료 코드 1. 배포 순서: export → web:build → check:web → 커밋 → 배포(`web/README.md`) |
 
-## 현재 작업 — 브랜드 무드 (이용석, 2026-11-05)
+## 현재 작업 — 인스타 Unified Login 연결 (Codex, 2026-11-17)
+
+- 이슈 #96, 기반 `feat/instagram`의 `0630788`, 작업 브랜치 `fix/96-instagram-unified-login`. 작업 폴더 `/Users/lee/.codex/.chatgpt-projects/g-p-6abb113ccf84819189f417d059c9233f/worktrees/cardnews-instagram`. 원래 `/Users/lee/git/Cardnews-automation`의 실험 변경은 별도 상태다.
+- 사용자가 원래 폴더의 `.env`에 토큰·계정 ID를 입력했다. `IG_API_SETUP=unified`를 추가했고, 개발 폴더는 원래 `.env`를 참조한다. 값은 문서·로그·커밋에 넣지 않는다.
+- 완료한 연결 확인은 `npm run ig -- check`의 `@cardnews_auto_lab` 계정 조회, 게시 권한 2개 승인, 한도 0/100건이다. 토큰과 계정 ID 일치도 확인했다. `prepare`·`publish`가 같은 계정 선택을 사용한다.
+- 검증은 전체 `npm test` 225개, 그중 인스타·게시 전 점검 14개 통과. 기존 제품의 임시 복사본으로 JPEG 5장·캡션 422자를 준비하고 `publish --dry-run`을 실행했다. 기존 PNG 5장의 AI 활용 XMP 누락은 복사본에만 보완했고 그림 데이터 동일성을 확인했다. 점검은 통과 6개·사람 확인 1개(GPT 이미지 1~5번)·실패 0개다.
+- 실제 게시·공개 터널 실행은 아직이다. 원래 젤크림은 `stage=approved`이지만 AI 카드 보고서의 `text_checked`·`design_checked`는 false다. 사람에게 게시할 카드·캡션을 확인받은 뒤 진행한다. 작업실 게시 패널(B5)·성과 수집(C)은 후속이다. 노션 작업 트래커 갱신 필요.
+- 작업 폴더는 `/Users/lee/.codex/.chatgpt-projects/g-p-6abb113ccf84819189f417d059c9233f/worktrees/cardnews-instagram`, 게시 준비 복사본은 `/private/tmp/cardnews-ig-dryrun-m3fqs6bj/products/refreshing-gel-cream/output/instagram`이다. `cloudflared` 설치는 확인했다. 실행 중인 서버·생성 작업 없음. 다음 행동은 변경 PR 검토, 실제 게시할 5장·캡션 확인, 첫 게시 결과와 링크 기록이다.
+
+## 이전 작업 — 브랜드 무드 (이용석, 2026-11-05)
 
 - 목표: 카테고리·무드를 고르는 대신 브랜드 URL + 제품 자료만 넣으면 상세페이지 무드를 읽고 GPT가 카드 배경을 만드는 흐름 (A안: GPT는 배경만, 글자는 코드). 이용석·이규동 구두 합의, 제안 #87.
 - 브랜치 `feat/89-brand-mood`: #85(`fix/84-studio-usability`, Windows claude·codex 찾기) 위에 쌓음. #85를 먼저 병합해야 Windows에서 AI 배경이 돌아감.

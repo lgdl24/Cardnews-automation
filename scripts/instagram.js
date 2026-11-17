@@ -3,7 +3,8 @@
 //   npm run ig -- prepare <제품ID>          캡션(output/instagram/caption.txt) + JPEG(AI 활용 XMP 유지)
 //   npm run ig -- publish <제품ID> [--dry-run] [--base-url <https 주소>]
 //        게시 전 점검이 '게시 가능'인 것만. 공개 주소는 cloudflared 빠른 터널(기본) 또는 --base-url(이미 파일을 공개해 둔 서버)
-//   npm run ig -- refresh-token             60일 토큰 갱신 → .env의 IG_ACCESS_TOKEN을 바꿈 (값은 출력하지 않음)
+//   npm run ig -- refresh-token             Instagram Login 토큰 갱신 → .env의 IG_ACCESS_TOKEN 교체
+// .env의 IG_API_SETUP=unified는 Unified Login, 생략하면 기존 Instagram Login. Unified Login은 IG_USER_ID 필수.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -56,19 +57,26 @@ async function prepare(id, { log = console.log } = {}) {
 }
 
 function client() {
-  const { IG_ACCESS_TOKEN } = readEnvKeys(['IG_ACCESS_TOKEN']);
-  return createClient({ token: IG_ACCESS_TOKEN });
+  const { IG_ACCESS_TOKEN, IG_USER_ID, IG_API_SETUP } = readEnvKeys(['IG_ACCESS_TOKEN', 'IG_USER_ID', 'IG_API_SETUP']);
+  return createClient({ token: IG_ACCESS_TOKEN, userId: IG_USER_ID, apiSetup: IG_API_SETUP || 'instagram' });
 }
 
-async function check({ log = console.log } = {}) {
-  const ig = client();
+async function check({ log = console.log, ig = client() } = {}) {
   const me = await ig.me();
-  const limit = await ig.publishingLimit(me.user_id).catch(() => null);
+  let granted = null;
+  if (ig.apiSetup === 'unified') {
+    const result = await ig.permissions();
+    granted = (result.data || []).filter((p) => p.status === 'granted').map((p) => p.permission);
+    const missing = ['instagram_basic', 'instagram_content_publish'].filter((p) => !granted.includes(p));
+    if (missing.length) throw new IgError(`게시 권한이 부족해요: ${missing.join('·')}. 앱에서 해당 권한을 승인하고 토큰을 다시 발급해 주세요`);
+  }
+  const limit = await ig.publishingLimit(me.user_id);
   const used = limit?.data?.[0]?.quota_usage;
   const total = limit?.data?.[0]?.config?.quota_total;
-  log(`연결됨: @${me.username} (${me.account_type || '계정 유형 알 수 없음'}) · 계정 ID ${me.user_id}`);
+  log(`연결됨: @${me.username} (${ig.apiSetup === 'unified' ? 'Unified Login' : me.account_type || 'Instagram Login'}) · 계정 ID ${me.user_id}`);
+  if (granted) log('게시 권한 확인: instagram_basic·instagram_content_publish');
   if (used !== undefined) log(`24시간 게시 한도: ${used}/${total ?? '?'}건 사용`);
-  return { me, used, total };
+  return { me, used, total, permissions: granted };
 }
 
 async function publish(id, { dryRun = false, baseUrl = null, log = console.log } = {}) {
@@ -87,7 +95,8 @@ async function publish(id, { dryRun = false, baseUrl = null, log = console.log }
     return { dryRun: true };
   }
   const ig = client();
-  const me = await ig.me();
+  const { me, used, total } = await check({ ig, log });
+  if (Number.isFinite(used) && Number.isFinite(total) && used >= total) throw new IgError('게시 한도(24시간)에 도달했어요. 한도가 회복된 뒤 다시 시도해 주세요');
   let server = null;
   let tunnel = null;
   try {

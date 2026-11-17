@@ -20,7 +20,7 @@ function fakeFetch(routes) {
     const u = new URL(url);
     const body = init.body ? Object.fromEntries(new URLSearchParams(String(init.body))) : {};
     const params = { ...Object.fromEntries(u.searchParams), ...body };
-    calls.push({ method: init.method || 'GET', path: u.pathname, params });
+    calls.push({ method: init.method || 'GET', host: u.host, path: u.pathname, params, authorization: init.headers?.Authorization });
     for (const [re, reply] of routes) {
       if (re.test(`${init.method || 'GET'} ${u.pathname}`)) {
         const out = typeof reply === 'function' ? reply(params, calls) : reply;
@@ -32,7 +32,7 @@ function fakeFetch(routes) {
   return { fn, calls };
 }
 
-test('캐러셀 게시: 카드별 컨테이너 → 처리 완료 대기 → 캐러셀 → 게시 → 링크, 토큰은 본문으로만', async () => {
+test('캐러셀 게시: 카드별 컨테이너 → 처리 완료 대기 → 캐러셀 → 게시 → 링크, 토큰은 인증 헤더로만', async () => {
   let n = 0;
   const f = fakeFetch([
     [/^POST \/v27\.0\/17841\/media$/, (p) => ({ id: p.media_type === 'CAROUSEL' ? 'car-1' : `item-${++n}` })],
@@ -47,7 +47,8 @@ test('캐러셀 게시: 카드별 컨테이너 → 처리 완료 대기 → 캐�
   assert.deepEqual(posts.map((c) => c.params.is_carousel_item || c.params.media_type || c.params.creation_id), ['true', 'true', 'true', 'CAROUSEL', 'car-1']);
   assert.equal(posts[3].params.children, 'item-1,item-2,item-3');
   assert.equal(posts[3].params.caption, '🤖 AI를 활용해 제작했어요');
-  assert.ok(f.calls.every((c) => c.params.access_token === TOKEN));
+  assert.ok(f.calls.every((c) => c.authorization === `Bearer ${TOKEN}`));
+  assert.ok(f.calls.every((c) => !Object.hasOwn(c.params, 'access_token')));
 });
 
 test('한 장이면 단일 게시, 11장 이상은 거절, 처리 실패·오류 메시지에 토큰이 남지 않음', async () => {
@@ -65,6 +66,82 @@ test('한 장이면 단일 게시, 11장 이상은 거절, 처리 실패·오류
   assert.ok(!err.message.includes(TOKEN), '오류 메시지에 토큰이 없어야 함');
   assert.match(explain(err), /토큰이 만료/);
   assert.throws(() => createClient({ token: '' }), /IG_ACCESS_TOKEN이 없어요/);
+});
+
+test('Unified Login은 명시한 계정 ID와 Facebook API를 쓰고 기존 Instagram Login 계정 조회도 유지한다', async () => {
+  const unified = fakeFetch([
+    [/^GET \/v27\.0\/17841$/, { id: '17841', username: 'cardnews_test' }],
+    [/^GET \/v27\.0\/me\/permissions$/, { data: [{ permission: 'instagram_content_publish', status: 'granted' }] }],
+    [/^POST \/v27\.0\/17841\/media$/, { id: 'one' }],
+    [/^GET \/v27\.0\/one$/, { status_code: 'FINISHED' }],
+    [/^POST \/v27\.0\/17841\/media_publish$/, { id: 'published' }],
+    [/^GET \/v27\.0\/published$/, { permalink: 'https://www.instagram.com/p/test/' }],
+  ]);
+  const ig = createClient({ token: TOKEN, apiSetup: 'unified', userId: '17841', fetchFn: unified.fn });
+  assert.equal((await ig.me()).user_id, '17841');
+  assert.equal((await ig.permissions()).data[0].permission, 'instagram_content_publish');
+  await ig.publishImages('17841', ['https://images.example/card.jpg'], '승인한 문구');
+  assert.ok(unified.calls.every((c) => c.host === 'graph.facebook.com'));
+  assert.ok(!unified.calls.some((c) => c.path === '/v27.0/me'), '시스템 사용자를 인스타 계정으로 조회하면 안 됨');
+  assert.ok(unified.calls.every((c) => c.authorization === `Bearer ${TOKEN}` && !Object.hasOwn(c.params, 'access_token')));
+
+  const legacy = fakeFetch([[/^GET \/v27\.0\/me$/, { user_id: '17841', username: 'legacy', account_type: 'BUSINESS' }]]);
+  const old = createClient({ token: TOKEN, fetchFn: legacy.fn });
+  assert.equal((await old.me()).username, 'legacy');
+  assert.equal(legacy.calls[0].host, 'graph.instagram.com');
+  assert.match(legacy.calls[0].params.fields, /user_id/);
+});
+
+test('계정 ID 오류를 감지하고 Unified Login 토큰의 Instagram 갱신을 차단한다', async () => {
+  const f = fakeFetch([[/^GET \/v27\.0\/me$/, { user_id: '2', username: 'other' }]]);
+  const unified = createClient({ token: TOKEN, apiSetup: 'unified', fetchFn: f.fn });
+  await assert.rejects(unified.me(), /IG_USER_ID가 필요/);
+  await assert.rejects(unified.refreshToken(), /Unified Login 토큰/);
+  assert.equal(f.calls.length, 0);
+  const legacy = createClient({ token: TOKEN, userId: '1', fetchFn: f.fn });
+  await assert.rejects(legacy.me(), /계정이 달라요/);
+  assert.throws(() => createClient({ token: TOKEN, apiSetup: 'unknown' }), /IG_API_SETUP/);
+  assert.throws(() => createClient({ token: TOKEN, userId: '../me' }), /숫자 ID/);
+});
+
+test('연결 검사는 Unified Login의 게시 권한과 한도를 확인하고 누락·조회 실패를 숨기지 않는다', async () => {
+  const { check } = require('../scripts/instagram');
+  const calls = [];
+  const ig = {
+    apiSetup: 'unified',
+    me: async () => ({ user_id: '17841', username: 'cardnews_test' }),
+    permissions: async () => ({ data: [
+      { permission: 'instagram_basic', status: 'granted' },
+      { permission: 'instagram_content_publish', status: 'granted' },
+    ] }),
+    publishingLimit: async (id) => {
+      calls.push(id);
+      return { data: [{ quota_usage: 0, config: { quota_total: 100 } }] };
+    },
+  };
+  const messages = [];
+  const result = await check({ ig, log: (message) => messages.push(message) });
+  assert.equal(result.me.user_id, '17841');
+  assert.deepEqual(calls, ['17841']);
+  assert.equal(result.used, 0);
+  assert.equal(result.total, 100);
+  assert.ok(messages.some((message) => /게시 권한 확인/.test(message)));
+  const missing = { ...ig, permissions: async () => ({ data: [{ permission: 'instagram_basic', status: 'granted' }, { permission: 'instagram_content_publish', status: 'declined' }] }) };
+  await assert.rejects(check({ ig: missing, log: () => {} }), /게시 권한이 부족.*instagram_content_publish/);
+  assert.equal(calls.length, 1, '권한이 없으면 게시 한도 확인까지 진행하지 않음');
+  const failedLimit = { ...ig, publishingLimit: async () => { throw new IgError('한도 조회 실패'); } };
+  await assert.rejects(check({ ig: failedLimit, log: () => {} }), /한도 조회 실패/);
+});
+
+test('통신·처리 오류에서도 토큰을 숨기고 로그인 방식에 맞는 권한을 안내한다', async () => {
+  const network = createClient({ token: TOKEN, fetchFn: async () => { throw new Error(`connection failed: ${TOKEN}`); } });
+  const networkError = await network.me().catch((error) => error);
+  assert.ok(networkError instanceof IgError);
+  assert.ok(!networkError.message.includes(TOKEN));
+  const denied = createClient({ token: TOKEN, apiSetup: 'unified', userId: '17841', fetchFn: fakeFetch([[/GET/, { error: { message: 'permission denied', code: 200 } }]]).fn });
+  const error = await denied.me().catch((failure) => failure);
+  assert.match(explain(error), /instagram_content_publish/);
+  assert.ok(!explain(error).includes('instagram_business_'));
 });
 
 test('캡션: 첫 줄 AI 활용·샘플 표시, 카드 문구만 사용, 해시태그', () => {
