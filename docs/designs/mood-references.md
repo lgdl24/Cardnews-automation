@@ -52,7 +52,7 @@
 | single-drop-macro | 고급·몰입·어두운 | 핀터레스트 |
 | pearl-glow-luxe | 고급·화사·샴페인 | 핀터레스트 |
 | pale-blue-hydration-grid | 산뜻·맑은·쿨톤 | 핀터레스트 |
-| phone-ui-problem-solution | 공감·대화형·문제 해결 | 핀터레스트 (전용 배치 전이라 editorial로 연결) |
+| phone-ui-problem-solution | 공감·대화형·문제 해결 | 핀터레스트 (dialogue 배치: 표지 검색창) |
 | dark-gold-luxe | 고급·묵직·어두운·금색 | 핀터레스트 |
 | citrus-fresh | 산뜻·상큼·노랑 | 핀터레스트 |
 | pink-reminder | 다정·부드러운·연분홍·루틴 | 핀터레스트 |

@@ -42,12 +42,17 @@ test('in_repo는 실제 디자인 묶음 이름이다', () => {
   }
 });
 
-test('배치(panel·editorial·immersive)마다 템플릿 3장이 있고, 제품 자리가 템플릿 CSS와 같다', () => {
+test('배치(panel·editorial·immersive·dialogue)마다 템플릿 3장이 있고, 제품 자리가 템플릿 CSS와 같다', () => {
   const fs = require('fs');
   const path = require('path');
   for (const [name, l] of Object.entries(BRAND_LAYOUTS)) {
     for (const key of ['cover', 'image', 'description']) {
-      const file = path.join(__dirname, '..', l.dir, `${key}.html`);
+      // 배치 폴더에 없으면 fallback 배치의 템플릿을 씀 (dialogue는 표지만, 나머지는 editorial)
+      let file = path.join(__dirname, '..', l.dir, `${key}.html`);
+      if (!fs.existsSync(file) && l.fallback) {
+        file = path.join(__dirname, '..', BRAND_LAYOUTS[l.fallback].dir, `${key}.html`);
+        assert.deepEqual(l.frames[key], BRAND_LAYOUTS[l.fallback].frames[key], `${name}/${key}: fallback 템플릿과 제품 자리가 같아야 해요`);
+      }
       assert.ok(fs.existsSync(file), `${name}/${key}.html`);
       if (!l.frames) continue;
       const f = l.frames[key];

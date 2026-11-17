@@ -116,6 +116,16 @@ const BRAND_LAYOUTS = {
     },
   },
 };
+// 문제→해결 표지(규칙 v2 질문 제목): 표지만 검색창 모양, 이미지·설명형은 editorial을 그대로 씀 (fallback)
+BRAND_LAYOUTS.dialogue = {
+  dir: 'templates/brand/dialogue',
+  fallback: 'editorial',
+  frames: { ...BRAND_LAYOUTS.editorial.frames, cover: { x: 600, y: 380, w: 420, h: 640 } },
+  hints: {
+    ...BRAND_LAYOUTS.editorial.hints,
+    cover: 'Keep the left 55% bright, plain and low-detail: a white rounded box and text will be placed directly on it. Leave an open surface in the lower-right where a product will stand.',
+  },
+};
 const layoutOf = (mood) => (mood && BRAND_LAYOUTS[mood.layout] ? mood.layout : 'panel');
 const hintFor = (mood, templateKey) => {
   const h = BRAND_LAYOUTS[layoutOf(mood)].hints;
@@ -125,8 +135,12 @@ const hintFor = (mood, templateKey) => {
 function brandTemplate(tpl, mood, templateKey, root) {
   const layout = layoutOf(mood);
   if (layout === 'panel' || !tpl) return tpl;
-  const file = `${BRAND_LAYOUTS[layout].dir}/${templateKey}.html`;
-  return fs.existsSync(path.join(root, file)) ? { ...tpl, file } : tpl;
+  // 배치 폴더에 없으면 fallback 배치(dialogue → editorial), 그래도 없으면 기본
+  for (let l = layout; l && l !== 'panel'; l = BRAND_LAYOUTS[l].fallback) {
+    const file = `${BRAND_LAYOUTS[l].dir}/${templateKey}.html`;
+    if (fs.existsSync(path.join(root, file))) return { ...tpl, file };
+  }
+  return tpl;
 }
 
 // 배경 내용 (Codex·ChatGPT 채팅 공통): 장면·분위기·색·글자 면 자리·금지 사항

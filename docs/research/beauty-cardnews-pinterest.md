@@ -21,7 +21,7 @@
 | single-drop-macro | [링크](https://kr.pinterest.com/pin/1148488342520313161/) | 흐린 어두운 배경, 가운데 큰 이탤릭 한 단어 + 위아래 작은 대문자 |
 | pearl-glow-luxe | [링크](https://kr.pinterest.com/pin/1045820344737613381/) | 샴페인·크림 그라데이션, 투명 원형 받침, 세리프 + 스크립트 겹침 |
 | pale-blue-hydration-grid | [링크](https://kr.pinterest.com/pin/1126322188130975295/) | 옅은 블루 그레이 + 남색 면 한 장, 세 단어 세리프 제목, 물방울 클로즈업 |
-| phone-ui-problem-solution | [링크](https://kr.pinterest.com/pin/1069534611531049012/) | 검색창·말풍선·알림·토글로 고민을 던지고 제품으로 답함 (아래 훅 형식). 전용 표지 배치는 규칙 v2 뒤에 |
+| phone-ui-problem-solution | [링크](https://kr.pinterest.com/pin/1069534611531049012/) | 검색창·말풍선·알림·토글로 고민을 던지고 제품으로 답함 (아래 훅 형식). 표지는 dialogue 배치(검색창), 말풍선·알림·토글 표지는 아직 |
 | dark-gold-luxe | [링크](https://kr.pinterest.com/pin/527273068867351507/) | 검정 바탕 + 금빛 테두리 빛, 스크립트 영문 + 굵은 한글. 원본의 순위 배지는 빼고 |
 | citrus-fresh | [링크](https://kr.pinterest.com/pin/536491374384222054/) | 레몬·햇빛·물방울, 제품 + 작은 사각 사진 콜라주. 원문에 시트러스 성분이 있을 때만 |
 | pink-reminder | [링크](https://kr.pinterest.com/pin/1017743215818493883/) | 연분홍 물결, 아이콘 + 짧은 한 줄 칸. 사용법 카드용 |
