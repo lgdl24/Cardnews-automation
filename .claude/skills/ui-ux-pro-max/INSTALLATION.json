@@ -1,0 +1,12 @@
+{
+  "source": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+  "ref": "e59ff376a41f7ca47b7541ad5c116495cbade3ee",
+  "path": ".claude/skills/ui-ux-pro-max",
+  "installed_at": "2026-11-17",
+  "scope": "project-local; shared reference for Claude Code and Codex",
+  "local_changes": [
+    "Adapted plugin-root command paths in SKILL.md for project-local usage",
+    "Included upstream MIT license"
+  ],
+  "installer": "OpenAI skill-installer install-skill-from-github.py"
+}

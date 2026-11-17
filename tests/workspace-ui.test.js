@@ -25,7 +25,11 @@ async function open(t,url='/',options={}){
  await page.goto(origin+url,{waitUntil:'networkidle'});await page.evaluate(()=>document.fonts.ready);return page;
 }
 async function capture(page,name){if(process.env.CARDNEWS_UI_CAPTURE_DIR){fs.mkdirSync(process.env.CARDNEWS_UI_CAPTURE_DIR,{recursive:true});await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo(0,0)});await page.screenshot({path:path.join(process.env.CARDNEWS_UI_CAPTURE_DIR,name+'.png'),fullPage:true});}}
-async function noOverflow(page){assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);}
+async function noOverflow(page){
+ // 넘치면 원인 요소를 함께 알려 줌 (스크롤 상자 안쪽은 제외)
+ const r=await page.evaluate(()=>{const W=innerWidth;if(document.documentElement.scrollWidth<=W)return null;const out=[];for(const el of document.querySelectorAll('body *')){const b=el.getBoundingClientRect();if(b.right>W+1){let p=el.parentElement,clipped=false;while(p){const o=getComputedStyle(p).overflowX;if(o==='auto'||o==='scroll'||o==='hidden'){clipped=true;break;}p=p.parentElement;}if(!clipped)out.push(`${el.tagName.toLowerCase()}.${el.getAttribute('class')??''} ${Math.round(b.right)}px`);}}return{scrollWidth:document.documentElement.scrollWidth,W,out:out.slice(0,8)};});
+ assert.equal(r,null,JSON.stringify(r));
+}
 const summary=id=>({...index.projects[0],id,product_name:id==='alpha'?'Alpha serum':'Beta cream',thumbnail:index.projects[0].thumbnail});
 
 test('theme follows system, can be overridden, and survives navigation and reload',async t=>{

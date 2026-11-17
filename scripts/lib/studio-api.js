@@ -231,6 +231,10 @@ function createStudio({
     const cards = readJsonSafe(path.join(dir, 'cards.json'));
     const events = readEventsFrom(logFile(id));
     const last = events[events.length - 1];
+    // 목록 화면용: 대표 카드(첫 PNG)와 마지막 작업 결과 — 읽기만 함
+    const pngDir = path.join(dir, 'output', 'png');
+    const pngFiles = fs.existsSync(pngDir) ? fs.readdirSync(pngDir).filter((f) => /^card-\d{2}\.png$/.test(f)).sort() : [];
+    const lastFinish = [...events].reverse().find((e) => e.event === 'job_finished');
     return {
       id,
       name: (input.info['제품명'] || id).split('\n')[0],
@@ -240,6 +244,10 @@ function createStudio({
       running: jobStateOf(id) === 'running',
       queued: jobStateOf(id) === 'queued',
       queue_position: queueIndex(id) >= 0 ? queueIndex(id) + 1 : null,
+      card_count: cards && Array.isArray(cards.cards) ? cards.cards.length : null,
+      thumb: pngFiles.length ? { file: pngFiles[0], v: Math.round(fs.statSync(path.join(pngDir, pngFiles[0])).mtimeMs) } : null,
+      png_count: pngFiles.length,
+      last_job: lastFinish ? { kind: lastFinish.kind || null, ok: Boolean(lastFinish.ok), error_code: lastFinish.error_code || null, ts: lastFinish.ts } : null,
     };
   }
 
