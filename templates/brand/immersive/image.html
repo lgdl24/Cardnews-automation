@@ -1,0 +1,33 @@
+<style>
+/* 브랜드 무드 · 몰입형 이미지 강조형: 어두운 장면 가운데 제품, 뒤에 흐린 큰 이탤릭 단어, 아래 가운데 흰 글자.
+   제품 자리는 BRAND_LAYOUTS.immersive.frames.image와 같게 */
+.card.brand { padding:0; background:linear-gradient(170deg, var(--color-text) 0%, color-mix(in srgb, var(--color-text) 70%, var(--color-primary)) 100%); }
+.brand__scene { position:absolute; inset:0; overflow:hidden; }
+.brand__scene-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+.has-scene .brand__scene-img { display:block; }
+.im__veil { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, rgb(0 0 0 / .12) 0%, rgb(0 0 0 / .15) 50%, rgb(0 0 0 / .62) 72%, rgb(0 0 0 / .7) 100%); }
+.im__display { position:absolute; left:0; right:0; top:90px; z-index:1; text-align:center; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:240px; line-height:1; white-space:nowrap; overflow:hidden; color:rgb(255 255 255 / .55); }
+.brand__photo { position:absolute; display:block; object-fit:contain; object-position:center bottom; z-index:2; filter:drop-shadow(0 26px 24px rgb(0 0 0 / .45)); }
+.brand-image .brand__photo { left:290px; top:90px; width:500px; height:520px; }
+.brand-image .brand__texture { display:none; position:absolute; left:250px; top:80px; width:580px; height:540px; object-fit:contain; z-index:2; }
+.brand-image.has-texture .brand__texture { display:block; }
+.brand-image.has-texture .brand__photo, .brand-image.no-image .brand__photo, .has-baked .brand__photo { display:none; }
+.im__pager { position:absolute; right:64px; top:48px; z-index:3; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:26px; color:rgb(255 255 255 / .85); }
+.im__text { position:absolute; left:100px; right:100px; bottom:76px; z-index:3; text-align:center; }
+.im__label { font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:30px; color:rgb(255 255 255 / .85); }
+.im-image__title { margin-top:14px; font-size:60px; font-weight:800; line-height:1.2; letter-spacing:-0.02em; max-height:146px; color:#fff; }
+.im-image__copy { margin-top:14px; font-size:31px; font-weight:300; line-height:1.42; max-height:89px; color:rgb(255 255 255 / .9); }
+</style>
+<article class="card brand brand-image im role-{{role}} {{imageClass}} {{sceneClass}} {{bakedClass}} {{textureClass}}">
+  <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
+  <div class="im__veil" aria-hidden="true"></div>
+  <div class="im__display" aria-hidden="true">{{display}}</div>
+  <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
+  <div class="image__frame"><img class="brand__texture" src="{{texture}}" alt=""></div>
+  <span class="im__pager">{{page}} / {{total}}</span>
+  <div class="im__text">
+    <div class="im__label">{{sectionLabel}}</div>
+    <h1 class="im-image__title" data-fit>{{title}}</h1>
+    <div class="im-image__copy" data-fit>{{caption}}</div>
+  </div>
+</article>

@@ -28,6 +28,7 @@
       "additionalProperties": false,
       "properties": {
         "source": { "enum": ["snapshot", "product_photo"] },
+        "layout": { "description": "카드 배치 (선택, 없으면 panel). 참고한 레퍼런스의 layout_id (config/mood-references.json). panel: 반투명 면, editorial: 면 없이 큰 영문 단어·가는 선, immersive: 어두운 장면 위 가운데 정렬", "enum": ["panel", "editorial", "immersive"] },
         "summary": { "type": "string", "minLength": 1 },
         "palette": {
           "type": "object",

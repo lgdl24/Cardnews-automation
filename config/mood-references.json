@@ -21,6 +21,7 @@
   "references": [
     {
       "id": "editorial-silk",
+      "layout_id": "editorial",
       "title": "에디토리얼 실크 (뷰티 템플릿 사이트·프리미엄 스킨케어 광고)",
       "source": { "kind": "template-site", "url": "https://studio.swiperjs.com/templates/beauty-cosmetics", "seen_at": "2026-10-20" },
       "mood": ["차분", "고급", "여백", "에디토리얼", "따뜻한 중성색", "세리프"],
@@ -34,6 +35,7 @@
     },
     {
       "id": "clean-block",
+      "layout_id": "editorial",
       "title": "클린 블록 (팀 무드 가이드 10.20)",
       "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-20" },
       "mood": ["정돈", "담백", "쿨톤", "미니멀", "신뢰"],
@@ -47,6 +49,7 @@
     },
     {
       "id": "natural-linen",
+      "layout_id": "editorial",
       "title": "내추럴 린넨 (팀 무드 가이드 10.20)",
       "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-20" },
       "mood": ["자연스러운", "부드러운", "따뜻한", "종이 질감", "어스톤"],
@@ -60,6 +63,7 @@
     },
     {
       "id": "water-fresh",
+      "layout_id": "editorial",
       "title": "워터 프레시 (팀 시안 02 '블루 나이트' 계열)",
       "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-27" },
       "mood": ["산뜻", "맑은", "투명", "수분", "파스텔 블루"],
@@ -73,6 +77,7 @@
     },
     {
       "id": "sunlight-shadow",
+      "layout_id": "panel",
       "title": "햇빛 그림자 (팀 무드 가이드 10.20)",
       "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-20" },
       "mood": ["밝은", "경쾌", "여름", "선명", "하이라이트"],
@@ -86,6 +91,7 @@
     },
     {
       "id": "big-type",
+      "layout_id": "panel",
       "title": "빅 타이포 (팀 시안 10 '블루 타이프')",
       "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-27" },
       "mood": ["대담", "단순", "그래픽", "한 가지 색"],
@@ -99,6 +105,7 @@
     },
     {
       "id": "pop-block",
+      "layout_id": "panel",
       "title": "팝 컬러블록 (팀 시안 06 '듀 팝')",
       "source": { "kind": "in-house", "url": null, "seen_at": "2026-10-27" },
       "mood": ["발랄", "생기", "컬러풀", "젊은", "경쾌"],
@@ -112,6 +119,7 @@
     },
     {
       "id": "sage-serif-poster",
+      "layout_id": "editorial",
       "title": "세이지 세리프 포스터 (핀터레스트, 스킨케어 그래픽 포스터)",
       "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1098174690415179831/", "seen_at": "2026-11-17" },
       "mood": ["차분", "자연스러운", "에디토리얼", "세리프", "세이지 그린", "여백"],
@@ -125,6 +133,7 @@
     },
     {
       "id": "olive-editorial-frame",
+      "layout_id": "editorial",
       "title": "올리브 에디토리얼 프레임 (핀터레스트, 에디토리얼 스킨케어 4장 세트)",
       "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1082271354231543677/", "seen_at": "2026-11-17" },
       "mood": ["차분", "고급", "에디토리얼", "올리브", "따뜻한 중성색"],
@@ -138,6 +147,7 @@
     },
     {
       "id": "single-drop-macro",
+      "layout_id": "immersive",
       "title": "한 방울 매크로 (핀터레스트, 럭셔리 스킨케어 소셜 디자인)",
       "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1148488342520313161/", "seen_at": "2026-11-17" },
       "mood": ["고급", "몰입", "어두운", "따뜻한", "미니멀"],
@@ -151,6 +161,7 @@
     },
     {
       "id": "pearl-glow-luxe",
+      "layout_id": "editorial",
       "title": "진주 글로우 럭스 (핀터레스트, 럭셔리 스킨케어 글로우)",
       "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1045820344737613381/", "seen_at": "2026-11-17" },
       "mood": ["고급", "화사", "샴페인", "부드러운 빛", "우아"],
@@ -164,6 +175,7 @@
     },
     {
       "id": "pale-blue-hydration-grid",
+      "layout_id": "editorial",
       "title": "페일 블루 수분 그리드 (핀터레스트, 스킨케어 광고 소셜 세트)",
       "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1126322188130975295/", "seen_at": "2026-11-17" },
       "mood": ["산뜻", "맑은", "미니멀", "쿨톤", "수분"],

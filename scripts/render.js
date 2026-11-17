@@ -13,7 +13,7 @@ const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
 const { applyAiCards } = require('./lib/ai-cards');
-const { BRAND_DESIGN, brandPalette, bgEntries } = require('./lib/brand');
+const { BRAND_DESIGN, brandPalette, bgEntries, brandTemplate, layoutOf } = require('./lib/brand');
 
 // 카드 색 정하기 (#38): 기본 색 또는 제품 사진 대표 색 → 글자 대비 4.5 이상으로 조정
 // 제품 색이면 사진 픽셀을 읽으려고 브라우저를 먼저 띄움 (HTML만 만들 때도)
@@ -135,6 +135,9 @@ async function main() {
   console.log(`디자인 묶음: ${design.name} v${design.version ?? '-'} (${DESIGN_FROM[design.source]})`);
   console.log(brand.used && colors.source === 'theme' ? colorSummary(colors).replace('카드 색: 기본', '카드 색: 브랜드 무드 (brand_mood.palette)') : colorSummary(colors));
   const cardTheme = { ...theme, color: colors.color };
+  // 무드 '브랜드'의 카드 배치(brand_mood.layout, 레퍼런스에서 고름): 배치 폴더의 템플릿을 씀. 글자 칸 규칙은 같음
+  const tplOf = (card) => (isBrand ? brandTemplate(templates[card.template], data.brand_mood, card.template, paths.root) : templates[card.template]);
+  if (isBrand) console.log(`카드 배치: ${layoutOf(data.brand_mood)}`);
 
   // 새 묶음의 제품 사진만 투명 여백 계산. 원본 파일은 그대로 둠.
   const imageCrops = new Map();
@@ -163,7 +166,7 @@ async function main() {
   // HTML 생성
   for (const card of targets) {
     const html = buildCardHtml({
-      card, cards: data.cards, total: data.cards.length, product, tpl: templates[card.template], theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image),
+      card, cards: data.cards, total: data.cards.length, product, tpl: tplOf(card), theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image),
       extraImages: bgs.has(card.no) ? { ...extraImages, sceneFile: bgs.get(card.no).file, bakedProduct: bgs.get(card.no).baked } : extraImages,
     });
     fs.writeFileSync(path.join(htmlDir, `card-${pad(card.no)}.html`), html);

@@ -3,11 +3,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const refs = require('../config/mood-references.json');
 const templates = require('../config/templates.json');
-const { checkBrandMood } = require('../scripts/lib/brand');
+const { checkBrandMood, BRAND_LAYOUTS } = require('../scripts/lib/brand');
 
 // 단어 단위로 봄 (surface의 face처럼 단어 일부가 걸리지 않게)
 const PEOPLE_MEDICAL = /\b(persons?|people|wom[ae]n|m[ae]n|faces?|hands?|models?|doctors?|nurses?|pharmac\w*|lab\w*|coats?|hospitals?|clinic\w*|microscopes?|pipettes?|syringes?|injections?|medical)\b/i;
-const KEYS = ['id', 'title', 'source', 'mood', 'layout', 'type', 'color_usage', 'photo_style', 'scene', 'avoid', 'in_repo'];
+const KEYS = ['id', 'layout_id', 'title', 'source', 'mood', 'layout', 'type', 'color_usage', 'photo_style', 'scene', 'avoid', 'in_repo'];
 const KINDS = ['pinterest', 'behance', 'template-site', 'in-house'];
 
 test('레퍼런스마다 정해진 칸만 있고, 장면은 brand_mood 검사에 걸리지 않는다', () => {
@@ -16,6 +16,7 @@ test('레퍼런스마다 정해진 칸만 있고, 장면은 brand_mood 검사에
   for (const r of refs.references) {
     assert.deepEqual(Object.keys(r).sort(), [...KEYS].sort(), `${r.id}: 칸이 달라요 (이미지 경로 같은 칸은 두지 않음)`);
     assert.match(r.id, /^[a-z0-9-]+$/, r.id);
+    assert.ok(BRAND_LAYOUTS[r.layout_id], `${r.id}.layout_id: ${r.layout_id}`);
     assert.ok(!ids.has(r.id), `id 중복: ${r.id}`);
     ids.add(r.id);
     for (const k of ['title', 'layout', 'type', 'color_usage', 'photo_style', 'scene']) assert.ok(String(r[k] || '').trim(), `${r.id}.${k}`);
@@ -38,5 +39,20 @@ test('in_repo는 실제 디자인 묶음 이름이다', () => {
   const designs = Object.keys(templates._designs || {});
   for (const r of refs.references) {
     if (r.in_repo !== null) assert.ok(designs.includes(r.in_repo), `${r.id}.in_repo: ${r.in_repo}`);
+  }
+});
+
+test('배치(panel·editorial·immersive)마다 템플릿 3장이 있고, 제품 자리가 템플릿 CSS와 같다', () => {
+  const fs = require('fs');
+  const path = require('path');
+  for (const [name, l] of Object.entries(BRAND_LAYOUTS)) {
+    for (const key of ['cover', 'image', 'description']) {
+      const file = path.join(__dirname, '..', l.dir, `${key}.html`);
+      assert.ok(fs.existsSync(file), `${name}/${key}.html`);
+      if (!l.frames) continue;
+      const f = l.frames[key];
+      const html = fs.readFileSync(file, 'utf8');
+      assert.ok(html.includes(`.brand__photo { left:${f.x}px; top:${f.y}px; width:${f.w}px; height:${f.h}px; }`), `${name}/${key}: 제품 자리 ${JSON.stringify(f)}가 CSS와 달라요`);
+    }
   }
 });
