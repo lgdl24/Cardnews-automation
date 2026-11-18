@@ -21,7 +21,7 @@
 
 ## 현재 작업 — KT 팀 작업실과 고정 게시 주소 #112 (Codex, 2026-11-18)
 
-- [#112](https://github.com/lgdl24/Cardnews-automation/issues/112)의 순서와 설치·시험 기준은 [KT 운영 안내](kt-studio-deployment.md)에 있어요. 브랜치는 `feat/112-kt-studio-publish`이며 공통 게시 관리자가 담긴 PR #111의 `420157f` 위에서 시작했어요. #111이 main에 합쳐지면 후속 PR의 대상을 main으로 바꿔요.
+- [#112](https://github.com/lgdl24/Cardnews-automation/issues/112)의 순서와 설치·시험 기준은 [KT 운영 안내](kt-studio-deployment.md)에 있어요. [준비 PR #113](https://github.com/lgdl24/Cardnews-automation/pull/113)은 공통 게시 관리자가 담긴 PR #111의 `420157f` 위에서 시작했어요. #111이 main에 합쳐지면 #113의 대상을 main으로 바꿔요. [노션 작업 트래커](https://app.notion.com/p/41c6bcfa1f8a81709c14f7c7329b8b41)도 진행 중으로 등록했어요.
 - 제작 결과는 기존 승인 데이터·카드 번호순 PNG를 사용해요. 서버가 JPEG를 요청별 경로에 복사하고 공개 HTTPS 응답을 확인한 뒤 인스타로 넘겨요. 일반 종료와 확인 실패 뒤 공개 JPEG를 지워요.
 - `scripts/studio-server.js`와 `ops/kt/`로 팀 인증 뒤 작업실 웹을 실행하고, 인스타 토큰과 예약 실행은 별도 OS 계정 서비스로 옮겨요. 작업실에서는 로그인된 Claude Code로 게시 캡션을 작성·검토해요. 제작 엔진의 이미지·문구 규격과 AI 인증 방식은 기존 흐름을 사용해요.
 - `npm test` 267개, `npm run test:web` 31개, `npm run web:build`를 통과했어요. 가상 제품으로 별도 서버 간 캡션·사람 확인·예약 캐러셀·링크·재게시 차단을 확인했어요. 실제 Caddy를 로컬 HTTPS로 띄워 팀 인증, JPEG GET/HEAD, 다른 파일 차단을 검증했어요.
