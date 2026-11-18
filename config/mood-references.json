@@ -1,6 +1,6 @@
 {
   "_comment": "뷰티 카드뉴스 템플릿 레퍼런스. 사람이 고른 비슷한 무드의 카드뉴스 템플릿(핀터레스트·비핸스·템플릿 사이트·팀 시안)에서 이미지·글자·로고는 가져오지 않고 디자인 특징만 글로 옮긴 것입니다. 사용자가 고르는 카테고리가 아닙니다. 구성안 작업에서 브랜드 페이지(스냅샷)의 분위기와 'mood' 단어가 가장 가까운 레퍼런스 1~2개를 Claude가 찾아 brand_mood의 장면·사진 연출·색 쓰는 법에 참고합니다. 색 값은 항상 브랜드 페이지에서 가져옵니다. 설명: docs/designs/mood-references.md",
-  "version": "0.3",
+  "version": "0.4",
   "updated_at": "2026-11-17",
   "common": {
     "principles": [
@@ -193,7 +193,7 @@
       "title": "휴대폰 화면 문제→해결 (핀터레스트, 검색창·말풍선·알림·토글 카드)",
       "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1069534611531049012/", "seen_at": "2026-11-17" },
       "mood": ["공감", "대화형", "미니멀", "밝은 회색", "문제 해결"],
-      "layout": "첫 장에 검색창·채팅 말풍선·알림창·꺼짐/켜짐 스위치 같은 휴대폰 화면 조각으로 고민을 던지고, 아래나 다음 장에 제품으로 답함 (같은 형식: 핀 1051660950521023552 고민↔해결 나란히, 1146518017659512350 부재중 전화, 764556474285870712 토글). 표지는 dialogue 배치(검색창 모양), 나머지 카드는 editorial",
+      "layout": "첫 장에 검색창·채팅 말풍선·알림창·꺼짐/켜짐 스위치 같은 휴대폰 화면 조각으로 고민을 던지고, 아래나 다음 장에 제품으로 답함 (말풍선형은 chat-probs-solution, 알림형은 notification-reminder로 따로. 토글 764556474285870712는 피부 변화 단정 위험이 커서 배치로 만들지 않음). 표지는 dialogue 배치(검색창 모양), 나머지 카드는 editorial",
       "type": "작은 산세리프(화면 UI 글자 크기), 답은 굵은 제목",
       "color_usage": "흰색·밝은 회색 바탕, 말풍선·스위치에만 브랜드 주색",
       "photo_style": "부드럽게 퍼지는 주광, 제품은 작게 정면",
@@ -255,6 +255,34 @@
       "photo_style": "정면, 그림자 짧게, 배경과 분리된 깔끔한 컷",
       "scene": "Pale sage green paper with a faint fine grid pattern, soft even daylight, clean, flat and graphic.",
       "avoid": ["말풍선 안에 원문보다 강한 효능 쓰기", "질문을 여러 개 늘어놓기 (질문은 하나)"],
+      "in_repo": null
+    },
+    {
+      "id": "chat-probs-solution",
+      "layout_id": "chat",
+      "title": "고민↔해결 말풍선 (핀터레스트, YOUR PROBS / OUR SOLUTION)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1051660950521023552/", "seen_at": "2026-11-17" },
+      "mood": ["공감", "대화형", "친근", "부드러운", "문제 해결"],
+      "layout": "왼쪽 흰 말풍선에 고민 한 줄, 오른쪽 브랜드 색 말풍선에 답, 오른쪽 아래 제품. 이미지·설명형은 editorial",
+      "type": "산세리프 질문 + 명조 답",
+      "color_usage": "베이지·흰 바탕, 답 말풍선만 브랜드 주색",
+      "photo_style": "정면, 그림자 짧게, 밝고 부드러운 빛",
+      "scene": "Warm beige paper surface with soft diffused daylight and a gentle shadow gradient, calm, clean and minimal.",
+      "avoid": ["고민 말풍선에 질환·피부 상태 단어", "고민을 여러 개 늘어놓기 (원문 특징 수만큼, 표지는 하나)"],
+      "in_repo": null
+    },
+    {
+      "id": "notification-reminder",
+      "layout_id": "notice",
+      "title": "휴대폰 알림 리마인더 (핀터레스트, SPF 부재중 전화·알림)",
+      "source": { "kind": "pinterest", "url": "https://kr.pinterest.com/pin/1146518017659512350/", "seen_at": "2026-11-17" },
+      "mood": ["일상", "리마인더", "미니멀", "쿨톤", "루틴"],
+      "layout": "휴대폰 알림 카드(앱 아이콘·now)에 질문 한 줄, 아래 답을 큰 명조로, 오른쪽 아래 제품. 이미지·설명형은 editorial",
+      "type": "시스템 UI 같은 산세리프 + 명조 답",
+      "color_usage": "옅은 회청색 바탕, 알림 아이콘과 답 캡션에만 브랜드 주색",
+      "photo_style": "부드러운 주광, 제품 정면",
+      "scene": "Pale blue-grey soft gradient backdrop with a smooth matte stone slab and gentle morning light, quiet and minimal.",
+      "avoid": ["원문에 없는 사용 횟수·덧바르기 시간 알림 (원문 사용 방법만)", "불안을 주는 경고 말투"],
       "in_repo": null
     }
   ]
