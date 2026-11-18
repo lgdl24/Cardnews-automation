@@ -8,7 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
-| 2026-11-18 | Codex | #110 · `feat/110-instagram-publish-unified` | 사용자 승인으로 #109를 main에 병합했어요. CLI·웹 게시 관리자/기록·프로세스 잠금·불분명 상태·예약을 통합했고 실제 게시 없이 265/31 검사·빌드를 통과했어요. 사용법은 `docs/instagram-publish.md`예요. |
+| 2026-11-18 | Codex | #110 · `feat/110-instagram-publish-unified` · [PR #111](https://github.com/lgdl24/Cardnews-automation/pull/111) | 사용자 승인으로 #109를 main에 병합했어요. CLI·웹 게시 관리자/기록·프로세스 잠금·불분명 상태·예약을 통합했고 실제 게시 없이 265/31 검사·빌드를 통과했어요. 사용법은 `docs/instagram-publish.md`예요. |
 | 2026-11-17 | Codex | #107 · `feat/107-instagram-caption` · [PR #109](https://github.com/lgdl24/Cardnews-automation/pull/109) | B 방식으로 승인 근거 기반의 새 게시 글 작성·별도 의미 검토를 추가했어요. 첫 줄 AI 활용·맥락별 태그, 카드/원문/규칙 변경 무효화, CLI·웹·점검 캡션 일치와 사람 재확인을 연결했어요. 편집 UI·실제 게시·예약은 실행하지 않았어요. 아래 #107 절을 확인해요. |
 | 2026-11-17 | Claude | PR #91·#93·#95·#98·#99·#101·#103·#105 → `main` | **열린 PR 8개 main 병합 (이규동 결정)**: 이용석 #89·#92·#94·#97·#100, 작업실 개편 #102, 인스타 B1~B4·Unified Login(#96)·B5(#104). 입력 화면은 #92의 01 자료·브랜드 → 02 채운 내용 확인 → 03 제작 조건 구성 위에 #102의 단계별 진행·선택 항목 접기·오류 요약·임시 저장. AI 배경 패널은 #102 접기 구조 + #89 채팅 대체(요청문 복사·이미지 올리기). `render.js`는 AI 활용 메타데이터 + 브랜드 배치 둘 다, `brand.js` 배경 요청문 3종(Codex·채팅·합성) 모두 의료·약사·전문가·흰 가운 금지. 병합 뒤 main: `npm test` 245, `test:web` 30, `test:render` 17, 웹 빌드 통과 |
 | 2026-11-17 | Claude | #104 · `feat/104-instagram-web-publish` (`fix/96` + #102 합침) | **작업실 인스타 수동·예약 게시(B5)**: `scripts/lib/ig-publisher.js`(상태 `products/<id>/output/instagram/ig-publish.json`, 버전 해시, 같은 버전 1회, 결과 불분명→조회 뒤 재시도, 재시작 복원, 예약 30초 확인·놓침 10분), `ig-publish-deps.js`(토큰·터널·JPEG·점검 프로세스), API `/instagram/account`·`/products/:id/instagram/*`, 화면 `PublishPanel.tsx`. 새 환경값 `IG_PUBLIC_BASE_URL`(고정 공개 주소, 나중 KT 서버)·`CARDNEWS_IG_SCHEDULE=off`(예약 확인 끔). 게시 전 점검은 작업실이 별도 프로세스로 실행(시험 폴더도 동작) |
@@ -22,14 +22,14 @@
 ## 현재 작업 — CLI·웹 게시 기록 통합 #110 (Codex, 2026-11-18)
 
 - 사용자 승인으로 PR #109를 main에 병합했어요(`e27141d`). 인터넷 중단 후 원격 병합·작업 폴더를 대조했고 변경 유실은 없었어요. #107 캡션 개선은 main 반영 완료예요.
-- 이슈는 [#110](https://github.com/lgdl24/Cardnews-automation/issues/110), 브랜치는 `feat/110-instagram-publish-unified`, 기준은 `origin/main`의 `e27141d`예요. 원래 실험 폴더는 수정하지 않았어요. PR은 준비 중이에요.
+- 이슈는 [#110](https://github.com/lgdl24/Cardnews-automation/issues/110), 브랜치는 `feat/110-instagram-publish-unified`, 기준은 `origin/main`의 `e27141d`예요. 원래 실험 폴더는 수정하지 않았어요. [PR #111](https://github.com/lgdl24/Cardnews-automation/pull/111)을 main 대상으로 열었고 구현 커밋은 `92bdadb`예요.
 - 완료한 변경은 `scripts/lib/ig-publish-lock.js`·`ig-cli-publisher.js`, 공통 `ig-publisher.js`, CLI 명령·웹 출처 표시예요. CLI도 `ig-publish.json`의 관리자·버전·사람 확인·예약·기록을 사용해요. PID 기반 참가 파일로 서로 다른 프로세스의 게시·상태 수정을 직렬화하고, 살아 있는 실행은 복구가 덮어쓰지 않아요.
 - CLI는 먼저 `publish <제품ID> --dry-run`으로 캡션·점검·버전을 확인해요. 실제 게시는 `--version <버전> --confirm`으로 그 버전의 사람 확인을 명시해요. `verify <제품ID>`는 공통 기록의 불분명 결과·링크만 조회해요. CLI는 예약 타이머를 시작하지 않아요.
 - 게시 요청 당시의 캡션 전체를 보존해 공통 AI 첫 줄만으로 다른 게시물을 고르지 않아요. 목록 지연·여러 후보 등으로 확정할 수 없으면 확인 필요를 유지해요. media_id가 있으면 링크 확인 중 종료돼도 게시 완료로 복구해요. 완료 기록과 제작 로그 사이의 중단은 같은 media_id 이벤트를 중복 없이 보완해요. 손상된 기록은 빈 기록으로 대체하지 않아요.
 - 검사 결과는 `npm test` 265개·`npm run test:web` 31개·`npm --prefix web run build` 통과예요. CLI↔웹 양방향, 실제 별도 Node 프로세스 동시 실행·SIGKILL, 예약 경합, 이전 기록, dry-run, 제작 로그 중단·손상, 게시물 오인·누락 응답을 가짜 API·임시 제품으로 확인했어요.
 - [공통 게시 사용법](instagram-publish.md)에 명령·복구·적용 범위를 적었어요. 같은 PC·같은 실제 제품 폴더를 쓰는 새 버전끼리 공유해요. 이전 버전의 게시가 끝난 뒤 기존 CLI·작업실을 모두 종료하고 새 버전으로 실행해야 해요.
 - 실제 제품·인스타 게시·예약·토큰 갱신은 실행하지 않았어요. 시험 프로세스·브라우저는 종료했고 앱 서버는 열지 않았어요. KT 서버·성과 수집·캡션 편집 UI는 이번 범위 밖이에요.
-- 다음은 커밋·push·main 대상 PR 확인, 사용자 리뷰·병합 결정이에요. 이후 실제 계정 새 게시 1회는 별도 승인 뒤 진행해요. 노션 트래커의 최신 작업 동기화도 남아 있어요.
+- 커밋·push·main 대상 PR #111 등록을 마쳤어요. 다음은 사용자 리뷰·병합 결정이에요. 병합 후 CLI·웹을 모두 새 버전으로 다시 실행해요. 실제 계정 새 게시 1회는 별도 승인 뒤 진행해요. 노션 트래커의 최신 작업 동기화도 남아 있어요.
 
 ## 현재 작업 — 인스타 캡션 개선 #107 (Codex, 2026-11-17)
 
