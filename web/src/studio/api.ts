@@ -378,6 +378,7 @@ export interface IgStatus {
   approved?: boolean;
   approved_at?: string | null;
   caption?: string;
+  caption_needs_write?: boolean;
   cards?: { no: number; file: string }[];
   check?: (PublishCheck | { ready: boolean; checks: PublishCheck['checks'] }) | null;
   acks?: string[];

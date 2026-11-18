@@ -1,0 +1,30 @@
+[Unit]
+Description=Cardnews team studio
+After=network.target cardnews-publish.service
+Wants=cardnews-publish.service
+
+[Service]
+User=cardnews-studio
+Group=cardnews-web
+SupplementaryGroups=cardnews-data
+UMask=0007
+WorkingDirectory=/opt/cardnews/app
+RuntimeDirectory=cardnews-web
+RuntimeDirectoryMode=0750
+EnvironmentFile=/etc/cardnews/studio.env
+Environment=CARDNEWS_PRODUCTS_DIR=/var/lib/cardnews/products
+Environment=CARDNEWS_STUDIO_STATE_DIR=/var/lib/cardnews/studio
+Environment=CARDNEWS_STUDIO_SOCKET=/run/cardnews-web/studio.sock
+Environment=CARDNEWS_PUBLISH_SOCKET=/run/cardnews-publish/publish.sock
+Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/cardnews/browsers
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=CARDNEWS_FIGMA_PUSH=off
+ExecStart=/usr/local/bin/node scripts/studio-server.js web
+Restart=on-failure
+RestartSec=3
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

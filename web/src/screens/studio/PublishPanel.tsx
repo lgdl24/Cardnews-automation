@@ -1,6 +1,5 @@
 // 인스타 게시 패널 (B5, #104) — 최종 승인 뒤: 계정·카드·캡션 미리보기 → 게시 전 점검·사람 확인 → 확인 창 → 진행 → 게시 링크
 // 지금 게시와 예약 게시. 서버가 상태를 저장하므로 새로고침·작업실 재시작 뒤에도 이어서 보임
-// 캡션 수정은 다른 담당 기능(이번 범위 아님) → 자동 캡션을 보여주기만
 import { useEffect, useRef, useState } from 'react';
 import { IG_ACTIVE, pngUrl, studioFetch, usePolling, type IgAccount, type IgRequest, type IgStatus, type ProductDetail } from '../../studio/api';
 import { formatElapsed } from '../../studio/status';
@@ -33,6 +32,7 @@ export function PublishPanel({ detail }: { detail: ProductDetail }) {
   const [account, setAccount] = useState<IgAccount | null>(null);
   const [accountLoading, setAccountLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [writingCaption, setWritingCaption] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -60,7 +60,7 @@ export function PublishPanel({ detail }: { detail: ProductDetail }) {
     setError(null);
     try {
       const r = await studioFetch<IgStatus & { instagram?: IgStatus }>(`/products/${encodeURIComponent(id)}/instagram/${path}`, { method, body });
-      ig.setData(r.instagram ?? r);
+      if (path !== 'caption') ig.setData(r.instagram ?? r);
       ig.refresh();
       return true;
     } catch (e) {
@@ -69,6 +69,14 @@ export function PublishPanel({ detail }: { detail: ProductDetail }) {
       return false;
     } finally {
       setBusy(false);
+    }
+  };
+  const writeCaption = async () => {
+    setWritingCaption(true);
+    try {
+      await act('caption');
+    } finally {
+      setWritingCaption(false);
     }
   };
 
@@ -130,7 +138,7 @@ export function PublishPanel({ detail }: { detail: ProductDetail }) {
             {sched.state === 'missed' && <p><strong>예약을 놓쳤어요.</strong> {sched.reason}</p>}
             {sched.state === 'blocked' && <p><strong>예약 시각에 게시하지 못했어요.</strong> {sched.reason}</p>}
             {(sched.state === 'failed' || sched.state === 'unknown') && <p><strong>예약 게시가 끝나지 못했어요.</strong> {sched.reason ?? '위의 게시 상태를 확인해 주세요.'}</p>}
-            {sched.state === 'scheduled' && <p className="muted">그 시각에 이 컴퓨터와 작업실(npm run studio)이 켜져 있어야 해요. 꺼져 있다가 {s.limits?.grace_minutes ?? 10}분 넘게 지나면 자동으로 게시하지 않고 다시 확인을 받아요.</p>}
+            {sched.state === 'scheduled' && <p className="muted">예약 시각에 작업실 서버가 실행 중이어야 해요. 서버가 꺼져 있다가 {s.limits?.grace_minutes ?? 10}분 넘게 지나면 다시 확인을 받아요.</p>}
           </div>
           {['scheduled', 'missed', 'blocked'].includes(sched.state) && (
             <button type="button" className="btn btn-small" disabled={busy} onClick={() => act('schedule', undefined, 'DELETE')}>{sched.state === 'scheduled' ? '예약 취소' : '예약 지우기'}</button>
@@ -152,7 +160,12 @@ export function PublishPanel({ detail }: { detail: ProductDetail }) {
               );
             })}
           </ol>
-          <pre className="ig-caption">{s.caption}</pre>
+          {s.caption && <pre className="ig-caption">{s.caption}</pre>}
+          {s.caption_needs_write && (
+            <button type="button" className="btn btn-small" disabled={busy || active} onClick={writeCaption}>
+              {writingCaption ? '캡션 작성·검토 중…' : '게시 캡션 작성'}
+            </button>
+          )}
           <p className="muted">캡션은 승인된 카드 문구로만 만들어요(새 문구 없음). 첫 줄에 AI 활용 표시가 들어가요. 캡션 수정 기능은 담당자가 따로 만들 예정이에요.</p>
         </div>
       </details>
