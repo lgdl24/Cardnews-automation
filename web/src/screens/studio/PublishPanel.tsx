@@ -259,7 +259,7 @@ function RequestView({ req, steps, busy, onVerify }: { req: IgRequest; steps: { 
   const nowKey = active ? req.steps[req.steps.length - 1]?.key : null;
   const end = active ? now : Date.parse(req.finished_at ?? req.updated_at);
   const elapsed = (end - Date.parse(req.requested_at)) / 1000;
-  const by = req.trigger === 'schedule' ? '예약 게시' : '지금 게시';
+  const by = req.trigger === 'schedule' ? '예약 게시' : req.trigger === 'cli' ? '터미널 게시' : '지금 게시';
   if (req.state === 'published') {
     return (
       <div className="ig-result is-done" role="status">

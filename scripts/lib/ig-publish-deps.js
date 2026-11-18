@@ -29,8 +29,8 @@ async function toJpegs(outDir, pngFiles) {
  *  - IG_PUBLIC_BASE_URL(예: 나중의 KT 서버)이 있으면 그 주소 + 파일 이름 (파일을 그 서버에 올리는 일은 서버 쪽 작업)
  *  - 없으면 게시하는 동안만 이 컴퓨터에 작은 서버 + cloudflared 임시 터널을 열고 끝나면 닫음
  */
-async function openPublicUrls(jpgs) {
-  const base = readEnvKeys(['IG_PUBLIC_BASE_URL']).IG_PUBLIC_BASE_URL;
+async function openPublicUrls(jpgs, { baseUrl = null } = {}) {
+  const base = baseUrl || readEnvKeys(['IG_PUBLIC_BASE_URL']).IG_PUBLIC_BASE_URL;
   if (base) return { mode: 'base_url', urls: jpgs.map((f) => `${base.replace(/\/$/, '')}/${path.basename(f)}`), close: () => {} };
   const { startFileServer, openTunnel, waitReachable } = require('./public-url');
   const server = await startFileServer(jpgs);
