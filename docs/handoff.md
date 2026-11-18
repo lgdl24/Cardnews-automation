@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-18 | Codex | #110 · `feat/110-instagram-publish-unified` | 사용자 승인으로 #109를 main에 병합했어요. CLI·웹 게시 관리자/기록·프로세스 잠금·불분명 상태·예약을 통합했고 실제 게시 없이 265/31 검사·빌드를 통과했어요. 사용법은 `docs/instagram-publish.md`예요. |
 | 2026-11-17 | Codex | #107 · `feat/107-instagram-caption` · [PR #109](https://github.com/lgdl24/Cardnews-automation/pull/109) | B 방식으로 승인 근거 기반의 새 게시 글 작성·별도 의미 검토를 추가했어요. 첫 줄 AI 활용·맥락별 태그, 카드/원문/규칙 변경 무효화, CLI·웹·점검 캡션 일치와 사람 재확인을 연결했어요. 편집 UI·실제 게시·예약은 실행하지 않았어요. 아래 #107 절을 확인해요. |
 | 2026-11-17 | Claude | PR #91·#93·#95·#98·#99·#101·#103·#105 → `main` | **열린 PR 8개 main 병합 (이규동 결정)**: 이용석 #89·#92·#94·#97·#100, 작업실 개편 #102, 인스타 B1~B4·Unified Login(#96)·B5(#104). 입력 화면은 #92의 01 자료·브랜드 → 02 채운 내용 확인 → 03 제작 조건 구성 위에 #102의 단계별 진행·선택 항목 접기·오류 요약·임시 저장. AI 배경 패널은 #102 접기 구조 + #89 채팅 대체(요청문 복사·이미지 올리기). `render.js`는 AI 활용 메타데이터 + 브랜드 배치 둘 다, `brand.js` 배경 요청문 3종(Codex·채팅·합성) 모두 의료·약사·전문가·흰 가운 금지. 병합 뒤 main: `npm test` 245, `test:web` 30, `test:render` 17, 웹 빌드 통과 |
 | 2026-11-17 | Claude | #104 · `feat/104-instagram-web-publish` (`fix/96` + #102 합침) | **작업실 인스타 수동·예약 게시(B5)**: `scripts/lib/ig-publisher.js`(상태 `products/<id>/output/instagram/ig-publish.json`, 버전 해시, 같은 버전 1회, 결과 불분명→조회 뒤 재시도, 재시작 복원, 예약 30초 확인·놓침 10분), `ig-publish-deps.js`(토큰·터널·JPEG·점검 프로세스), API `/instagram/account`·`/products/:id/instagram/*`, 화면 `PublishPanel.tsx`. 새 환경값 `IG_PUBLIC_BASE_URL`(고정 공개 주소, 나중 KT 서버)·`CARDNEWS_IG_SCHEDULE=off`(예약 확인 끔). 게시 전 점검은 작업실이 별도 프로세스로 실행(시험 폴더도 동작) |
@@ -17,14 +18,25 @@
 | 2026-11-17 | Claude | #100 · `feat/100-brand-layouts` (#93·#97 위) | **브랜드 무드 배치** (이용석): `brand_mood.layout` = panel(기존 반투명 면)·editorial(면 없이 큰 영문 세리프 단어·가는 선)·immersive(어두운 장면·흰 글자 가운데). 레퍼런스마다 `layout_id`, 구성안에서 고른 레퍼런스의 배치로 출력(`templates/brand/<배치>/`). 배치별 제품 자리·배경 구도 `scripts/lib/brand.js` BRAND_LAYOUTS(panel 아니면 배경 key에 배치 포함). 새 문구 칸 `display`(영문 장식 단어, 근거 원문 단어의 영어만). 브랜드 묶음에 Pretendard Light(300) |
 | 2026-11-17 | Claude | #97 · `feat/97-mood-references` | **템플릿 레퍼런스** (이용석): `config/mood-references.json` — 비슷한 무드의 뷰티 카드뉴스 템플릿 12개를 특징 글로(이미지 없음, 링크만). 사용자가 고르는 카테고리가 아님. 구성안 작업에서 브랜드 페이지 분위기와 `mood` 단어가 가까운 1~2개를 찾아 `brand_mood`의 장면·사진 연출·색 쓰는 법에 참고(색 값은 브랜드 페이지), evidence에 "레퍼런스 <id>". 설명 `docs/designs/mood-references.md`, 핀터레스트 조사 `docs/research/beauty-cardnews-pinterest.md`, 검사 `tests/mood-references.test.js` |
 | 2026-11-13 | Claude | `feat/instagram` (`feat/ax-compliance` 위) | **인스타 연동 B1~B4 (실계정 시험 전)**: `npm run ig -- check`(토큰으로 계정·24시간 한도) · `prepare <id>`(캡션 `output/instagram/caption.txt` — 카드 문구만, 첫 줄 AI 활용·샘플 표시 / JPEG 변환, PNG의 AI 활용 XMP를 JPEG APP1로) · `publish <id> [--dry-run] [--base-url]`(게시 전 점검 '게시 가능'만 → 비밀 경로 파일 서버 + `cloudflared` 빠른 터널 → 카드별 컨테이너 → 캐러셀 → 게시 → `published.json`·`published` 이벤트) · `refresh-token`(.env의 토큰 줄만 교체). 토큰은 `.env`의 `IG_ACCESS_TOKEN`, 출력·오류 메시지에 안 나옴. 설정 `config/instagram.json`(API v27.0). 이벤트 규격 v0.4. 다음: 실계정 첫 게시 → 작업실 '게시' 패널(B5) → 성과 수집(C) |
-| 2026-11-10 | Claude | `feat/ax-compliance` (이슈 없음) | **AX 확장 A: 게시 전 점검** (계획 `docs/proposals/ax-plan.md`, A→B 인스타 게시→C 성과 되먹임): A1 주의 표현 '가상 인물·전문가 추천' 분류(개정 화장품법 제13조①4 · 공정위 가상인물 지침, 목록 v2) · A2 GPT 이미지 지시문에 의료인·가운·병원 금지 · A3 출력 PNG에 AI 활용 XMP(IPTC `DigitalSourceType`=compositeWithTrainedAlgorithmicMedia, `cardnews:aiParts` text/text,image) 자동 삽입(`render` 끝, `scripts/lib/ai-disclosure.js`). AI 카드 '같은 파일' 비교는 XMP를 빼고 그림만(`samePng`) · A4 `npm run precheck -- <id>` → `output/publish-check.json`(승인·검증·출력·주의 표현·AI 표시·GPT 이미지·캡션), 작업실 '게시 전 점검' 패널(`GET /products/:id/precheck`). **규칙 버전은 그대로 v1** — 주의 표현 목록이 바뀌었으니 v2로 올릴지 사람 결정(A5) |
+
+## 현재 작업 — CLI·웹 게시 기록 통합 #110 (Codex, 2026-11-18)
+
+- 사용자 승인으로 PR #109를 main에 병합했어요(`e27141d`). 인터넷 중단 후 원격 병합·작업 폴더를 대조했고 변경 유실은 없었어요. #107 캡션 개선은 main 반영 완료예요.
+- 이슈는 [#110](https://github.com/lgdl24/Cardnews-automation/issues/110), 브랜치는 `feat/110-instagram-publish-unified`, 기준은 `origin/main`의 `e27141d`예요. 원래 실험 폴더는 수정하지 않았어요. PR은 준비 중이에요.
+- 완료한 변경은 `scripts/lib/ig-publish-lock.js`·`ig-cli-publisher.js`, 공통 `ig-publisher.js`, CLI 명령·웹 출처 표시예요. CLI도 `ig-publish.json`의 관리자·버전·사람 확인·예약·기록을 사용해요. PID 기반 참가 파일로 서로 다른 프로세스의 게시·상태 수정을 직렬화하고, 살아 있는 실행은 복구가 덮어쓰지 않아요.
+- CLI는 먼저 `publish <제품ID> --dry-run`으로 캡션·점검·버전을 확인해요. 실제 게시는 `--version <버전> --confirm`으로 그 버전의 사람 확인을 명시해요. `verify <제품ID>`는 공통 기록의 불분명 결과·링크만 조회해요. CLI는 예약 타이머를 시작하지 않아요.
+- 게시 요청 당시의 캡션 전체를 보존해 공통 AI 첫 줄만으로 다른 게시물을 고르지 않아요. 목록 지연·여러 후보 등으로 확정할 수 없으면 확인 필요를 유지해요. media_id가 있으면 링크 확인 중 종료돼도 게시 완료로 복구해요. 완료 기록과 제작 로그 사이의 중단은 같은 media_id 이벤트를 중복 없이 보완해요. 손상된 기록은 빈 기록으로 대체하지 않아요.
+- 검사 결과는 `npm test` 265개·`npm run test:web` 31개·`npm --prefix web run build` 통과예요. CLI↔웹 양방향, 실제 별도 Node 프로세스 동시 실행·SIGKILL, 예약 경합, 이전 기록, dry-run, 제작 로그 중단·손상, 게시물 오인·누락 응답을 가짜 API·임시 제품으로 확인했어요.
+- [공통 게시 사용법](instagram-publish.md)에 명령·복구·적용 범위를 적었어요. 같은 PC·같은 실제 제품 폴더를 쓰는 새 버전끼리 공유해요. 이전 버전의 게시가 끝난 뒤 기존 CLI·작업실을 모두 종료하고 새 버전으로 실행해야 해요.
+- 실제 제품·인스타 게시·예약·토큰 갱신은 실행하지 않았어요. 시험 프로세스·브라우저는 종료했고 앱 서버는 열지 않았어요. KT 서버·성과 수집·캡션 편집 UI는 이번 범위 밖이에요.
+- 다음은 커밋·push·main 대상 PR 확인, 사용자 리뷰·병합 결정이에요. 이후 실제 계정 새 게시 1회는 별도 승인 뒤 진행해요. 노션 트래커의 최신 작업 동기화도 남아 있어요.
 
 ## 현재 작업 — 인스타 캡션 개선 #107 (Codex, 2026-11-17)
 
 - PR은 [#109](https://github.com/lgdl24/Cardnews-automation/pull/109)이고 대상은 main이에요. 구현 커밋은 `54443eb`이며 브랜치는 `feat/107-instagram-caption`, 시작 기준은 `origin/main` `a080a36`이에요. 병합은 사용자가 결정해요.
 
 - 사용자 결정은 **B 방식**이에요. 같은 정보를 나열하는 대신 승인 카드·원문 근거로 새 문장을 작성해요. 캡션 편집 UI는 다른 담당 영역이어서 만들지 않아요. AI 활용 표시는 첫 줄에 유지해요.
-- 브랜치는 `feat/107-instagram-caption`이고 기준은 `origin/main`의 `a080a36`이에요. 기존 `fix/96`은 main 병합된 상태로 보존했어요. 원래 `/Users/lee/git/Cardnews-automation`의 실험 변경은 수정하지 않았어요. PR은 준비 중이에요.
+- 브랜치는 `feat/107-instagram-caption`이고 기준은 `origin/main`의 `a080a36`이에요. 기존 `fix/96`은 main 병합된 상태로 보존했어요. 원래 `/Users/lee/git/Cardnews-automation`의 실험 변경은 수정하지 않았어요. PR #109는 사용자 승인으로 main에 병합됐어요.
 - 구현은 `scripts/lib/ig-caption-writer.js`·`ig-caption-draft.js`, `prompts/instagram-caption.md`예요. `npm run ig -- caption <제품ID> [--force]`와 `prepare`에서 작성해요. 최종 승인 자료만 받고 Claude 작성→구조/근거 ID/수치/주의 표현 검사→별도 Claude 의미 검토 뒤 `output/instagram/caption-draft.json`·`caption.txt`를 저장해요. 실패 시 기존 카드 나열 글로 대체하지 않아요.
 - CLI·작업실·게시 전 점검이 같은 작성본을 읽어요. 웹 조회·실제 게시 순간에는 모델을 실행하지 않아요. 카드/원문/캡션 설정/작성 지시 변경은 작성본을 무효로 해요. 캡션 변경은 기존 게시 버전·점검·사람 확인을 다시 요구해요. 새 ‘게시 글 근거·말투 확인’은 사람이 확인해요. 카드 생성·평가 v2와 별도로 `caption-v1`을 관리해요.
 - 실제 Claude 첫 호출은 OAuth 만료로 중단됐고 사용자가 재로그인했어요. 이후 젤크림·평가용 가상 제품의 임시 사본에서 작성·별도 의미 검토 성공을 확인했어요. 최종 작성 지시로 두 제품을 다시 작성·검토했고 실제 출력 전후 예시를 문서·픽스처에 기록했어요. 원래 제품 상태·로그·이미지는 보존했어요. 실제 게시·예약·토큰 갱신은 실행하지 않았어요.

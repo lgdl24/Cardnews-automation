@@ -352,7 +352,7 @@ export type IgState = 'requested' | 'preparing' | 'opening_url' | 'uploading' | 
 export interface IgRequest {
   request_id: string;
   version: string;
-  trigger: 'manual' | 'schedule';
+  trigger: 'manual' | 'schedule' | 'cli';
   state: IgState;
   requested_at: string;
   updated_at: string;

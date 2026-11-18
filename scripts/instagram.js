@@ -2,7 +2,8 @@
 //   npm run ig -- check                     토큰으로 계정·게시 한도 확인 (토큰은 출력하지 않음)
 //   npm run ig -- caption <제품ID> [--force] 게시 글 작성·근거 검토 (게시하지 않아요)
 //   npm run ig -- prepare <제품ID>          캡션(output/instagram/caption.txt) + JPEG(AI 활용 XMP 유지)
-//   npm run ig -- publish <제품ID> [--dry-run] [--base-url <https 주소>]
+//   npm run ig -- publish <제품ID> [--dry-run] [--version HASH --confirm] [--base-url <https 주소>]
+//   npm run ig -- verify <제품ID>           공통 기록의 불분명한 게시·링크를 조회해요
 //        게시 전 점검이 '게시 가능'인 것만. 공개 주소는 cloudflared 빠른 터널(기본) 또는 --base-url(이미 파일을 공개해 둔 서버)
 //   npm run ig -- refresh-token             Instagram Login 토큰 갱신 → .env의 IG_ACCESS_TOKEN 교체
 // .env의 IG_API_SETUP=unified는 Unified Login, 생략하면 기존 Instagram Login. Unified Login은 IG_USER_ID 필수.
@@ -15,8 +16,7 @@ const { createClient, explain, IgError } = require('./lib/instagram');
 const { resolveCaption } = require('./lib/ig-caption');
 const { generateCaption } = require('./lib/ig-caption-writer');
 const { toJpegs } = require('./lib/ig-media');
-const { startFileServer, openTunnel, waitReachable } = require('./lib/public-url');
-const { appendEvent } = require('./lib/events');
+const { createCliPublisher, publishWithManager } = require('./lib/ig-cli-publisher');
 
 const cfg = require('../config/instagram.json');
 const igDir = (id) => paths.product(id, 'output', 'instagram');
@@ -78,49 +78,8 @@ async function check({ log = console.log, ig = client() } = {}) {
   return { me, used, total, permissions: granted };
 }
 
-async function publish(id, { dryRun = false, baseUrl = null, log = console.log, ig = null } = {}) {
-  const { run: precheck } = require('./precheck');
-  // 게시 순간에는 새 글을 만들지 않아요. prepare/caption으로 작성하고 먼저 확인해요.
-  const prepared = await prepare(id, { log, generate: false });
-  const report = precheck(id);
-  const names = prepared.jpgs.map((f) => path.basename(f));
-  if (!report?.ready) {
-    const blockers = (report?.checks || []).filter((c) => c.status === 'fail' || c.status === 'todo').map((c) => `${c.label}: ${c.detail}`);
-    if (!dryRun) throw new Error(`게시 전 점검을 통과하지 못했어요\n- ${blockers.join('\n- ')}`);
-    log(`[시험] 실제 게시라면 막혀요:\n- ${blockers.join('\n- ')}`);
-  }
-  if (dryRun) {
-    log(`[시험] 게시하지 않아요. 카드 ${names.length}장(${names.join(', ')}) + 캡션 ${prepared.caption.length}자`);
-    log('--- 캡션 ---\n' + prepared.caption);
-    return { dryRun: true };
-  }
-  const api = ig || client();
-  const { me, used, total } = await check({ ig: api, log });
-  if (Number.isFinite(used) && Number.isFinite(total) && used >= total) throw new IgError('게시 한도(24시간)에 도달했어요. 한도가 회복된 뒤 다시 시도해 주세요');
-  let server = null;
-  let tunnel = null;
-  try {
-    let urls;
-    if (baseUrl) {
-      urls = names.map((n) => `${baseUrl.replace(/\/$/, '')}/${n}`);
-    } else {
-      server = await startFileServer(prepared.jpgs);
-      tunnel = await openTunnel(server.port);
-      urls = prepared.jpgs.map((f) => tunnel.url + server.pathOf(f));
-      log('공개 주소 확인 중…');
-      if (!(await waitReachable(urls[0]))) throw new Error('공개 주소에서 이미지가 열리지 않아요 (터널 확인)');
-    }
-    log(`게시 중: @${me.username} · ${urls.length}장`);
-    const r = await api.publishImages(me.user_id, urls, prepared.caption);
-    const record = { product_id: id, published_at: new Date().toISOString(), account: me.username, media_id: r.media_id, permalink: r.permalink, cards: names.length, key: prepared.post.key };
-    fs.writeFileSync(path.join(igDir(id), 'published.json'), JSON.stringify(record, null, 2) + '\n');
-    if (process.env.CARDNEWS_NO_LOG !== '1') appendEvent(id, 'published', { job_id: null, channel: 'instagram', media_id: r.media_id, permalink: r.permalink, cards: names.length });
-    log(`게시 완료: ${r.permalink || r.media_id}`);
-    return record;
-  } finally {
-    tunnel?.close();
-    await server?.close();
-  }
+async function publish(id, { ig = null, baseUrl = null, publisher = null, ...options } = {}) {
+  return publishWithManager(id, { ...options, publisher: publisher || createCliPublisher({ ig, baseUrl }) });
 }
 
 // .env의 IG_ACCESS_TOKEN 줄만 새 값으로 바꿈 (다른 줄은 그대로, 값은 출력하지 않음)
@@ -145,14 +104,21 @@ async function main(argv) {
   };
   if (cmd === 'check') return check();
   if (cmd === 'refresh-token') return refreshToken();
-  if (!id || !/^[a-z0-9-]+$/.test(id)) throw new Error('사용법: npm run ig -- check | caption <제품ID> [--force] | prepare <제품ID> | publish <제품ID> [--dry-run] [--base-url URL] | refresh-token');
+  if (!id || !/^[a-z0-9-]+$/.test(id)) throw new Error('사용법: npm run ig -- check | caption <제품ID> [--force] | prepare <제품ID> | publish <제품ID> [--dry-run] [--version HASH --confirm] [--base-url URL] | refresh-token');
   if (cmd === 'caption') {
     const result = await captionOf(id, { force: rest.includes('--force') });
     console.log(`게시 글을 작성했어요 (${result.chars}자). 게시 전에 내용을 확인해 주세요.\n\n${result.text}`);
     return result;
   }
   if (cmd === 'prepare') return prepare(id);
-  if (cmd === 'publish') return publish(id, { dryRun: rest.includes('--dry-run'), baseUrl: opt('--base-url') });
+  if (cmd === 'publish') return publish(id, { dryRun: rest.includes('--dry-run'), baseUrl: opt('--base-url'), version: opt('--version'), confirm: rest.includes('--confirm') });
+  if (cmd === 'verify') {
+    const publisher = createCliPublisher();
+    publisher.recover([id]);
+    const result = await publisher.verify(id);
+    console.log(JSON.stringify({ state: result.current?.state, permalink: result.current?.permalink, message: result.current?.error?.message || null }, null, 2));
+    return result;
+  }
   throw new Error(`알 수 없는 명령: ${cmd}`);
 }
 
