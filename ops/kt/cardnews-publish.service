@@ -1,0 +1,29 @@
+[Unit]
+Description=Cardnews Instagram publishing and schedules
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=cardnews-publish
+Group=cardnews-data
+SupplementaryGroups=cardnews-media
+UMask=0007
+WorkingDirectory=/opt/cardnews/app
+RuntimeDirectory=cardnews-publish
+RuntimeDirectoryMode=0750
+EnvironmentFile=/etc/cardnews/publish.env
+Environment=CARDNEWS_PRODUCTS_DIR=/var/lib/cardnews/products
+Environment=CARDNEWS_PUBLISH_SOCKET=/run/cardnews-publish/publish.sock
+Environment=IG_PUBLIC_MEDIA_DIR=/var/lib/cardnews/ig-media
+Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/cardnews/browsers
+ExecStart=/usr/local/bin/node scripts/studio-server.js publish
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

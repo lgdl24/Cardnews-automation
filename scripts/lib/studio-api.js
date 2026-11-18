@@ -1,4 +1,4 @@
-// 로컬 제작 API (웹 모드): 웹 제작 화면이 부르는 HTTP API. 개발 서버(npm run studio = vite dev)에서만 켜짐
+// 웹 제작 화면이 부르는 HTTP API. 로컬 개발 서버 또는 팀 전용 서버에서 사용해요.
 // 제품 만들기 → 입력 확인 → 구성안 작업 → 승인/수정 요청 → 문구·출력 작업 → 최종 승인/수정 요청 → 결과 보기 웹에 내보내기
 // 실제 제작은 작업 실행기(job-runner.js)가 내 컴퓨터의 claude -p로 실행
 //
@@ -125,6 +125,9 @@ function createStudio({
   precheckFn,
   // 인스타 게시(B5, #104): 게시 관리자. 테스트는 가짜 인스타 API·JPEG·공개 주소를 넣은 것을 줌
   publisher: publisherIn,
+  forwardInstagram,
+  studioOrigin,
+  captionFn,
   // 예약 게시 확인(30초마다). CARDNEWS_IG_SCHEDULE=off 로 끔 (테스트는 직접 tick)
   igSchedule = process.env.CARDNEWS_IG_SCHEDULE !== 'off',
 } = {}) {
@@ -187,8 +190,11 @@ function createStudio({
     openPublicUrls: igDeps.openPublicUrls,
   });
   // 작업실을 다시 켜면: 진행 중이던 게시는 이어 하지 않고 상태를 정리, 예약은 파일에서 그대로 이어감
-  publisher.recover(listIds());
-  if (igSchedule) publisher.startTimer(listIds);
+  if (!forwardInstagram) {
+    publisher.recover(listIds());
+    if (igSchedule) publisher.startTimer(listIds);
+  }
+  let captionRunning = false;
 
   // 같은 파일이면 다시 검사하지 않음 (진행 중 화면이 자주 새로 고침)
   const cache = new Map();
@@ -863,6 +869,7 @@ function createStudio({
     }
     // 인스타 연결 계정 (이름·24시간 한도만, 토큰은 보내지 않음)
     if (method === 'GET' && parts[0] === 'instagram' && parts[1] === 'account' && parts.length === 2) {
+      if (forwardInstagram) return forwardInstagram(req, res, '/instagram/account', url.search);
       return send(res, 200, await publisher.account({ refresh: url.searchParams.get('refresh') === '1' }));
     }
     // 자료(PDF·이미지·글)로 입력 칸 채우기: 초안만 돌려주고 저장하지 않음 (사람이 확인한 뒤 제품 만들기)
@@ -1057,6 +1064,35 @@ function createStudio({
       // 인스타 게시 (B5, #104): 상태·미리보기 / 사람 확인 / 지금 게시 / 예약·취소 / 게시 여부 확인
       if (parts[2] === 'instagram') {
         const sub = parts[3] || '';
+        if (method === 'POST' && sub === 'caption' && parts.length === 4) {
+          const dir = productDir(id);
+          const data = readJsonSafe(path.join(dir, 'cards.json'));
+          if (data?.stage !== 'approved') throw new HttpError(409, '카드를 최종 승인한 뒤 캡션을 작성해 주세요');
+          if (captionRunning) throw new HttpError(409, '캡션을 작성하고 있어요. 잠시 뒤 다시 확인해 주세요');
+          captionRunning = true;
+          try {
+            const { generateCaption, askClaude } = require('./ig-caption-writer');
+            await (captionFn || generateCaption)({
+              productDir: dir,
+              data,
+              inputText: fs.readFileSync(path.join(dir, 'input.md'), 'utf8'),
+              cfg: require('../../config/instagram.json').caption,
+              caution: require('../../config/caution-expressions.json'),
+              ask: (prompt, schema) => askClaude(prompt, schema, { bin }),
+            });
+            return send(res, 200, { ok: true });
+          } catch (e) {
+            throw new HttpError(422, e.message);
+          } finally {
+            captionRunning = false;
+          }
+        }
+        if (forwardInstagram) {
+          const suffix = parts.length === 3 && method === 'GET' ? '' :
+            parts.length === 4 && ['ack', 'publish', 'schedule', 'verify'].includes(sub) ? `/${sub}` : null;
+          if (suffix === null) throw new HttpError(404, '없는 API예요');
+          return forwardInstagram(req, res, `/products/${id}/instagram${suffix}`, url.search);
+        }
         if (method === 'GET' && parts.length === 3) return send(res, 200, publisher.status(id, { refresh: url.searchParams.get('refresh') === '1' }));
         if (parts.length !== 4) throw new HttpError(404, '없는 API예요');
         if (method === 'POST' && sub === 'ack') return send(res, 200, publisher.acknowledge(id, await readBody(req)));
@@ -1117,8 +1153,10 @@ function createStudio({
     const url = new URL(req.url, 'http://localhost');
     if (!url.pathname.startsWith(API)) return false;
     try {
-      const host = String(req.headers.host || '').replace(/:\d+$/, '');
-      if (!LOCAL_HOSTS.has(host)) throw new HttpError(403, '이 컴퓨터에서만 쓸 수 있어요');
+      const host = String(req.headers.host || '');
+      if (studioOrigin ? host !== new URL(studioOrigin).host : !LOCAL_HOSTS.has(host.replace(/:\d+$/, ''))) {
+        throw new HttpError(403, '허용한 작업실 주소로 접속해 주세요');
+      }
       if (url.pathname === FIGMA_API || url.pathname.startsWith(`${FIGMA_API}/`)) {
         // 피그마 플러그인(다른 출처)에서 오는 요청: 응답을 읽을 수 있게 열어 두고, 연결 코드로 막음
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1136,7 +1174,9 @@ function createStudio({
       if (req.method !== 'GET') {
         if (req.headers['x-studio'] !== '1') throw new HttpError(403, '웹 제작 화면에서만 요청할 수 있어요');
         const origin = req.headers.origin;
-        if (origin) {
+        if (studioOrigin) {
+          if (origin !== studioOrigin) throw new HttpError(403, '작업실에서 보낸 요청만 받을 수 있어요');
+        } else if (origin) {
           const o = new URL(origin);
           if (!LOCAL_HOSTS.has(o.hostname) && o.hostname !== '::1') throw new HttpError(403, '다른 사이트에서 온 요청이에요');
         }
