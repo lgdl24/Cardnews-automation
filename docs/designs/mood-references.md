@@ -36,7 +36,7 @@
 | `avoid` | 이 레퍼런스를 따라 할 때 피할 것 |
 | `in_repo` | 이미 옮긴 디자인 묶음 이름, 없으면 null |
 
-## 들어 있는 레퍼런스 (17개)
+## 들어 있는 레퍼런스 (19개)
 
 | id | 분위기 | 출처 |
 |---|---|---|
@@ -57,6 +57,8 @@
 | citrus-fresh | 산뜻·상큼·노랑 | 핀터레스트 |
 | pink-reminder | 다정·부드러운·연분홍·루틴 | 핀터레스트 |
 | bold-question-grid | 대담·친근·그래픽·대화형 | 핀터레스트 |
+| chat-probs-solution | 공감·대화형·친근 | 핀터레스트 (chat 배치: 표지 말풍선) |
+| notification-reminder | 일상·리마인더·미니멀 | 핀터레스트 (notice 배치: 표지 알림 카드) |
 
 핀터레스트 조사 노트(디자인 갈래, 첫 장 훅 형식): [beauty-cardnews-pinterest.md](../research/beauty-cardnews-pinterest.md)
 
