@@ -28,6 +28,27 @@ function publicHead(directory) {
   };
 }
 
+test('고정 HTTPS 게시 이미지는 공개 폴더 그룹을 따라요 — 제품 폴더 그룹이 따라오면 게이트웨이가 403 (#138)', async (t) => {
+  if (process.platform === 'win32') return t.skip('Windows는 그룹 권한이 달라요');
+  const primary = process.getgid();
+  const other = require('node:child_process').execSync('id -G').toString().trim().split(/\s+/).map(Number).find((g) => g !== primary);
+  if (other === undefined) return t.skip('그룹이 하나뿐이라 시험할 수 없어요');
+  const root = scratch(t);
+  const media = path.join(root, 'media');
+  fs.mkdirSync(media);
+  fs.chownSync(media, process.getuid(), other);
+  fs.chmodSync(media, 0o2750);
+  const jpg = path.join(root, 'card-01.jpg');
+  fs.writeFileSync(jpg, '게시 이미지');
+  fs.chownSync(jpg, process.getuid(), primary); // 제품 폴더(다른 그룹)의 JPEG
+  const staged = await stageFixedMedia([jpg], { ...fixedMediaConfig(base, media), fetchFn: publicHead(media) });
+  const file = path.join(media, new URL(staged.urls[0]).pathname.split('/').slice(-2).join('/'));
+  assert.equal(fs.statSync(file).gid, other, '게이트웨이가 읽는 공개 폴더 그룹');
+  assert.equal(fs.statSync(file).mode & 0o777, 0o640);
+  assert.equal(fs.readFileSync(file, 'utf8'), '게시 이미지');
+  await staged.close();
+});
+
 test('고정 HTTPS에서 게시 요청마다 다른 JPEG를 제공하고 성공·실패 뒤에 정리해요', async (t) => {
   const root = scratch(t);
   const media = path.join(root, 'media');

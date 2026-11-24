@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
+const { inheritGroup } = require('./common');
 
 const CARD_JPEG = /^card-\d{2}\.jpg$/;
 
@@ -27,8 +28,11 @@ async function stageFixedMedia(jpgs, { base, directory, fetchFn = fetch }) {
   try {
     for (const [index, file] of jpgs.entries()) {
       const dest = path.join(target, names[index]);
-      await fs.copyFile(file, dest);
+      // copyFile은 원본(제품 폴더) 그룹을 그대로 가져와서 웹 게이트웨이가 못 읽었어요(403, #138).
+      // 새 파일로 써서 공개 폴더의 그룹(상속)을 따르게 하고, 그래도 다르면 폴더 그룹으로 맞춰요
+      await fs.writeFile(dest, await fs.readFile(file), { mode: 0o640, flag: 'wx' });
       await fs.chmod(dest, 0o640);
+      inheritGroup(dest);
     }
     for (const [index, url] of urls.entries()) {
       const result = await fetchFn(url, { method: 'HEAD', redirect: 'error', signal: AbortSignal.timeout(8000) });
