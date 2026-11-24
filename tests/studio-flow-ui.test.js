@@ -47,6 +47,11 @@ const summaries = [
   { id: 'sun-done', name: '톤업 선크림', brand: 'Brand', stage: 'approved', updated_at: ago(86400), running: false, thumb: { file: 'card-01.png', v: 1 }, png_count: 5, last_job: { kind: 'copy', ok: true, error_code: null, ts: ago(86400) } },
 ];
 
+const glowif = {
+  ...summaries[1], id: 'glowif-light-layer-gel', name: 'GLOWIF 라이트 레이어 젤',
+  glowif: { label: '바른 뒤 끈적임', reviews: 588, products: 120 },
+};
+
 async function open(t, url, { width = 1440, scheme = 'light', product = detail(), requests = [] } = {}) {
   const context = await browser.newContext({ viewport: { width, height: 1000 }, colorScheme: scheme, reducedMotion: 'reduce' });
   t.after(() => context.close());
@@ -64,7 +69,7 @@ async function open(t, url, { width = 1440, scheme = 'light', product = detail()
     if (req.method() !== 'GET') { requests.push({ method: req.method(), path: u.pathname, body: req.postDataJSON() }); return route.fulfill({ json: { product } }); }
     if (u.pathname.endsWith('/status')) return route.fulfill({ json: status });
     if (u.pathname.endsWith('/jobs')) return route.fulfill({ json: status.jobs });
-    if (u.pathname.endsWith('/products')) return route.fulfill({ json: { products: summaries } });
+    if (u.pathname.endsWith('/products')) return route.fulfill({ json: { products: u.searchParams.get('source') === 'glowif' ? [glowif] : summaries } });
     return route.fulfill({ json: product });
   });
   await page.goto(origin + url, { waitUntil: 'networkidle' });
@@ -88,6 +93,21 @@ async function captureAll(page, name) {
     }
   }
 }
+
+test('Glowif 사이드바에서 리뷰 집계를 보고 기존 제품 검토 화면을 열어요', async (t) => {
+  const page = await open(t, '/studio', { product: detail({ id: glowif.id, name: glowif.name, glowif: glowif.glowif }), width: 375 });
+  await page.getByRole('navigation', { name: '주 메뉴' }).getByRole('link', { name: 'Glowif', exact: true }).click();
+  await page.getByRole('heading', { name: 'Glowif', exact: true }).waitFor();
+  const tile = page.locator('.studio-tile').filter({ hasText: glowif.name });
+  await tile.waitFor();
+  assert.equal(await page.locator('.studio-tile').count(), 1);
+  assert.match(await tile.innerText(), /리뷰 588건.*상품명 120개/);
+  await noOverflow(page);
+  await tile.click();
+  await page.getByRole('heading', { name: glowif.name }).waitFor();
+  assert.match(page.url(), /\/studio\/glowif-light-layer-gel$/);
+  assert.equal(await page.getByRole('link', { name: 'Glowif 목록' }).getAttribute('href'), '/glowif');
+});
 
 test('목록: 대표 카드·상태 배지·이어서 할 일, 실패만 따로 보기', async (t) => {
   const page = await open(t, '/studio');

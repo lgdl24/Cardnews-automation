@@ -5,6 +5,7 @@ import { Icon, type IconName } from './Icon';
 
 const menu: { to: string; label: string; icon: IconName; match: (p: string) => boolean }[] = [
   { to: '/studio', label: '제작 작업실', icon: 'studio', match: (p) => p.startsWith('/studio') },
+  { to: '/glowif', label: 'Glowif', icon: 'layers', match: (p) => p === '/glowif' },
   { to: '/', label: '콘텐츠 라이브러리', icon: 'grid', match: (p) => p === '/' || p.startsWith('/projects') },
   { to: '/eval', label: '평가 대시보드', icon: 'chart', match: (p) => p.startsWith('/eval') },
   { to: '/compare', label: '결과 비교', icon: 'compare', match: (p) => p.startsWith('/compare') },
@@ -14,7 +15,7 @@ export function Header() {
   const { pathname } = useLocation();
   const { status } = useStudioStatus();
   // 작업실 메뉴는 로컬 제작 API가 켜져 있을 때(또는 그 화면에 있을 때)만
-  const visible = menu.filter((m) => m.to !== '/studio' || status || pathname.startsWith('/studio'));
+  const visible = menu.filter((m) => !['/studio', '/glowif'].includes(m.to) || status || m.match(pathname));
   const current = menu.find((m) => m.match(pathname))?.label ?? (pathname === '/guide' ? '이용 가이드' : '');
   const guideActive = pathname === '/guide';
   return (

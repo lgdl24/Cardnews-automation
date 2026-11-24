@@ -126,6 +126,7 @@ export interface ProductSummary {
   last_job?: { kind: JobKind | null; ok: boolean; error_code: string | null; ts: string } | null;
   /** 인스타 게시 요약 (게시 기록이 있을 때) */
   instagram?: { state: IgState | null; published: boolean; permalink: string | null; scheduled_at: string | null; schedule_state: string | null } | null;
+  glowif?: { source: 'aihub-71603'; topic: string; label: string; reviews: number; products: number; from: string | null; to: string | null };
 }
 export interface StudioCard {
   no: number;
@@ -150,6 +151,7 @@ export interface Actions {
   can_ai_card?: boolean;
   can_ai_bg?: boolean;
   ai_busy?: boolean;
+  ai_pending?: boolean;
   can_plan: boolean;
   can_approve_plan: boolean;
   can_revise_plan: boolean;

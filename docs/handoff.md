@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-24 | Codex | #127 · `feat/127-glowif-review-drafts` | **Glowif 첫 제작 흐름**. 로컬 AI-Hub ZIP 집계 → 가상 제품 누끼·v2 구성안 → Glowif 목록 → 기존 구성안 승인·문구 검증·GPT 5장 디자인·최종 검토를 연결했어요. [실행과 검토 방법](glowif.md) |
 | 2026-11-24 | Claude | #125 · `fix/125-friendly-failures` | **웹 구성안이 입력 확인에서 항상 멈추던 문제**: `package.json`의 게시 전 점검 이름 `precheck`를 npm이 `npm run check` 앞에 자동 실행(제품ID 없이 실패) → **`npm run publish-check`로 이름 변경**, `pre·post` 이름 충돌 검사 추가(`tests/job-runner.test.js`). **실패 안내를 쉬운 말로**: `web/src/studio/status.ts`의 `failureGuide`(오류 코드+Claude 글 → 입력/카드/다시/기다림/관리자), 고칠 곳 목록(입력 칸 이름을 누르면 `/studio/<id>/edit?field=<칸>`으로 이동·표시, 카드 번호·칸), 원문·오류 코드는 「자세한 기록」에 접고 복사. 입력 확인·검증·카드별 문제·제작 기록의 오류 코드도 우리말 꼬리표. 인스타 오류 안내(`explain`)도 할 일 먼저·관리자 단서는 괄호 |
 | 2026-11-24 | Claude | #123 · `feat/123-deploy-mail` | **배포 실패 메일 알림**: CI 실패·빌드 실패·되돌림·되돌린 뒤 이상 때 `ops/kt/deploy/notify.py`가 Resend HTTPS API로 메일(KT는 메일 포트 막힘). 설정 `/etc/cardnews/notify.env`(root 600, `RESEND_API_KEY`·`NOTIFY_EMAIL`), 없으면 알림 없이 배포. 시험 `cardnews-deploy.sh --test-notify`. 운영 안내 「실패 메일 알림」 |
 | 2026-11-24 | Claude | #120 · `feat/120-ci-cd` | **CI/CD**: GitHub Actions `CI`(PR·main, `npm test`·웹 빌드·`test:web`, 읽기 권한만)를 main 필수 검사로. KT는 `cardnews-deploy.timer`가 5분마다 main을 가져와 CI 성공 커밋만 배포 — 작업·게시·30분 안 예약이 있으면 미룸, 권한 없는 `cardnews-build`가 `/opt/cardnews/releases/<커밋>`에 빌드, `/opt/cardnews/app` 연결 전환, 정상 응답 없으면 자동 되돌리기. 작업실 하단에 배포 버전 표시(`CARDNEWS_DEPLOY_STATUS_FILE`). **main 병합 = 5~10분 뒤 KT 반영**. 운영 안내 「자동 배포」 |
@@ -17,9 +18,15 @@
 | 2026-11-18 | Codex | #110 · `feat/110-instagram-publish-unified` · [PR #111](https://github.com/lgdl24/Cardnews-automation/pull/111) | 사용자 승인으로 #109를 main에 병합했어요. CLI·웹 게시 관리자/기록·프로세스 잠금·불분명 상태·예약을 통합했고 실제 게시 없이 265/31 검사·빌드를 통과했어요. 사용법은 `docs/instagram-publish.md`예요. |
 | 2026-11-17 | Codex | #107 · `feat/107-instagram-caption` · [PR #109](https://github.com/lgdl24/Cardnews-automation/pull/109) | B 방식으로 승인 근거 기반의 새 게시 글 작성·별도 의미 검토를 추가했어요. 첫 줄 AI 활용·맥락별 태그, 카드/원문/규칙 변경 무효화, CLI·웹·점검 캡션 일치와 사람 재확인을 연결했어요. 편집 UI·실제 게시·예약은 실행하지 않았어요. 아래 #107 절을 확인해요. |
 | 2026-11-17 | Claude | PR #91·#93·#95·#98·#99·#101·#103·#105 → `main` | **열린 PR 8개 main 병합 (이규동 결정)**: 이용석 #89·#92·#94·#97·#100, 작업실 개편 #102, 인스타 B1~B4·Unified Login(#96)·B5(#104). 입력 화면은 #92의 01 자료·브랜드 → 02 채운 내용 확인 → 03 제작 조건 구성 위에 #102의 단계별 진행·선택 항목 접기·오류 요약·임시 저장. AI 배경 패널은 #102 접기 구조 + #89 채팅 대체(요청문 복사·이미지 올리기). `render.js`는 AI 활용 메타데이터 + 브랜드 배치 둘 다, `brand.js` 배경 요청문 3종(Codex·채팅·합성) 모두 의료·약사·전문가·흰 가운 금지. 병합 뒤 main: `npm test` 245, `test:web` 30, `test:render` 17, 웹 빌드 통과 |
-| 2026-11-17 | Claude | #104 · `feat/104-instagram-web-publish` (`fix/96` + #102 합침) | **작업실 인스타 수동·예약 게시(B5)**: `scripts/lib/ig-publisher.js`(상태 `products/<id>/output/instagram/ig-publish.json`, 버전 해시, 같은 버전 1회, 결과 불분명→조회 뒤 재시도, 재시작 복원, 예약 30초 확인·놓침 10분), `ig-publish-deps.js`(토큰·터널·JPEG·점검 프로세스), API `/instagram/account`·`/products/:id/instagram/*`, 화면 `PublishPanel.tsx`. 새 환경값 `IG_PUBLIC_BASE_URL`(고정 공개 주소, 나중 KT 서버)·`CARDNEWS_IG_SCHEDULE=off`(예약 확인 끔). 게시 전 점검은 작업실이 별도 프로세스로 실행(시험 폴더도 동작) |
-| 2026-11-17 | Claude | #102 · `feat/102-web-studio-redesign` | **웹 UI 개편 2차**: 디자인 기준 `design-system/cardnews-studio/MASTER.md`(Pretendard 단일·포인트색 1개·상태색 6종 토큰, 기존 `--color-*`는 별칭). 작업실 목록 대표 카드·상태, 제작 진행 5단계·실제 진행/대기/실패 원인·다시 하기, 구성안·카드 검토 결정 막대, 입력 오류 요약·임시 저장(localStorage `cardnews-draft:*`, 이미지 제외). `GET /api/studio/products` 요약에 `thumb`·`png_count`·`card_count`·`last_job` 추가(읽기 전용). 새 검사 `tests/studio-flow-ui.test.js`. 인스타 웹 게시는 제안만 `docs/proposals/instagram-web-publish.md` |
-| 2026-11-17 | Codex | #96 · `fix/96-instagram-unified-login` (`feat/instagram` 위), PR #99 | Unified Login·게시 권한·한도 확인 지원, Bearer 헤더와 오류 토큰 숨김. 이전 실험 이미지의 GPT 사용 표시도 검토에 반영. 게시 명령의 `check` 이름 충돌 수정, Cloudflare는 연결 등록을 기다린 뒤 DNS 전파 15초 대기. 사용자 승인 후 젤크림 5장 첫 실제 게시·캡션·순서 검증 완료. 아래 게시 링크와 기록 위치 참조 |
+
+## 현재 작업 — Glowif 리뷰 기반 제작 #127 (Codex, 2026-11-24)
+
+- [이슈 #127](https://github.com/lgdl24/Cardnews-automation/issues/127), `feat/127-glowif-review-drafts`, 시작점 `71b2c19`. 기존 제품 승인·게시 기능을 재사용해요.
+- AI-Hub 스킨케어 리뷰 15,001건으로 집계를 재현했어요. 끈적임 588건·상품명 120개에서 첫 제품을 골랐고, 기존 투명 누끼로 구성안을 등록한 뒤 동일 파일을 다시 실행해도 초안이 하나인 것을 확인했어요.
+- Glowif 제품의 1·2·5장 공통 근거, 제품명·답 부제와 마무리 규칙을 검사해요. 카드 5장이 모두 현재 문구의 GPT 디자인이어야 최종 승인과 게시 점검을 통과해요.
+- 검증은 `npm test` 282개, `npm run test:web` 35개, `npm run test:render` 17개, 웹 빌드 통과예요. 기존 누끼와 검증한 시험 문구를 사용해 실제 Codex로 GPT 디자인 5장을 출력했어요. 제품을 넣은 1·2장의 잠금 검사에서 이동 0px, 색 차이 각각 8.5·6.7이었고 5장 모두 1080×1080과 AI 이미지 메타데이터를 확인했어요.
+- 이 환경에서 Claude Code 로그인 상태가 확인되지 않아 실제 Claude의 문구 작성 호출은 확인하지 못했어요. 구성안 승인 뒤 문구 작업이 이어지는 일반 웹 흐름과 Glowif의 최종 승인·게시 차단은 테스트로 검증했어요.
+- 실제 리뷰 파일과 생성물은 비공개 시험 폴더에서만 사용해요. 새 리뷰 제공처 확보 후 KT에서 하루 한 번 증분 수집을 연결할 예정이에요.
 
 ## 현재 작업 — CI/CD #120 (Claude, 2026-11-24)
 
