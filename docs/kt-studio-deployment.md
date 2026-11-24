@@ -117,6 +117,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now cardnews-deploy.time
 - 실패한 커밋을 다시 시도: 원인을 고친 새 커밋을 병합해요. 같은 커밋을 다시 하려면 `sudo rm /var/lib/cardnews/deploy/failed-<커밋>`
 - 손으로 되돌리기: `ls -t /opt/cardnews/releases` → `sudo ln -sfn /opt/cardnews/releases/<이전> /opt/cardnews/app && sudo systemctl restart cardnews-publish cardnews-studio`
 - 자동 배포 멈추기: `sudo systemctl disable --now cardnews-deploy.timer`
+- 되돌리기 훈련: `sudo /opt/cardnews/deploy/cardnews-deploy.sh --rollback-drill` — 지금 버전을 복사해 일부러 고장 낸 버전으로 전환한 뒤, 고장 감지 → 원래 버전 복귀 → 정상 확인까지 해요. 작업실이 1~2분 끊기고, 작업·게시가 있으면 하지 않아요.
 - 실제 인스타 게시 시험 중에는 게시가 진행·예약된 동안 자동으로 미뤄요. 그래도 그 시간에는 병합하지 않는 게 좋아요.
 
 ## 설치 후 확인

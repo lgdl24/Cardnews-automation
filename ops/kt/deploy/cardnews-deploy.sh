@@ -104,10 +104,51 @@ switch_to() { # release_dir
   ln -sfn "$1" "$APP.next" && mv -T "$APP.next" "$APP"
 }
 
+# 바쁘면 BUSY_REASON에 이유를 넣고 1을 돌려줘요
+check_busy() {
+  BUSY_REASON=""
+  local studio_json args=()
+  studio_json=$(mktemp)
+  if systemctl is-active -q cardnews-studio; then
+    if curl -fsS -m 10 --unix-socket "$STUDIO_SOCK" -H "Host: $(studio_host)" http://localhost/api/studio/status -o "$studio_json"; then
+      args=(--studio-status "$studio_json")
+    else
+      rm -f "$studio_json"; BUSY_REASON="작업실 상태를 확인하지 못했어요"; return 1
+    fi
+  fi
+  if pgrep -u cardnews-studio -f 'ai-cli/bin/(claude|codex)' >/dev/null; then
+    rm -f "$studio_json"; BUSY_REASON="Claude·Codex 작업이 실행 중이에요"; return 1
+  fi
+  local out
+  if ! out=$(python3 "$BUSY_CHECK" --products "$PRODUCTS" --guard-minutes "$GUARD_MINUTES" "${args[@]}"); then
+    rm -f "$studio_json"; BUSY_REASON=$(echo "$out" | paste -sd ';'); return 1
+  fi
+  rm -f "$studio_json"
+  return 0
+}
+
 # ── 0) 처음 한 번은 설치 절차(운영 안내 「자동 배포」)로 app을 연결로 바꿔 둬야 해요
 if [ ! -L "$APP" ]; then
   log "중단: $APP 이 릴리스 연결(심볼릭 링크)이 아니에요. 운영 안내의 첫 설치 절차를 먼저 해요"
   exit 1
+fi
+
+# ── 되돌리기 훈련: 지금 버전을 복사해 일부러 고장 낸 뒤 전환 → 고장 감지 → 원래 버전으로 되돌리기를 확인해요
+#    sudo /opt/cardnews/deploy/cardnews-deploy.sh --rollback-drill  (작업실이 1~2분 끊겨요)
+if [ "${1:-}" = "--rollback-drill" ]; then
+  if ! check_busy; then log "훈련 미룸: $BUSY_REASON"; exit 1; fi
+  CURRENT=$(readlink -f "$APP")
+  DRILL=$RELEASES/.drill-broken
+  rm -rf "$DRILL" && cp -a "$CURRENT" "$DRILL"
+  echo "process.exit(1); // 되돌리기 훈련용으로 일부러 고장 낸 버전" > "$DRILL/scripts/studio-server.js"
+  log "훈련 시작: 고장 낸 버전으로 전환"
+  switch_to "$DRILL"; restart_services
+  RESULT=0
+  if healthy; then log "훈련 실패: 고장 낸 버전이 정상으로 보였어요"; RESULT=1; else log "훈련: 고장을 감지했어요 → $(basename "$CURRENT")로 되돌림"; fi
+  switch_to "$CURRENT"; restart_services
+  if healthy; then log "훈련 완료: 되돌린 뒤 정상이에요"; else log "경고: 훈련 뒤 정상 응답이 없어요. 직접 확인이 필요해요"; RESULT=1; fi
+  rm -rf "$DRILL"
+  exit $RESULT
 fi
 
 # ── 1) main 가져오기
@@ -138,21 +179,8 @@ case "$CI" in
 esac
 
 # ── 3) 바쁜지 확인
-STUDIO_JSON=$(mktemp)
-trap 'rm -f "$STUDIO_JSON"' EXIT
-STUDIO_ARGS=()
-if systemctl is-active -q cardnews-studio; then
-  if curl -fsS -m 10 --unix-socket "$STUDIO_SOCK" -H "Host: $(studio_host)" http://localhost/api/studio/status -o "$STUDIO_JSON"; then
-    STUDIO_ARGS=(--studio-status "$STUDIO_JSON")
-  else
-    wait_once "$SHA" "작업실 상태를 확인하지 못했어요"; exit 0
-  fi
-fi
-if pgrep -u cardnews-studio -f 'ai-cli/bin/(claude|codex)' >/dev/null; then
-  wait_once "$SHA" "Claude·Codex 작업이 실행 중이에요"; exit 0
-fi
-if ! BUSY=$(python3 "$BUSY_CHECK" --products "$PRODUCTS" --guard-minutes "$GUARD_MINUTES" "${STUDIO_ARGS[@]}"); then
-  wait_once "$SHA" "$(echo "$BUSY" | paste -sd ';')"; exit 0
+if ! check_busy; then
+  wait_once "$SHA" "$BUSY_REASON"; exit 0
 fi
 
 # ── 4) 빌드 (권한 없는 계정)
