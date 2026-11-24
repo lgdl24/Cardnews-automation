@@ -163,7 +163,8 @@ CURRENT=$(readlink -f "$APP")
 SHORT=${SHA:0:7}
 
 # ── 2) CI 결과
-CI=$(curl -fsS -m 20 -H 'Accept: application/vnd.github+json' "$API/commits/$SHA/check-runs?check_name=$CHECK_NAME" 2>/dev/null \
+# Accept 헤더를 붙이면 학교망에서 GitHub API가 500을 돌려줘서 기본 형식(JSON)으로 요청해요 (11.24 확인)
+CI=$(curl -fsS -m 20 "$API/commits/$SHA/check-runs?check_name=$CHECK_NAME" 2>/dev/null \
   | python3 -c 'import json,sys
 runs=json.load(sys.stdin).get("check_runs",[])
 if not runs: print("none")
