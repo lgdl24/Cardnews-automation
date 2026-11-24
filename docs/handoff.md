@@ -21,7 +21,7 @@
 
 ## 현재 작업 — Glowif 리뷰 기반 제작 #127 (Codex, 2026-11-24)
 
-- [이슈 #127](https://github.com/lgdl24/Cardnews-automation/issues/127), `feat/127-glowif-review-drafts`, 시작점 `71b2c19`. 기존 제품 승인·게시 기능을 재사용해요.
+- [이슈 #127](https://github.com/lgdl24/Cardnews-automation/issues/127) · [PR #128](https://github.com/lgdl24/Cardnews-automation/pull/128) · [노션 작업](https://app.notion.com/p/4226bcfa1f8a81438e99de734cc249b7). `feat/127-glowif-review-drafts`, 시작점 `71b2c19`. 기존 제품 승인·게시 기능을 재사용해요.
 - AI-Hub 스킨케어 리뷰 15,001건으로 집계를 재현했어요. 끈적임 588건·상품명 120개에서 첫 제품을 골랐고, 기존 투명 누끼로 구성안을 등록한 뒤 동일 파일을 다시 실행해도 초안이 하나인 것을 확인했어요.
 - Glowif 제품의 1·2·5장 공통 근거, 제품명·답 부제와 마무리 규칙을 검사해요. 카드 5장이 모두 현재 문구의 GPT 디자인이어야 최종 승인과 게시 점검을 통과해요.
 - 검증은 `npm test` 282개, `npm run test:web` 35개, `npm run test:render` 17개, 웹 빌드 통과예요. 기존 누끼와 검증한 시험 문구를 사용해 실제 Codex로 GPT 디자인 5장을 출력했어요. 제품을 넣은 1·2장의 잠금 검사에서 이동 0px, 색 차이 각각 8.5·6.7이었고 5장 모두 1080×1080과 AI 이미지 메타데이터를 확인했어요.
