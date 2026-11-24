@@ -19,6 +19,16 @@
 | 2026-11-17 | Claude | #102 · `feat/102-web-studio-redesign` | **웹 UI 개편 2차**: 디자인 기준 `design-system/cardnews-studio/MASTER.md`(Pretendard 단일·포인트색 1개·상태색 6종 토큰, 기존 `--color-*`는 별칭). 작업실 목록 대표 카드·상태, 제작 진행 5단계·실제 진행/대기/실패 원인·다시 하기, 구성안·카드 검토 결정 막대, 입력 오류 요약·임시 저장(localStorage `cardnews-draft:*`, 이미지 제외). `GET /api/studio/products` 요약에 `thumb`·`png_count`·`card_count`·`last_job` 추가(읽기 전용). 새 검사 `tests/studio-flow-ui.test.js`. 인스타 웹 게시는 제안만 `docs/proposals/instagram-web-publish.md` |
 | 2026-11-17 | Codex | #96 · `fix/96-instagram-unified-login` (`feat/instagram` 위), PR #99 | Unified Login·게시 권한·한도 확인 지원, Bearer 헤더와 오류 토큰 숨김. 이전 실험 이미지의 GPT 사용 표시도 검토에 반영. 게시 명령의 `check` 이름 충돌 수정, Cloudflare는 연결 등록을 기다린 뒤 DNS 전파 15초 대기. 사용자 승인 후 젤크림 5장 첫 실제 게시·캡션·순서 검증 완료. 아래 게시 링크와 기록 위치 참조 |
 
+## 현재 작업 — CI/CD #120 (Claude, 2026-11-24)
+
+- 결정(이규동): main 병합 시 KT 자동 배포. 서버가 공개 저장소 main을 가져가는 방식(GitHub에 서버 접속 정보 없음). 알림은 나중에 정함.
+- CI: `.github/workflows/ci.yml`(PR·main, 1분 30초 안팎). main 보호 규칙의 필수 검사 `CI`(GitHub Actions)로 등록. 실행 환경 apt의 man-db 갱신이 몇 분 걸려 꺼 두고, Playwright 브라우저는 캐시해요. 시스템 한글 글꼴은 설치하지 않아요(저장소 Pretendard 사용).
+- CI에서 실제 `claude`가 없어 `tests/brand.test.js` 작업실 테스트가 503으로 실패 → 가짜 CLI(`tests/fixtures/fake-claude.js`) 지정으로 고침.
+- KT 설치(11.24): 빌드 계정 `cardnews-build`, `/opt/cardnews/repo.git`, `/opt/cardnews/releases/`(기존 앱은 `legacy-20261124`), `/opt/cardnews/app` → 릴리스 연결, `/opt/cardnews/deploy/`, `cardnews-deploy.timer` 켜짐, `studio.env`에 `CARDNEWS_DEPLOY_STATUS_FILE`(백업 `studio.env.before-120`), Playwright 브라우저 폴더 소유 → 빌드 계정.
+- 확인: 첫 자동 배포 `53511c0` 성공(빌드·전환·정상 확인 16초), 작업실 상태 API에 배포 정보, 릴리스는 root 소유·읽기 전용, #116 읽기 제한 코드 포함. `--rollback-drill`로 고장 낸 버전 전환 → 1분 안에 감지 → 원래 버전 복귀·정상(64초).
+- 학교망에서 GitHub API에 `Accept: application/vnd.github+json` 헤더를 붙이면 500이 와서 헤더 없이 요청하도록 고쳤어요(#122 PR). 확인 실패는 '대기'로 남기고 다음 확인 때 다시 시도해요.
+- 남은 일: ① 실패 알림(디스코드·메일 웹훅, 사용자 결정 뒤) ② 배포 스크립트·Caddy·fail2ban·서비스 파일은 자동 배포 대상이 아니라 바뀌면 직접 설치 ③ 이용석 님께 "main 병합 = 5~10분 뒤 KT 반영"·CI 필수 공유.
+
 ## 현재 작업 — 공개 저장소에서 실제 브랜드 자료 빼기 #118 (Claude, 2026-11-24)
 
 - 결정(이규동): 저장소는 공개 유지. 실제 브랜드 제품 사진·공식몰 문구만 저장소에서 뺌. 무료 플랜이라 비공개로 바꾸면 main 보호·비밀값 푸시 차단이 꺼져서 공개를 유지했어요.

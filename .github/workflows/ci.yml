@@ -40,7 +40,8 @@ jobs:
           npm --prefix web ci --include=dev --no-audit --no-fund
 
       # 화면·출력 글꼴은 저장소의 Pretendard를 써서 시스템 한글 글꼴은 설치하지 않아요.
-      # Ubuntu 24.04 실행 환경은 apt 설치 때 man-db 색인 갱신으로 몇 분씩 멈출 수 있어 꺼요.
+      # apt는 실행 환경에 따라 몇 분씩 멈춰서 쓰지 않아요. GitHub의 Ubuntu 실행 환경에는 Google Chrome이
+      # 깔려 있어 Chromium에 필요한 시스템 라이브러리가 이미 있어요. 브라우저 파일만 받아요(캐시).
       - name: Playwright 버전
         id: pw
         run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
@@ -53,14 +54,8 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: 브라우저 설치
-        run: |
-          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
-          sudo rm -f /var/lib/man-db/auto-update
-          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
-            npx playwright install-deps chromium
-          else
-            npx playwright install --with-deps chromium
-          fi
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
 
       - name: 테스트
         run: npm test
