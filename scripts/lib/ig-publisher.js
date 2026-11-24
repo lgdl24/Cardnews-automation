@@ -243,6 +243,7 @@ function createPublisher({
       approved: snap.approved,
       approved_at: snap.approvedAt,
       caption: snap.caption,
+      caption_needs_write: snap.approved && snap.captionErrors.length > 0 && typeof snap.data.caption?.text !== 'string',
       cards: snap.cards.map(({ no, file }) => ({ no, file })),
       check,
       acks: s.acks && s.acks.version === snap.version ? s.acks.ids : [],

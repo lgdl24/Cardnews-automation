@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-18 | Codex | #112 · `feat/112-kt-studio-publish` | KT 작업실과 게시 JPEG의 기준 주소를 무료 서브도메인 HTTPS로 바꿨어요. 팀원별 로그인, 비로그인 접근 차단, 게시 프로세스와 외부의 JPEG 조회를 확인했어요. |
 | 2026-11-18 | Codex | #110 · `feat/110-instagram-publish-unified` · [PR #111](https://github.com/lgdl24/Cardnews-automation/pull/111) | 사용자 승인으로 #109를 main에 병합했어요. CLI·웹 게시 관리자/기록·프로세스 잠금·불분명 상태·예약을 통합했고 실제 게시 없이 265/31 검사·빌드를 통과했어요. 사용법은 `docs/instagram-publish.md`예요. |
 | 2026-11-17 | Codex | #107 · `feat/107-instagram-caption` · [PR #109](https://github.com/lgdl24/Cardnews-automation/pull/109) | B 방식으로 승인 근거 기반의 새 게시 글 작성·별도 의미 검토를 추가했어요. 첫 줄 AI 활용·맥락별 태그, 카드/원문/규칙 변경 무효화, CLI·웹·점검 캡션 일치와 사람 재확인을 연결했어요. 편집 UI·실제 게시·예약은 실행하지 않았어요. 아래 #107 절을 확인해요. |
 | 2026-11-17 | Claude | PR #91·#93·#95·#98·#99·#101·#103·#105 → `main` | **열린 PR 8개 main 병합 (이규동 결정)**: 이용석 #89·#92·#94·#97·#100, 작업실 개편 #102, 인스타 B1~B4·Unified Login(#96)·B5(#104). 입력 화면은 #92의 01 자료·브랜드 → 02 채운 내용 확인 → 03 제작 조건 구성 위에 #102의 단계별 진행·선택 항목 접기·오류 요약·임시 저장. AI 배경 패널은 #102 접기 구조 + #89 채팅 대체(요청문 복사·이미지 올리기). `render.js`는 AI 활용 메타데이터 + 브랜드 배치 둘 다, `brand.js` 배경 요청문 3종(Codex·채팅·합성) 모두 의료·약사·전문가·흰 가운 금지. 병합 뒤 main: `npm test` 245, `test:web` 30, `test:render` 17, 웹 빌드 통과 |
@@ -17,7 +18,17 @@
 | 2026-11-17 | Claude | #94 · `feat/94-rules-v2` | **규칙 v2: 문제 제시 → 해결** (이용석, 11.11 멘토 피드백): `config/skill-version.json` v2. 1번 표지 제목은 원문 사용감·상황을 뒤집은 소비자 문제(뒤집은 근거 ID를 1번 `intent`·`evidence`에), 2번은 그 답, 마지막은 다시 묶음. 질환·기능성 단어를 문제로 쓰지 않고 해결 단정 금지(`docs/style-guide.md` '문제 제시 → 해결', `cardnews-content` Skill 2·3·4·5단계). 데이터 규격·검증·템플릿은 그대로라 v1과 같은 잣대로 비교. 테스트의 실행ID는 버전을 `config/skill-version.json`에서 읽음, 웹 데이터 예시 `index.json` 현재 버전 v2 |
 | 2026-11-17 | Claude | #100 · `feat/100-brand-layouts` (#93·#97 위) | **브랜드 무드 배치** (이용석): `brand_mood.layout` = panel(기존 반투명 면)·editorial(면 없이 큰 영문 세리프 단어·가는 선)·immersive(어두운 장면·흰 글자 가운데). 레퍼런스마다 `layout_id`, 구성안에서 고른 레퍼런스의 배치로 출력(`templates/brand/<배치>/`). 배치별 제품 자리·배경 구도 `scripts/lib/brand.js` BRAND_LAYOUTS(panel 아니면 배경 key에 배치 포함). 새 문구 칸 `display`(영문 장식 단어, 근거 원문 단어의 영어만). 브랜드 묶음에 Pretendard Light(300) |
 | 2026-11-17 | Claude | #97 · `feat/97-mood-references` | **템플릿 레퍼런스** (이용석): `config/mood-references.json` — 비슷한 무드의 뷰티 카드뉴스 템플릿 12개를 특징 글로(이미지 없음, 링크만). 사용자가 고르는 카테고리가 아님. 구성안 작업에서 브랜드 페이지 분위기와 `mood` 단어가 가까운 1~2개를 찾아 `brand_mood`의 장면·사진 연출·색 쓰는 법에 참고(색 값은 브랜드 페이지), evidence에 "레퍼런스 <id>". 설명 `docs/designs/mood-references.md`, 핀터레스트 조사 `docs/research/beauty-cardnews-pinterest.md`, 검사 `tests/mood-references.test.js` |
-| 2026-11-13 | Claude | `feat/instagram` (`feat/ax-compliance` 위) | **인스타 연동 B1~B4 (실계정 시험 전)**: `npm run ig -- check`(토큰으로 계정·24시간 한도) · `prepare <id>`(캡션 `output/instagram/caption.txt` — 카드 문구만, 첫 줄 AI 활용·샘플 표시 / JPEG 변환, PNG의 AI 활용 XMP를 JPEG APP1로) · `publish <id> [--dry-run] [--base-url]`(게시 전 점검 '게시 가능'만 → 비밀 경로 파일 서버 + `cloudflared` 빠른 터널 → 카드별 컨테이너 → 캐러셀 → 게시 → `published.json`·`published` 이벤트) · `refresh-token`(.env의 토큰 줄만 교체). 토큰은 `.env`의 `IG_ACCESS_TOKEN`, 출력·오류 메시지에 안 나옴. 설정 `config/instagram.json`(API v27.0). 이벤트 규격 v0.4. 다음: 실계정 첫 게시 → 작업실 '게시' 패널(B5) → 성과 수집(C) |
+
+## 현재 작업 — KT 팀 작업실과 고정 게시 주소 #112 (Codex, 2026-11-18)
+
+- [#112](https://github.com/lgdl24/Cardnews-automation/issues/112)의 순서와 설치·시험 기준은 [KT 운영 안내](kt-studio-deployment.md)에 있어요. [준비 PR #113](https://github.com/lgdl24/Cardnews-automation/pull/113)은 공통 게시 관리자가 담긴 PR #111의 `420157f` 위에서 시작했어요. #111이 main에 합쳐지면 #113의 대상을 main으로 바꿔요. [노션 작업 트래커](https://app.notion.com/p/41c6bcfa1f8a81709c14f7c7329b8b41)도 진행 중으로 등록했어요.
+- 제작 결과는 기존 승인 데이터·카드 번호순 PNG를 사용해요. 서버가 JPEG를 요청별 경로에 복사하고 공개 HTTPS 응답을 확인한 뒤 인스타로 넘겨요. 일반 종료와 확인 실패 뒤 공개 JPEG를 지워요.
+- `scripts/studio-server.js`와 `ops/kt/`로 팀 인증 뒤 작업실 웹을 실행하고, 인스타 토큰과 예약 실행은 별도 OS 계정 서비스로 옮겨요. 작업실에서는 로그인된 Claude Code로 게시 캡션을 작성·검토해요. 제작 엔진의 이미지·문구 규격과 AI 인증 방식은 기존 흐름을 사용해요.
+- `npm test` 267개, `npm run test:web` 31개, `npm run web:build`를 통과했어요. 가상 제품으로 별도 서버 간 캡션·사람 확인·예약 캐러셀·링크·재게시 차단을 확인했어요. 실제 Caddy를 로컬 HTTPS로 띄워 팀 인증, JPEG GET/HEAD, 다른 파일 차단을 검증했어요.
+- KT에 위 브랜치의 앱을 시험 배포했어요. 사용자가 도메인 없이 공인 IP를 쓰기로 해서 해당 Static NAT에 TCP 443만 추가했어요. Caddy에서 Let's Encrypt IP 인증서를 발급받고 기본 SNI를 공인 IP로 지정했어요. SSH 미리보기는 계속 사용해요.
+- 외부에서 인증서 신뢰, 팀원별 로그인 2개·잘못된 비밀번호 차단, 미로그인 웹·API·데이터 401, 외부 사이트의 수정 요청 차단을 확인했어요. 임시 가상 JPEG는 공개 GET/HEAD 200, 목록·POST와 파일 삭제 이후 GET은 404를 확인했어요. 계정 암호는 개발 기록이나 Git에 넣지 않았어요.
+- 무료 Duck DNS 서브도메인을 우리 서버에 연결하고, 작업실 origin과 게시용 JPEG 주소를 새 도메인으로 함께 바꿨어요. 기존 IP·SSH 미리보기도 유지해요. 새 도메인의 HTTPS, 두 팀 계정과 비로그인 차단, 서버 게시 계정과 외부에서 가상 JPEG 조회·정리를 검증했어요.
+- 다음은 전용 계정의 Claude Code·Codex 로그인, Meta 계정 읽기 확인, 승인받은 실제 1회 게시예요. 시험 서버는 가상 제품으로 실행 중이고 실제 Meta 토큰·게시·예약은 사용하지 않았어요.
 
 ## 현재 작업 — CLI·웹 게시 기록 통합 #110 (Codex, 2026-11-18)
 

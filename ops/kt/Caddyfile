@@ -1,0 +1,24 @@
+{$CARDNEWS_STUDIO_DOMAIN} {
+	@instagramImage {
+		method GET HEAD
+		path_regexp ^/ig-media/[a-f0-9]{32}/card-[0-9]{2}\.jpg$
+	}
+	handle @instagramImage {
+		uri strip_prefix /ig-media
+		root * /var/lib/cardnews/ig-media
+		header Cache-Control "no-store"
+		header X-Content-Type-Options "nosniff"
+		file_server
+	}
+	handle /ig-media/* {
+		respond 404
+	}
+	handle {
+		basic_auth {
+			import /etc/cardnews/studio-users.caddy
+		}
+		reverse_proxy unix//run/cardnews-web/studio.sock {
+			header_up -Authorization
+		}
+	}
+}
