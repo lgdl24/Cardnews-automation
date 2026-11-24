@@ -2,7 +2,7 @@
 
 - 상태: **분석·제안** (2026-10-20, 이용석). 규칙·템플릿·코드·규칙 버전은 안 바꿈. 아래 방향은 승인된 결정이 아님
 - 관련: [글 무드·제품 색 무드 제안](../proposals/mood-proposal.md) (#39), 제품 색 + 대비 검사 (#38, 이규동 구현 중)
-- 시안 파일: [design-reference-review/](design-reference-review/) — 표지 시안 3개(HTML·PNG), 현재 v1 출력 묶음
+- 시안 파일: 표지 시안 3개(HTML·PNG), 현재 v1 출력 묶음 — 실제 브랜드 제품 사진이 들어 있어 공개 저장소에서 뺐어요(#118). 각자 컴퓨터의 사본(`cardnews-private-assets`)에서 봐요.
 - 퍼플 후속: [dalba-purple-redesign](dalba-purple-redesign/README.md) — 표지 A·B 비교, B 라일락 선택 뒤 구현 범위 (제안)
 
 ## 0. 확인 범위와 한계
@@ -19,7 +19,7 @@
 
 실제 제작물(퍼플 v1)과 가상 예시(r1)를 나란히 봤다. 측정값은 출력 HTML을 1080px로 열어 잰 값.
 
-![현재 v1 출력](design-reference-review/current-v1-purple.png)
+> 시안 이미지·HTML은 실제 브랜드 제품 사진이 들어 있어 공개 저장소에서 뺐어요(#118). 각자 컴퓨터의 사본(`cardnews-private-assets`)에서 봐요.
 
 | 문제 | 근거 (퍼플 v1) |
 |---|---|
@@ -128,11 +128,11 @@
 
 같은 사실(원문 `input.md`, 현재 `cards.json`)만 썼다. 색은 #38 시제품의 퍼플 계산값(대표 #8C7E97, primary #7E50A5)에서 대비를 맞춰 더 짙게 씀.
 
-![표지 시안 3개](design-reference-review/covers-compare.png)
+> 시안 이미지·HTML은 실제 브랜드 제품 사진이 들어 있어 공개 저장소에서 뺐어요(#118). 각자 컴퓨터의 사본(`cardnews-private-assets`)에서 봐요.
 
 | | A. 프리미엄 | B. 더마·팩트 | C. 내추럴·데일리 |
 |---|---|---|---|
-| 파일 | [HTML](design-reference-review/cover-a-premium.html) · [PNG](design-reference-review/cover-a-premium.png) | [HTML](design-reference-review/cover-b-derma.html) · [PNG](design-reference-review/cover-b-derma.png) | [HTML](design-reference-review/cover-c-daily.html) · [PNG](design-reference-review/cover-c-daily.png) |
+| 파일 | (#118로 저장소에서 뺌) | (#118로 저장소에서 뺌) | (#118로 저장소에서 뺌) |
 | 제목 | 노란 톤은 잡고 / 화사한 쿨톤으로 (v1 그대로) | 노란기는 잡고 / 백탁 없이 쿨톤 보정 | 매일 부담 없이 / 화사한 쿨톤 보정 |
 | 원문 근거 | “보라빛으로 노란 톤은 잡고 화사하게 쿨톤 보정” | “하얗게 들뜨는 백탁 현상 없이 노란기를 잡아주는 쿨톤 보정 효과”, 기능성 심사 문장(각주) | “매일 부담 없이 사용할 수 있는 데일리 UV 케어”, “세미 매트 제형” |
 | 제품 크기 | 205×436px, 면적 7.7% (원본 1.2배 확대) | 161×341px, 4.7% (0.94배) | 259×550px, 12.2% (1.5배) |

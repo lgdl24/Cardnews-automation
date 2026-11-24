@@ -4,7 +4,7 @@
 - 현재 결과 보존: `cardnews-evalinputs/products/dalba-toneup-purple/output/png` (v1, 기본 테마) 그대로
 - 확인일 2026-10-20
 
-![비교](compare-covers.png)
+> 시안 이미지·HTML은 실제 브랜드 제품 사진이 들어 있어 공개 저장소에서 뺐어요(#118). 각자 컴퓨터의 사본(`cardnews-private-assets`)에서 봐요.
 
 현재 v1 / #38 색만 적용 / A 화이트 / B 라일락. 문구는 4개 모두 같음(cards.json 1번).
 
@@ -65,7 +65,7 @@
 
 | | A 화이트 | B 라일락 |
 |---|---|---|
-| 파일 | [HTML](cover-a-white.html) · [PNG](cover-a-white.png) | [HTML](cover-b-lilac.html) · [PNG](cover-b-lilac.png) |
+| 파일 | (#118로 저장소에서 뺌) | (#118로 저장소에서 뺌) |
 | 구성 | 위 가운데 글자 → 아래 제품 정면, 대칭 | 왼쪽 큰 제목 / 오른쪽 기울인 제품, 사선 |
 | 제품 | 298×610px, 면적 15.6% (자른 이미지 1.6배) | 312×640px, 17.1% (1.7배) |
 | 느낌 | 공식몰 상단처럼 깨끗, 제품 정보가 먼저 | 상세 1번처럼 라일락 무드, 제목이 먼저 |
