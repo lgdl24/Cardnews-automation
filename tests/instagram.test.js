@@ -66,7 +66,9 @@ test('한 장이면 단일 게시, 11장 이상은 거절, 처리 실패·오류
   const err = await bad.me().catch((e) => e);
   assert.ok(err instanceof IgError);
   assert.ok(!err.message.includes(TOKEN), '오류 메시지에 토큰이 없어야 함');
-  assert.match(explain(err), /토큰이 만료/);
+  assert.match(explain(err), /인스타 연결이 만료/);
+  assert.match(explain(new IgError('(#100) Invalid parameter', { status: 400, code: 100 })), /^인스타가 요청을 받아 주지 않았어요.*\(인스타 응답: \(#100\) Invalid parameter\)$/, '영어 원문 앞에 할 일을 붙임');
+  assert.equal(explain(new IgError('인스타 API에 연결하지 못했어요 (ETIMEDOUT)')), '인스타 API에 연결하지 못했어요 (ETIMEDOUT)', '우리말 안내는 그대로');
   assert.throws(() => createClient({ token: '' }), /IG_ACCESS_TOKEN이 없어요/);
 });
 

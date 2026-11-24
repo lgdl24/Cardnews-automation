@@ -7,7 +7,7 @@
     "test:render": "node --test tests/render.test.js tests/calibrate.test.js tests/premium-render.test.js tests/new-designs-render.test.js tests/design-fidelity.test.js",
     "test:web": "node --test tests/plan-evidence-ui.test.js tests/premium-form-ui.test.js tests/workspace-ui.test.js tests/eval-dashboard-ui.test.js tests/studio-flow-ui.test.js tests/studio-publish-ui.test.js",
     "check": "node scripts/check-input.js",
-    "precheck": "node scripts/precheck.js",
+    "publish-check": "node scripts/precheck.js",
     "ig": "node scripts/instagram.js",
     "validate": "node scripts/validate.js",
     "render": "node scripts/render.js",

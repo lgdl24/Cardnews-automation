@@ -5,9 +5,9 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type R
 import { Link, useParams } from 'react-router';
 import {
   JOB_LABEL, aiBgUrl, aiCardUrl, brandShotUrl, describeProgress, figmaEditedUrl, imageUrl, pngUrl, studioFetch, usePolling, useStudioStatus,
-  type ProductDetail, type Report, type Revision, type RevisionType, type StudioJob,
+  type ProductDetail, type Report, type RevisionType, type StudioJob,
 } from '../../studio/api';
-import { STEP_NAMES, errorInfo, formatAgo, formatElapsed, stepStates, workStatus, type StepState } from '../../studio/status';
+import { STEP_NAMES, errorShort, failureGuide, formatAgo, formatElapsed, inputFieldOf, plainErrorLine, plainWhere, stepStates, workStatus, type StepState } from '../../studio/status';
 import { useIndex } from '../../data/load';
 import { buildZip } from '../../lib/zip';
 import { downloadBlob } from '../../lib/download';
@@ -84,7 +84,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
       setBusy(false);
     }
   };
-  const openRevision = (draft?: Revision | null) => {
+  const openRevision = (draft?: Partial<RevisionDraft> | null) => {
     setRevision({ types: draft?.types ?? [], cards: draft?.cards ?? [], memo: draft?.memo ?? '' });
     requestAnimationFrame(() => formRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   };
@@ -131,7 +131,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
       {failed && (
         <FailurePanel job={failed} detail={p} busy={busy}
           onRetry={(kind) => act(`/products/${id}/jobs`, { kind })}
-          onRevise={() => openRevision(failed.revision)}
+          onRevise={openRevision}
         />
       )}
 
@@ -341,11 +341,39 @@ function JobProgress({ job }: { job: StudioJob }) {
   );
 }
 
-function FailurePanel({ job, detail, busy, onRetry, onRevise }: { job: StudioJob; detail: ProductDetail; busy: boolean; onRetry: (kind: 'plan' | 'copy') => void; onRevise: () => void }) {
+// 입력 고치기 화면의 해당 칸으로 바로 가는 주소 (?field=칸 이름, #125)
+const editUrl = (id: string, field?: string | null) => `/studio/${id}/edit${field ? `?field=${encodeURIComponent(field)}` : ''}`;
+
+// 작업 실패: 쉬운 설명 → 고칠 곳(눌러서 이동) → 다음 할 일 버튼. 오류 코드·Claude 원문은 「자세한 기록」에 접어 둠 (#125)
+function FailurePanel({ job, detail, busy, onRetry, onRevise }: { job: StudioJob; detail: ProductDetail; busy: boolean; onRetry: (kind: 'plan' | 'copy') => void; onRevise: (draft?: Partial<RevisionDraft> | null) => void }) {
   const a = detail.actions;
-  const info = errorInfo(job.error_code);
+  const reportLines = job.report ? [...job.report.오류, ...job.report.알림.filter((n) => n && n !== '없음')] : [];
+  const info = failureGuide(job.error_code, reportLines);
   const finished = job.finished_at ?? job.started_at;
   const sec = (Date.parse(finished) - Date.parse(job.started_at)) / 1000;
+  const canRevise = Boolean(a.can_revise_plan || a.can_revise_final);
+  // 고칠 곳: 입력 문제면 입력 확인 결과, 카드 문제면 결과 보고의 카드 번호·칸
+  const inputIssues = info.fix === 'input' ? detail.check.errors : [];
+  const cardIssues = info.fix === 'revise' && job.report ? job.report.오류.map(plainErrorLine).filter((x) => x.code) : [];
+  const cards = [...new Set(cardIssues.map((x) => x.card).filter((n): n is number => n != null))].sort((x, y) => x - y);
+  const reviseTypes = job.error_code === 'EVIDENCE_ERROR' ? ['FACT'] : job.error_code === 'CHAR_LIMIT' || job.error_code === 'OVERFLOW' ? ['LEN'] : [];
+
+  const retry = job.kind === 'plan' && a.can_plan
+    ? { label: '구성안 다시 만들기', run: () => onRetry('plan'), icon: 'refresh' as const }
+    : job.kind === 'copy' && a.can_copy
+      ? { label: '카드 만들기 다시 시작', run: () => onRetry('copy'), icon: 'refresh' as const }
+      : job.kind === 'revise' && canRevise
+        ? { label: '수정 요청 다시 보내기', run: () => onRevise(job.revision), icon: 'edit' as const }
+        : null;
+  const fixInput = info.fix === 'input' && a.can_edit_input;
+  // 카드 수정 요청은 승인 전 최종 카드가 있을 때만 (카드 만들기가 실패하면 그 결과는 저장되지 않아 고칠 카드가 없음)
+  const fixCards = info.fix === 'revise' && Boolean(a.can_revise_final) && job.kind !== 'revise';
+  const hint = info.fix === 'revise' && !fixCards && job.kind !== 'revise'
+    ? 'Claude가 두 번 고쳐 봤지만 남았어요. 다시 시작해 보세요. 반복되면 자료 글이 너무 길지 않은지 확인해 주세요.'
+    : info.hint;
+  // 입력 고치기는 입력 문제이거나 원인이 분명하지 않을 때만 (작업실·한도 문제에서 입력을 고치라고 오해하지 않게)
+  const showEdit = a.can_edit_input && (info.fix === 'input' || info.fix === 'retry');
+
   return (
     <section className="job-card tone-failed" role="alert" aria-labelledby="fail-title">
       <div className="job-card-head">
@@ -353,31 +381,76 @@ function FailurePanel({ job, detail, busy, onRetry, onRevise }: { job: StudioJob
         <div className="job-card-title">
           <p className="job-kind">{JOB_LABEL[job.kind]} · 끝나지 못했어요</p>
           <h2 id="fail-title">{info.title}</h2>
-          <p>{info.hint}</p>
+          <p>{hint}</p>
         </div>
         <span className="job-card-time num">{formatDateTime(finished)} · {formatElapsed(sec)}</span>
       </div>
+      {inputIssues.length > 0 && (
+        <ul className="fail-fix" aria-label="고칠 곳">
+          {inputIssues.map((it, i) => (
+            <li key={i}>
+              <Link to={editUrl(detail.id, inputFieldOf(it.where))}><strong>{plainWhere(it.where)}</strong> {it.message}</Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {cardIssues.length > 0 && (
+        <ul className="fail-fix" aria-label="고칠 곳">
+          {cardIssues.map((x, i) => <li key={i}>{x.text}</li>)}
+        </ul>
+      )}
+      {job.revision?.memo && <p className="fail-memo"><span className="muted">보낸 수정 요청</span> {job.revision.memo}</p>}
+      <p className="muted fail-safe">이번 작업 결과는 반영하지 않았어요. 기존 입력·구성안·카드는 그대로예요.</p>
+      <div className="action-bar">
+        {fixInput && <Link className="btn btn-primary" to={editUrl(detail.id, inputIssues[0] ? inputFieldOf(inputIssues[0].where) : null)}><Icon name="edit" size={18} /> 입력 고치기</Link>}
+        {fixCards && <button className="btn btn-primary" type="button" disabled={busy} onClick={() => onRevise({ cards, types: reviseTypes, memo: '' })}><Icon name="edit" size={18} /> {cards.length ? `${cards.join('·')}번 카드 수정 요청` : '수정 요청 열기'}</button>}
+        {retry && <button className={`btn${fixInput || fixCards ? '' : ' btn-primary'}`} type="button" disabled={busy} onClick={retry.run}><Icon name={retry.icon} size={18} /> {retry.label}</button>}
+        {showEdit && !fixInput && <Link className="btn" to={editUrl(detail.id)}><Icon name="edit" size={18} /> 입력 고치기</Link>}
+        {(a.wait_ahead ?? 0) > 0 && <span className="muted">다시 시작하면 앞 작업 {a.wait_ahead}개가 끝난 뒤 시작해요.</span>}
+      </div>
+      <FailureDetails job={job} detail={detail} reportLines={reportLines} />
+    </section>
+  );
+}
+
+// 관리자·개발자용 원문: 오류 코드·실행 오류·재검증·Claude가 남긴 글. 복사해서 그대로 전달할 수 있게
+function FailureDetails({ job, detail, reportLines }: { job: StudioJob; detail: ProductDetail; reportLines: string[] }) {
+  const [copied, setCopied] = useState<'ok' | 'fail' | null>(null);
+  const verify = job.verify && !job.verify.ok ? job.verify.reasons : [];
+  if (!job.error_code && !job.crash && !verify.length && !reportLines.length) return null;
+  const text = [
+    `[${JOB_LABEL[job.kind]} 실패] 제품 ${detail.id} · 작업 ${job.job_id ?? '-'} · ${job.finished_at ?? job.started_at}`,
+    job.error_code ? `오류 코드: ${job.error_code}` : '',
+    job.crash ? `실행 오류: ${job.crash}` : '',
+    verify.length ? `결과 확인: ${verify.join(', ')}` : '',
+    ...reportLines.map((l) => `- ${l}`),
+  ].filter(Boolean).join('\n');
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); setCopied('ok'); } catch { setCopied('fail'); }
+  };
+  return (
+    <details className="fail-more">
+      <summary>자세한 기록 <span className="muted">관리자에게 보낼 때 복사해요</span></summary>
       <dl className="fail-facts">
         {job.error_code && <div><dt>오류 코드</dt><dd><code>{job.error_code}</code></dd></div>}
         {job.crash && <div><dt>실행 오류</dt><dd>{job.crash}</dd></div>}
-        {job.verify && !job.verify.ok && job.verify.reasons.length > 0 && <div><dt>재검증</dt><dd>{job.verify.reasons.join(', ')}</dd></div>}
-        {job.revision && <div><dt>수정 요청</dt><dd>{job.revision.memo}</dd></div>}
+        {verify.length > 0 && <div><dt>결과 확인</dt><dd>{verify.join(', ')}</dd></div>}
       </dl>
-      {job.report && (job.report.오류.length > 0 || job.report.알림.length > 0) && (
-        <ul className="fail-report">
-          {job.report.오류.map((e) => <li key={`e-${e}`} className="is-error">{e}</li>)}
-          {job.report.알림.filter((n) => n !== '없음').map((n) => <li key={`n-${n}`}>{n}</li>)}
-        </ul>
+      {reportLines.length > 0 && (
+        <>
+          <p className="fail-more-label muted">Claude가 남긴 글</p>
+          <ul className="fail-report">
+            {job.report!.오류.map((e) => <li key={`e-${e}`} className="is-error">{e}</li>)}
+            {job.report!.알림.filter((n) => n && n !== '없음').map((n) => <li key={`n-${n}`}>{n}</li>)}
+          </ul>
+        </>
       )}
-      <p className="muted fail-safe">이번 작업 결과는 반영하지 않았어요. 기존 입력·구성안·카드는 그대로예요.</p>
-      <div className="action-bar">
-        {job.kind === 'plan' && a.can_plan && <button className="btn btn-primary" type="button" disabled={busy} onClick={() => onRetry('plan')}><Icon name="refresh" size={18} /> 구성안 다시 만들기</button>}
-        {job.kind === 'copy' && a.can_copy && <button className="btn btn-primary" type="button" disabled={busy} onClick={() => onRetry('copy')}><Icon name="refresh" size={18} /> 카드 만들기 다시 시작</button>}
-        {job.kind === 'revise' && (a.can_revise_plan || a.can_revise_final) && <button className="btn btn-primary" type="button" disabled={busy} onClick={onRevise}><Icon name="edit" size={18} /> 수정 요청 다시 보내기</button>}
-        {a.can_edit_input && <Link className="btn" to={`/studio/${detail.id}/edit`}><Icon name="edit" size={18} /> 입력 고치기</Link>}
-        {(a.wait_ahead ?? 0) > 0 && <span className="muted">다시 시작하면 앞 작업 {a.wait_ahead}개가 끝난 뒤 시작해요.</span>}
+      <div className="fail-more-actions">
+        <button className="btn btn-small" type="button" onClick={copy}>기록 복사</button>
+        {copied === 'ok' && <span className="muted" role="status">복사했어요</span>}
+        {copied === 'fail' && <span className="muted" role="status">복사하지 못했어요. 위 글을 드래그해서 복사해 주세요.</span>}
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -408,7 +481,7 @@ function InputStage({ detail, busy, hideStart, onPlan }: { detail: ProductDetail
       </div>
       <div className="input-overview">
         <div className="panel">
-          <CheckPanel check={detail.check} />
+          <CheckPanel check={detail.check} productId={detail.id} canEdit={Boolean(a.can_edit_input)} />
           <dl className="input-facts">
             <div><dt>제품명</dt><dd>{text('제품명') || '—'}</dd></div>
             <div><dt>콘텐츠 목적</dt><dd>{text('콘텐츠 목적') || '—'}</dd></div>
@@ -440,12 +513,14 @@ function InputStage({ detail, busy, hideStart, onPlan }: { detail: ProductDetail
   );
 }
 
-function CheckPanel({ check }: { check: Report }) {
+function CheckPanel({ check, productId, canEdit }: { check: Report; productId: string; canEdit: boolean }) {
+  // 입력 항목 문제는 눌러서 입력 고치기의 그 칸으로 이동 (#125)
+  const link = canEdit ? (where: string) => editUrl(productId, inputFieldOf(where)) : undefined;
   return (
     <div className="check-panel">
       {check.errors.length === 0 && check.warnings.length === 0 && <p className="ok-text"><Icon name="check" size={16} /> 필수 항목·이미지·지시문 검사를 모두 통과했어요.</p>}
-      <IssueList items={check.errors} tone="error" />
-      <IssueList items={check.warnings} tone="warn" />
+      <IssueList items={check.errors} tone="error" link={link} />
+      <IssueList items={check.warnings} tone="warn" link={link} />
     </div>
   );
 }
@@ -475,15 +550,17 @@ function ValidationPanel({ validation }: { validation: ProductDetail['validation
   );
 }
 
-function IssueList({ items, tone, prefix }: { items: { code?: string; where: string; message: string }[]; tone: 'error' | 'warn' | 'info'; prefix?: string }) {
+// 오류 코드(INPUT_MISSING 등)는 짧은 우리말 꼬리표로, 위치('## 제품명'·'3번 카드.copy.title')는 사람이 읽는 말로 (#125)
+function IssueList({ items, tone, prefix, link }: { items: { code?: string; where: string; message: string }[]; tone: 'error' | 'warn' | 'info'; prefix?: string; link?: (where: string) => string }) {
   if (!items.length) return null;
   return (
     <ul className={`issues issues-${tone}`}>
-      {items.map((it, i) => (
-        <li key={i}>
-          {prefix ? <span className="issue-tag">{prefix}</span> : it.code ? <code>{it.code}</code> : null} <span className="muted">{it.where}</span> {it.message}
-        </li>
-      ))}
+      {items.map((it, i) => {
+        const tag = prefix ? <span className="issue-tag">{prefix}</span> : it.code ? <span className="issue-tag" title={it.code}>{errorShort(it.code)}</span> : null;
+        const body = <><strong className="issue-where">{plainWhere(it.where)}</strong> {it.message}</>;
+        const to = link && inputFieldOf(it.where) ? link(it.where) : null;
+        return <li key={i}>{tag} {to ? <Link to={to}>{body}</Link> : body}</li>;
+      })}
     </ul>
   );
 }
@@ -582,6 +659,8 @@ function PlanReview({ detail, labels }: { detail: ProductDetail; labels?: Labels
 }
 
 // ── 카드 검토: 필름 스트립 + 큰 미리보기 + 문구·근거·이 카드의 검증 결과
+// 카드 안 문제 위치 '3번 카드.copy.title' → '제목: ' (카드 번호는 이미 화면에 있으니 칸 이름만)
+const fieldLabelOf = (where: string) => { const f = plainWhere(where).replace(/^\d+번 카드\s*/, ''); return f ? `${f}: ` : ''; };
 const COPY_KEY: Record<string, string> = { badge: '배지', title: '제목', subtitle: '부제', caption: '설명', body: '본문', items: '항목', note: '참고', image: '이미지' };
 function CardReview({ detail, labels, onSeen }: { detail: ProductDetail; labels?: Labels; onSeen: (no: number) => void }) {
   const c = detail.cards!;
@@ -654,7 +733,7 @@ function CardReview({ detail, labels, onSeen }: { detail: ProductDetail; labels?
           <div className="review-copy">
             <p className="core-label">{card.no}번 카드 · {label(labels?.roles, card.role)} <span className="muted">· {label(labels?.templates, card.template)}</span></p>
             {aiApplied && <p className="notice notice-warn">[주의] 이 카드는 AI가 이미지로 그린 문구예요. 아래 승인 문구와 같은지 확인해 주세요.</p>}
-            {issues.length > 0 && <ul className="issues card-issues">{issues.map((x, i) => <li key={i} className={`issues-${x.tone}`}>{x.code ? <code>{x.code}</code> : <span className="issue-tag">[주의]</span>} {x.message}</li>)}</ul>}
+            {issues.length > 0 && <ul className="issues card-issues">{issues.map((x, i) => <li key={i} className={`issues-${x.tone}`}>{x.code ? <span className="issue-tag" title={x.code}>{errorShort(x.code)}</span> : <span className="issue-tag">[주의]</span>} {fieldLabelOf(x.where)}{x.message}</li>)}</ul>}
             <dl className="copy-lines">
               {card.copy && Object.entries(card.copy).filter(([k]) => k !== 'image').map(([k, val]) => (
                 <div className="copy-line" key={k}><dt>{COPY_KEY[k] ?? k}</dt><dd className="keep">{Array.isArray(val) ? val.join(' / ') : String(val)}</dd></div>
@@ -1056,7 +1135,7 @@ function EventLog({ events, labels }: { events: ProductDetail['events']; labels?
               {EVENT_TEXT[e.event] ?? e.event}
               {e.kind ? ` · ${JOB_LABEL[e.kind]}` : ''}
               {e.check ? ` · ${e.check === 'layout' ? '레이아웃' : '데이터'}` : ''}
-              {e.ok === false ? ` · 실패${e.error_code ? ` ${e.error_code}` : ''}${e.error_codes?.length ? ` ${e.error_codes.join(', ')}` : ''}` : e.ok ? ' · 통과' : ''}
+              {e.ok === false ? ` · 실패${e.error_code ? ` (${errorShort(e.error_code)})` : ''}${e.error_codes?.length ? ` (${e.error_codes.map(errorShort).join(', ')})` : ''}` : e.ok ? ' · 통과' : ''}
               {e.types?.length ? ` · ${e.types.map((t) => label(labels?.revision_types, t)).join(', ')}` : ''}
               {e.memo ? ` · “${e.memo}”` : ''}
             </span>

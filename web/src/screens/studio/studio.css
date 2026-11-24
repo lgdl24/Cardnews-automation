@@ -85,6 +85,19 @@
 .job-wait { margin: 14px 0 0 54px; font-size: 14px; }
 .job-say { margin: 12px 0 0 54px; font-size: 14px; color: var(--text-2); overflow-wrap: anywhere; }
 .job-say .muted { font-size: 12px; font-weight: 600; margin-right: 6px; }
+/* 실패: 고칠 곳(눌러서 이동) · 보낸 수정 요청 · 접어 둔 자세한 기록 (#125) */
+.fail-fix { margin: 14px 0 0 54px; padding: 12px 14px 12px 30px; background: var(--surface); border-radius: var(--radius-sm); font-size: 14px; display: grid; gap: 6px; overflow-wrap: anywhere; }
+.fail-fix a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.fail-fix strong { color: var(--st-failed); margin-right: 4px; }
+.fail-memo { margin: 12px 0 0 54px; font-size: 14px; overflow-wrap: anywhere; }
+.fail-memo .muted { font-size: 12px; font-weight: 600; margin-right: 6px; }
+.fail-more { margin: 16px 0 0 54px; font-size: 14px; }
+.fail-more summary { cursor: pointer; font-weight: 600; color: var(--text-2); width: fit-content; }
+.fail-more summary .muted { font-weight: 400; font-size: 13px; margin-left: 6px; }
+.fail-more .fail-facts, .fail-more .fail-report { margin-left: 0; }
+.fail-more-label { margin: 12px 0 0; font-size: 12px; font-weight: 600; }
+.fail-more .fail-report { margin-top: 4px; }
+.fail-more-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; }
 .fail-facts { margin: 14px 0 0 54px; display: grid; gap: 6px; font-size: 14px; }
 .fail-facts div { display: grid; grid-template-columns: 88px 1fr; gap: 8px; }
 .fail-facts dt { color: var(--text-2); font-size: 13px; }
@@ -127,6 +140,11 @@
 .issues { margin: 8px 0 0; padding-left: 18px; font-size: 14px; display: grid; gap: 4px; overflow-wrap: anywhere; }
 .issues code { background: var(--st-failed-bg); color: var(--st-failed); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
 .issue-tag { font-weight: 700; }
+.issues-error .issue-tag { color: var(--st-failed); }
+.issues a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.issue-where { font-weight: 600; margin-right: 2px; }
+/* 다른 화면에서 「이 칸 고치기」로 왔을 때 그 칸 표시 (#125) */
+.is-target { outline: 2px solid var(--accent, var(--st-running)); outline-offset: 6px; border-radius: var(--radius-sm); }
 .issues-error { color: var(--st-failed); }
 .issues-warn { color: var(--st-queued); }
 .issues-info { color: var(--text-2); }
@@ -354,7 +372,7 @@
   .job-card { padding: 16px; }
   .job-card-head { flex-wrap: wrap; }
   .job-card-time { width: 100%; padding-left: 54px; }
-  .job-timeline, .job-wait, .job-say, .fail-facts, .fail-report, .fail-safe, .job-card .action-bar { margin-left: 0; }
+  .job-timeline, .job-wait, .job-say, .fail-facts, .fail-report, .fail-safe, .fail-fix, .fail-memo, .fail-more, .job-card .action-bar { margin-left: 0; }
   .fail-facts div { grid-template-columns: 1fr; gap: 0; }
   .review-focus { padding: 12px; gap: 16px; }
   .film { width: 56px; height: 56px; }

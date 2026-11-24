@@ -1,4 +1,5 @@
-// 게시 전 점검: npm run precheck -- <제품ID> [--json]
+// 게시 전 점검: npm run publish-check -- <제품ID> [--json]
+// npm 명령 이름을 precheck로 두면 npm이 `npm run check` 앞에 자동으로 실행해 입력 확인을 막아요 (#125)
 // output/publish-check.json 에 저장. 아무것도 고치지 않음. 고쳐야 할 것(fail)이 있으면 종료 코드 1
 const fs = require('fs');
 const { paths, readJson, loadInput, normalize, requireProductId } = require('./lib/common');
