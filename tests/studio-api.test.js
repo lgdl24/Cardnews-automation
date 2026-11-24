@@ -102,6 +102,22 @@ function formValues() {
   };
 }
 
+test('입력 저장: Mac 한글 이미지 이름(자모를 푼 NFD)도 완성형 이름으로 저장해요 (#132)', async () => {
+  const s = await startServer();
+  try {
+    const v = formValues();
+    const nfd = '제품사진.png'.normalize('NFD');
+    v.images[0].file = nfd;
+    const r = await s.call('POST', '/products', { id: 'nfd-name', ...v });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.deepEqual(r.body.input.images.map((i) => i.file), ['제품사진.png']);
+    assert.ok(fs.readdirSync(path.join(s.productsDir, 'nfd-name', 'images')).includes('제품사진.png'));
+    assert.deepEqual(r.body.check.errors, []);
+  } finally {
+    s.close();
+  }
+});
+
 test('웹 제작 흐름: 입력 → 구성안 → 수정 요청 → 승인·문구 → 카드 수정 → 최종 승인 → 내보내기', async () => {
   const s = await startServer();
   try {

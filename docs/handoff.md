@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-24 | Claude | #132 · `fix/132-nfd-filenames` | **Mac 한글 파일 이름**: Mac은 파일 이름을 자모를 푼 NFD로 넘겨 `가-힣` 검사에 걸렸음(자료로 채우기 거절, 제품 사진 이름이 `image.png`로 바뀜). 브라우저(`ProductFormPage` 파일 이름 정리·자료 이름)와 서버(`extract-input` 자료 이름·`studio-api` 이미지 이름) 모두 `normalize('NFC')` 뒤 검사 |
 | 2026-11-24 | Claude | #129 · `feat/129-glowif-daily` | **Glowif 하루 한 번**: `npm run glowif -- <ZIP> --daily`는 근거 기준을 넘는 주제 중 초안·잠금이 없는 첫 주제 하나만 만들고, 없으면 GPT 호출 없이 끝남(`--dry-run`은 고르기만). 이전에는 1순위 주제가 있으면 "이미 만든 주제"로 끝나 다음 주제로 넘어가지 않았음. KT `cardnews-glowif.timer`(매일 04:13±10분, 작업실 계정), ZIP은 서버 `/var/lib/cardnews/glowif/aihub-71603.zip`(작업실 계정만 읽기, 저장소·웹에 없음). Glowif 잠금 중에는 자동 배포 미룸(`busy-check.py`). 운영 안내 「Glowif 하루 한 번」 |
 | 2026-11-24 | Codex | #127 · `feat/127-glowif-review-drafts` | **Glowif 첫 제작 흐름**. 로컬 AI-Hub ZIP 집계 → 가상 제품 누끼·v2 구성안 → Glowif 목록 → 기존 구성안 승인·문구 검증·GPT 5장 디자인·최종 검토를 연결했어요. [실행과 검토 방법](glowif.md) |
 | 2026-11-24 | Claude | #125 · `fix/125-friendly-failures` | **웹 구성안이 입력 확인에서 항상 멈추던 문제**: `package.json`의 게시 전 점검 이름 `precheck`를 npm이 `npm run check` 앞에 자동 실행(제품ID 없이 실패) → **`npm run publish-check`로 이름 변경**, `pre·post` 이름 충돌 검사 추가(`tests/job-runner.test.js`). **실패 안내를 쉬운 말로**: `web/src/studio/status.ts`의 `failureGuide`(오류 코드+Claude 글 → 입력/카드/다시/기다림/관리자), 고칠 곳 목록(입력 칸 이름을 누르면 `/studio/<id>/edit?field=<칸>`으로 이동·표시, 카드 번호·칸), 원문·오류 코드는 「자세한 기록」에 접고 복사. 입력 확인·검증·카드별 문제·제작 기록의 오류 코드도 우리말 꼬리표. 인스타 오류 안내(`explain`)도 할 일 먼저·관리자 단서는 괄호 |

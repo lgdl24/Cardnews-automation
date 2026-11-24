@@ -359,7 +359,7 @@ function MaterialsFill({ fields, onFill, onAddImages }: { fields: FormField[]; o
       if ([...files].some((f) => f.size > 20 * 1024 * 1024)) throw new Error('자료는 파일당 20MB 이하로 올려 주세요.');
       const payload = await Promise.all([...files].map((f) => new Promise<{ name: string; data: string }>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve({ name: f.name, data: String(reader.result).split(',')[1] ?? '' });
+        reader.onload = () => resolve({ name: f.name.normalize('NFC'), data: String(reader.result).split(',')[1] ?? '' });
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(f);
       })));
@@ -514,7 +514,9 @@ function ImagesField({ field: f, images, setImages, addFiles, submitted }: {
 }
 
 /** 파일 이름에서 쓸 수 없는 글자를 바꿈 (서버도 같은 규칙으로 다시 검사) */
-function safeName(name: string) {
+// Mac은 한글 파일 이름을 자모를 푼 형태(NFD)로 줘서, 완성형(NFC)으로 바꾸지 않으면 한글이 모두 지워져요 (#132)
+function safeName(raw: string) {
+  const name = raw.normalize('NFC');
   const ext = (name.match(/\.(png|jpe?g)$/i)?.[0] ?? '.png').toLowerCase();
   const base = name.replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9가-힣_-]+/g, '-').replace(/^-+|-+$/g, '') || 'image';
   return `${base}${ext}`;

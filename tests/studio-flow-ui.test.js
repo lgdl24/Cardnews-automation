@@ -251,6 +251,18 @@ test('카드 검토: 필름 스트립·키보드 이동·전체 흐름·카드�
   await captureAll(page, 'studio-cards');
 });
 
+test('입력: Mac 한글 이름 사진(자모를 푼 NFD)도 한글 이름 그대로 올라가요 (#132)', async (t) => {
+  const page = await open(t, '/studio/new');
+  const png = fs.readFileSync(path.join(PNG_DIR, 'card-01.png'));
+  await page.setInputFiles('#image-add', [
+    { name: '제품 사진.png'.normalize('NFD'), mimeType: 'image/png', buffer: png },
+    { name: '제형 컷.png'.normalize('NFD'), mimeType: 'image/png', buffer: png },
+  ]);
+  await page.getByLabel('제품-사진.png 설명').waitFor();
+  await page.getByLabel('제형-컷.png 설명').waitFor();
+  assert.equal(await page.locator('.notice-error').count(), 0, '같은 이름(image.png) 오류가 나지 않음');
+});
+
 test('입력: 제출하면 빠진 항목을 요약해 이동시키고, 글 입력은 임시 저장 후 다시 불러온다', async (t) => {
   const requests = [];
   const page = await open(t, '/studio/new', { requests });

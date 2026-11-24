@@ -159,6 +159,10 @@ test('자료로 채우기: 파일 형식·크기 검사, 결과는 양식 칸으
   assert.throws(() => prepareMaterials([{ name: 'a.exe', data: 'eA==' }]), /PDF/);
   assert.throws(() => prepareMaterials([{ name: '../a.pdf', data: 'eA==' }]), /PDF/);
   assert.equal(prepareMaterials([{ name: '소개 자료.pdf', data: 'data:application/pdf;base64,eA==' }])[0].name, '01-소개_자료.pdf');
+  // Mac 한글 파일 이름(자모를 푼 NFD)도 완성형으로 바꿔 받음 (#132)
+  const nfd = '토리든-솔리드인-웻-바디밀크.pdf'.normalize('NFD');
+  assert.notEqual(nfd, '토리든-솔리드인-웻-바디밀크.pdf');
+  assert.equal(prepareMaterials([{ name: nfd, data: 'eA==' }])[0].name, '01-토리든-솔리드인-웻-바디밀크.pdf');
   const fields = infoFields();
   assert.ok(!fields.some((f) => f.type === 'images'));
   const prompt = buildExtractPrompt(fields, ['01-a.pdf']);

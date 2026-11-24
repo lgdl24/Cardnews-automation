@@ -65,7 +65,8 @@ function prepareMaterials(files) {
   if (!list.length) throw Object.assign(new Error('자료 파일을 올려 주세요'), { status: 400 });
   if (list.length > MAX_FILES) throw Object.assign(new Error(`자료는 ${MAX_FILES}개까지 올릴 수 있어요`), { status: 400 });
   return list.map((f, i) => {
-    const name = String(f.name || '').trim();
+    // Mac은 한글 파일 이름을 자모를 푼 형태(NFD)로 넘겨서 완성형으로 바꾼 뒤 검사해요 (#132)
+    const name = String(f.name || '').normalize('NFC').trim();
     if (!MATERIAL_RE.test(name) || path.basename(name) !== name) throw Object.assign(new Error(`자료는 PDF·이미지(PNG·JPG)·글(TXT·MD) 파일만 올릴 수 있어요: ${name}`), { status: 400 });
     const data = Buffer.from(String(f.data || '').replace(/^data:[^,]*,/, ''), 'base64');
     if (!data.length) throw Object.assign(new Error(`빈 파일이에요: ${name}`), { status: 400 });
