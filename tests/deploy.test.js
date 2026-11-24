@@ -91,6 +91,70 @@ test('배포 스크립트·CI: 문법이 맞고, 검사 이름이 같고, CI는 
   assert.match(sh, /failed-\$SHA/, '실패한 커밋은 다시 시도하지 않음');
 });
 
+// 실패 메일 알림(#123): 가짜 메일 API로 요청 모양·키 숨김·설정 없음·오류를 확인
+const NOTIFY = path.join(ROOT, 'ops', 'kt', 'deploy', 'notify.py');
+const { execFile } = require('child_process');
+function runNotify(args) {
+  return new Promise((resolve) => {
+    execFile('python3', [NOTIFY, ...args], { encoding: 'utf8' }, (err, stdout) => resolve({ code: err ? err.code : 0, out: stdout.trim() }));
+  });
+}
+async function fakeMailApi(reply) {
+  const got = [];
+  const server = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', (d) => { body += d; });
+    req.on('end', () => {
+      got.push({ auth: req.headers.authorization, type: req.headers['content-type'], body: JSON.parse(body) });
+      res.writeHead(reply.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(reply.json));
+    });
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  return { got, url: `http://127.0.0.1:${server.address().port}/emails`, close: () => server.close() };
+}
+
+test('실패 메일 알림: 설정이 있으면 받는 주소·제목·본문을 보내고 키는 출력하지 않아요', async () => {
+  const w = workspace();
+  const KEY = 're_test_secret_key_123456';
+  const env = w.write('notify.env', `# 주석\nRESEND_API_KEY="${KEY}"\nNOTIFY_EMAIL=me@example.ac.kr\n`);
+  const api = await fakeMailApi({ status: 200, json: { id: 'x' } });
+  try {
+    const r = await runNotify(['--env', env, '--subject', '[카드뉴스 KT] 시험', '--body', '본문', '--url', api.url]);
+    assert.equal(r.code, 0, r.out);
+    assert.match(r.out, /보냄/);
+    assert.ok(!r.out.includes(KEY));
+    assert.equal(api.got.length, 1);
+    assert.equal(api.got[0].auth, `Bearer ${KEY}`);
+    assert.deepEqual(api.got[0].body.to, ['me@example.ac.kr']);
+    assert.equal(api.got[0].body.subject, '[카드뉴스 KT] 시험');
+    assert.match(api.got[0].body.from, /onboarding@resend\.dev/);
+  } finally { api.close(); }
+});
+
+test('실패 메일 알림: 설정이 없으면 보내지 않고(끝 코드 2), 거절되면 이유만 보여주고 키는 가려요', async () => {
+  const w = workspace();
+  const none = await runNotify(['--env', path.join(w.dir, 'missing.env'), '--subject', 's', '--body', 'b']);
+  assert.equal(none.code, 2);
+  const partial = await runNotify(['--env', w.write('p.env', 'NOTIFY_EMAIL=me@example.ac.kr\n'), '--subject', 's', '--body', 'b']);
+  assert.equal(partial.code, 2, '키가 없으면 보내지 않음');
+  const KEY = 're_leaky_key_987654';
+  const api = await fakeMailApi({ status: 403, json: { message: `You can only send testing emails to your own email address (${KEY})` } });
+  try {
+    const r = await runNotify(['--env', w.write('n.env', `RESEND_API_KEY=${KEY}\nNOTIFY_EMAIL=other@example.com\n`), '--subject', 's', '--body', 'b', '--url', api.url]);
+    assert.equal(r.code, 1);
+    assert.match(r.out, /실패 \(HTTP 403\) You can only send testing emails/);
+    assert.ok(!r.out.includes(KEY), '응답에 키가 섞여도 가림');
+  } finally { api.close(); }
+});
+
+test('배포 스크립트: 실패 네 가지 경우에 알림을 보내고, 알림 시험 모드가 있어요', () => {
+  const sh = fs.readFileSync(DEPLOY, 'utf8');
+  assert.equal((sh.match(/^\s+notify_failure "\$SHA"/gm) || []).length, 4, 'CI 실패·빌드 실패·되돌림·되돌린 뒤 이상');
+  assert.match(sh, /--test-notify/);
+  assert.match(sh, /\[ "\$code" = 2 \] && return 0/, '설정이 없으면 배포를 막지 않음');
+});
+
 test('작업실 상태: 배포 상태 파일이 있으면 짧은 커밋·결과만 보여주고, 없으면 null', async () => {
   const w = workspace();
   const statusFile = w.write('deploy/status.json', {

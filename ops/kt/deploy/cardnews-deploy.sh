@@ -72,6 +72,24 @@ wait_once() { # sha reason
   fi
 }
 
+# 실패 메일 알림 (#123): /etc/cardnews/notify.env(root만 읽기)에 RESEND_API_KEY·NOTIFY_EMAIL이 있을 때만 보내요.
+# KT는 SMTP가 막혀 있어 HTTPS 메일 API(Resend)를 써요. 키 값은 출력·기록하지 않아요. 보내지 못해도 배포 흐름은 그대로예요
+NOTIFY_ENV=/etc/cardnews/notify.env
+NOTIFY=$BASE/deploy/notify.py
+notify() { # subject body
+  local out code
+  out=$(python3 "$NOTIFY" --env "$NOTIFY_ENV" --subject "$1" --body "$2"); code=$?
+  [ "$code" = 2 ] && return 0   # 설정 없음: 알림 없이 진행
+  log "알림 메일: $out"
+  return $code
+}
+
+# 실패 알림 본문: 커밋·사유·확인할 곳 (경로·링크만, 비밀값 없음)
+notify_failure() { # sha title detail
+  notify "[카드뉴스 KT] $2 (${1:0:7})" "$(printf '%s\n\n%s\n\n커밋: https://github.com/lgdl24/Cardnews-automation/commit/%s\n시각: %s\n현재 서버 버전: %s\n\n서버에서 확인:\n  sudo tail -n 20 /opt/cardnews/DEPLOY.log\n  sudo less /var/lib/cardnews/deploy/build-%s.log\n\n운영 안내: docs/kt-studio-deployment.md 「자동 배포」' \
+    "$2" "$3" "$1" "$(date '+%Y-%m-%d %H:%M %Z')" "$(basename "$(readlink -f "$APP")" | cut -c1-12)" "${1:0:7}")" || true
+}
+
 as_build() {
   runuser -u "$BUILD_USER" -- env -i HOME="$BUILD_HOME" PATH="$NODE_BIN:/usr/bin:/bin" \
     PLAYWRIGHT_BROWSERS_PATH="$BASE/browsers" npm_config_update_notifier=false "$@"
@@ -133,6 +151,17 @@ if [ ! -L "$APP" ]; then
   exit 1
 fi
 
+# ── 알림 시험: sudo /opt/cardnews/deploy/cardnews-deploy.sh --test-notify
+if [ "${1:-}" = "--test-notify" ]; then
+  if ! grep -qE '^RESEND_API_KEY=.+' "$NOTIFY_ENV" 2>/dev/null || ! grep -qE '^NOTIFY_EMAIL=.+' "$NOTIFY_ENV"; then
+    echo "$NOTIFY_ENV 에 RESEND_API_KEY·NOTIFY_EMAIL이 없어요. 운영 안내 「실패 메일 알림」을 먼저 해요"; exit 1
+  fi
+  notify "[카드뉴스 KT] 알림 시험" "자동 배포 실패 알림이 이 주소로 오는지 시험하는 메일이에요.
+시각: $(date '+%Y-%m-%d %H:%M %Z')
+현재 서버 버전: $(basename "$(readlink -f "$APP")" | cut -c1-12)"
+  exit $?
+fi
+
 # ── 되돌리기 훈련: 지금 버전을 복사해 일부러 고장 낸 뒤 전환 → 고장 감지 → 원래 버전으로 되돌리기를 확인해요
 #    sudo /opt/cardnews/deploy/cardnews-deploy.sh --rollback-drill  (작업실이 1~2분 끊겨요)
 if [ "${1:-}" = "--rollback-drill" ]; then
@@ -174,7 +203,9 @@ else:
 case "$CI" in
   success) ;;
   failure|cancelled|timed_out|action_required|startup_failure|stale)
-    touch "$STATE/failed-$SHA"; log "건너뜀 $SHORT: CI 결과 $CI"; write_status skipped "$SHA" "CI 결과가 $CI 라 배포하지 않았어요"; exit 0 ;;
+    touch "$STATE/failed-$SHA"; log "건너뜀 $SHORT: CI 결과 $CI"; write_status skipped "$SHA" "CI 결과가 $CI 라 배포하지 않았어요"
+    notify_failure "$SHA" "main CI 실패로 배포 건너뜀" "main의 새 커밋에서 GitHub Actions 검사 CI 결과가 '$CI'예요. 서버는 이전 버전을 그대로 써요. GitHub의 Actions 탭에서 실패 원인을 확인해 고친 커밋을 병합해 주세요."
+    exit 0 ;;
   none) wait_once "$SHA" "CI 결과가 아직 없어요"; exit 0 ;;
   *) wait_once "$SHA" "CI 확인 중 ($CI)"; exit 0 ;;
 esac
@@ -203,6 +234,7 @@ if ! as_build bash -c "set -euo pipefail
   touch "$STATE/failed-$SHA"
   log "실패 $SHORT: 빌드 오류 (기록 $BUILD_LOG)"
   write_status failed "$SHA" "빌드에 실패해서 이전 버전을 그대로 써요"
+  notify_failure "$SHA" "배포 실패: 빌드 오류" "서버에서 새 버전을 설치·빌드하다가 실패했어요. 서버는 이전 버전을 그대로 써요. 빌드 기록에 원인이 있어요."
   exit 1
 fi
 chown -R root:root "$BUILD" && chmod -R go-w,a+rX "$BUILD"
@@ -226,9 +258,11 @@ else
   touch "$STATE/failed-$SHA"
   if healthy; then
     write_status failed "$SHA" "새 버전이 정상 응답하지 않아 이전 버전으로 되돌렸어요"
+    notify_failure "$SHA" "배포 실패: 자동으로 되돌림" "새 버전으로 바꾼 뒤 1분 안에 작업실·게시 서비스가 정상 응답하지 않아 이전 버전으로 되돌렸어요. 지금 작업실은 이전 버전으로 정상 동작해요."
   else
     log "경고: 되돌린 뒤에도 정상 응답이 없어요. 직접 확인이 필요해요"
     write_status failed "$SHA" "되돌린 뒤에도 정상 응답이 없어요. 직접 확인이 필요해요"
+    notify_failure "$SHA" "긴급: 되돌린 뒤에도 작업실 이상" "새 버전이 정상 응답하지 않아 이전 버전으로 되돌렸지만, 되돌린 뒤에도 정상 응답이 없어요. 서버에 접속해 sudo systemctl status cardnews-studio cardnews-publish 로 직접 확인해 주세요."
   fi
   exit 1
 fi

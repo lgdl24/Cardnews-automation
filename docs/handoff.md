@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-24 | Claude | #123 · `feat/123-deploy-mail` | **배포 실패 메일 알림**: CI 실패·빌드 실패·되돌림·되돌린 뒤 이상 때 `ops/kt/deploy/notify.py`가 Resend HTTPS API로 메일(KT는 메일 포트 막힘). 설정 `/etc/cardnews/notify.env`(root 600, `RESEND_API_KEY`·`NOTIFY_EMAIL`), 없으면 알림 없이 배포. 시험 `cardnews-deploy.sh --test-notify`. 운영 안내 「실패 메일 알림」 |
 | 2026-11-24 | Claude | #120 · `feat/120-ci-cd` | **CI/CD**: GitHub Actions `CI`(PR·main, `npm test`·웹 빌드·`test:web`, 읽기 권한만)를 main 필수 검사로. KT는 `cardnews-deploy.timer`가 5분마다 main을 가져와 CI 성공 커밋만 배포 — 작업·게시·30분 안 예약이 있으면 미룸, 권한 없는 `cardnews-build`가 `/opt/cardnews/releases/<커밋>`에 빌드, `/opt/cardnews/app` 연결 전환, 정상 응답 없으면 자동 되돌리기. 작업실 하단에 배포 버전 표시(`CARDNEWS_DEPLOY_STATUS_FILE`). **main 병합 = 5~10분 뒤 KT 반영**. 운영 안내 「자동 배포」 |
 | 2026-11-24 | Claude | #118 · `chore/118-remove-brand-assets` | **공개 저장소에서 실제 브랜드(달바) 자료 뺌**: 저장소는 공개 유지(이규동 결정). `products/dalba-toneup-purple/`·`eval/inputs/eval-toneup-purple/`(공식몰 누끼컷·상세 문구)은 Git 추적에서 빼고 `.gitignore`에 추가 — 각자 컴퓨터에만 둬요. 달바 사진을 합성한 시안 PNG·HTML(`docs/research/dalba-purple-redesign/`, `design-reference-review/`)은 삭제, 분석 글은 유지. 과거 이력에는 남아요(이력 재작성 안 함) |
 | 2026-11-24 | Claude | #116 · `fix/116-kt-studio-hardening` (`feat/112` 위) | **KT 작업실 보안 보강**: 제작 작업·자료 채우기의 Claude가 작업 폴더 밖을 못 읽게 `--settings`(`blockReads/WritesOutsideWorkingDirectories`, Claude Code 2.1.257+)와 로그인 정보 경로 `Read(...)` 차단을 넣고 경로 제한 없는 Read·Glob·Grep 허용을 뺐어요. Caddy 접근 기록(JSON)·HSTS, fail2ban(401 10회/10분 → 443 1시간 차단). KT에 반영·확인 완료(가짜 파일 시험, 실제 IP 기록, 차단 규칙). 자세한 내용은 `docs/kt-studio-deployment.md` 「보안 보강」 |
@@ -27,7 +28,7 @@
 - KT 설치(11.24): 빌드 계정 `cardnews-build`, `/opt/cardnews/repo.git`, `/opt/cardnews/releases/`(기존 앱은 `legacy-20261124`), `/opt/cardnews/app` → 릴리스 연결, `/opt/cardnews/deploy/`, `cardnews-deploy.timer` 켜짐, `studio.env`에 `CARDNEWS_DEPLOY_STATUS_FILE`(백업 `studio.env.before-120`), Playwright 브라우저 폴더 소유 → 빌드 계정.
 - 확인: 첫 자동 배포 `53511c0` 성공(빌드·전환·정상 확인 16초), 작업실 상태 API에 배포 정보, 릴리스는 root 소유·읽기 전용, #116 읽기 제한 코드 포함. `--rollback-drill`로 고장 낸 버전 전환 → 1분 안에 감지 → 원래 버전 복귀·정상(64초).
 - 학교망에서 GitHub API에 `Accept: application/vnd.github+json` 헤더를 붙이면 500이 와서 헤더 없이 요청하도록 고쳤어요(#122 PR). 확인 실패는 '대기'로 남기고 다음 확인 때 다시 시도해요.
-- 남은 일: ① 실패 알림(디스코드·메일 웹훅, 사용자 결정 뒤) ② 배포 스크립트·Caddy·fail2ban·서비스 파일은 자동 배포 대상이 아니라 바뀌면 직접 설치 ③ 이용석 님께 "main 병합 = 5~10분 뒤 KT 반영"·CI 필수 공유.
+- 남은 일: ① ~~실패 알림~~ → #123 메일 알림 ② 배포 스크립트·Caddy·fail2ban·서비스 파일은 자동 배포 대상이 아니라 바뀌면 직접 설치 ③ 이용석 님께 "main 병합 = 5~10분 뒤 KT 반영"·CI 필수 공유.
 
 ## 현재 작업 — 공개 저장소에서 실제 브랜드 자료 빼기 #118 (Claude, 2026-11-24)
 
