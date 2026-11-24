@@ -93,12 +93,18 @@ export interface JobsOverview {
   running: { product_id: string; name: string; kind: JobKind; started_at: string } | null;
   queue: { product_id: string; name: string; kind: JobKind; queued_at: string; position: number }[];
 }
+/** KT 서버 자동 배포 상태 (#120). 로컬 작업실에서는 null */
+export interface DeployStatus {
+  deployed: { sha: string | null; at: string | null } | null;
+  last: { sha: string | null; result: 'ok' | 'failed' | 'skipped' | 'waiting' | 'building' | null; message: string | null; at: string | null } | null;
+}
 export interface StudioStatus {
   ok: true;
   mode: 'web';
   claude: ClaudeInfo;
   job: StudioJob | null;
   jobs?: JobsOverview;
+  deploy?: DeployStatus | null;
   form: FormDef;
   revision_types: RevisionType[];
 }

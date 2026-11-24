@@ -1,0 +1,11 @@
+# KT 자동 배포 (#120): 부팅 3분 뒤부터 5분마다 main을 확인해요
+[Unit]
+Description=Check GitHub main for Cardnews deploy every 5 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

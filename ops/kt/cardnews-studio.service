@@ -19,6 +19,8 @@ Environment=CARDNEWS_PUBLISH_SOCKET=/run/cardnews-publish/publish.sock
 Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/cardnews/browsers
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 Environment=CARDNEWS_FIGMA_PUSH=off
+# 자동 배포 상태(#120). 작업실 하단에 배포 버전을 보여줘요
+Environment=CARDNEWS_DEPLOY_STATUS_FILE=/var/lib/cardnews/deploy/status.json
 ExecStart=/usr/local/bin/node scripts/studio-server.js web
 Restart=on-failure
 RestartSec=3

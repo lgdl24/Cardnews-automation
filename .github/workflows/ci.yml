@@ -1,0 +1,54 @@
+# CI (#120): PR과 main에서 테스트·웹 빌드를 돌려요.
+# KT 서버의 자동 배포는 main 커밋의 이 검사(이름 "CI")가 성공일 때만 진행해요.
+# 저장소 권한은 읽기만 써요. 비밀값(secrets)은 쓰지 않아요.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+
+      - name: 의존성 설치
+        run: |
+          npm ci --include=dev --no-audit --no-fund
+          npm --prefix web ci --include=dev --no-audit --no-fund
+
+      - name: 브라우저·한글 글꼴 설치
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y -q fonts-noto-cjk
+
+      - name: 테스트
+        run: npm test
+
+      - name: 웹 빌드
+        run: npm run web:build
+
+      - name: 화면 테스트
+        run: npm run test:web

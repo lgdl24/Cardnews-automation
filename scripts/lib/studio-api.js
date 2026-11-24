@@ -130,6 +130,8 @@ function createStudio({
   captionFn,
   // 예약 게시 확인(30초마다). CARDNEWS_IG_SCHEDULE=off 로 끔 (테스트는 직접 tick)
   igSchedule = process.env.CARDNEWS_IG_SCHEDULE !== 'off',
+  // KT 자동 배포 상태 파일(#120, ops/kt/deploy/cardnews-deploy.sh가 씀). 없으면 화면에 배포 정보를 안 보여줘요
+  deployStatusFile = process.env.CARDNEWS_DEPLOY_STATUS_FILE || null,
 } = {}) {
   precheckFn = precheckFn || igDeps.precheckIn(root, productsDir);
   const productDir = (id) => path.join(productsDir, id);
@@ -239,6 +241,20 @@ function createStudio({
     `], { encoding: 'utf8', env: scriptEnv({ CARDNEWS_NO_LOG: '1' }) });
     if (log) spawnSync(process.execPath, [path.join(root, 'scripts', 'validate.js'), id], { encoding: 'utf8', env: scriptEnv() });
     return readJsonSafeStr(r.stdout);
+  }
+
+  // 서버 자동 배포 상태 (#120): 지금 돌아가는 버전과 마지막 시도. 커밋은 앞 7자리만, 경로·로그는 보내지 않아요
+  function deployStatus() {
+    if (!deployStatusFile) return null;
+    const s = readJsonSafe(deployStatusFile);
+    if (!s || typeof s !== 'object') return null;
+    const short = (sha) => (typeof sha === 'string' && /^[0-9a-f]{7,40}$/.test(sha) ? sha.slice(0, 7) : null);
+    const text = (v) => (typeof v === 'string' ? v.slice(0, 200) : null);
+    const RESULTS = ['ok', 'failed', 'skipped', 'waiting', 'building'];
+    return {
+      deployed: s.deployed ? { sha: short(s.deployed.sha), at: text(s.deployed.at) } : null,
+      last: s.last ? { sha: short(s.last.sha), result: RESULTS.includes(s.last.result) ? s.last.result : null, message: text(s.last.message), at: text(s.last.at) } : null,
+    };
   }
 
   function claudeStatus() {
@@ -861,7 +877,7 @@ function createStudio({
     const parts = url.pathname.slice(API.length).split('/').filter(Boolean).map(decodeURIComponent);
 
     if (method === 'GET' && parts[0] === 'status' && parts.length === 1) {
-      return send(res, 200, { ok: true, mode: 'web', claude: claudeStatus(), job: current ? publicJob(current) : null, jobs: jobsOverview(), form: loadForm(), revision_types: readJson(path.join(root, 'config', 'revision-types.json')).types.map(({ code, label, example }) => ({ code, label, example })) });
+      return send(res, 200, { ok: true, mode: 'web', claude: claudeStatus(), job: current ? publicJob(current) : null, jobs: jobsOverview(), deploy: deployStatus(), form: loadForm(), revision_types: readJson(path.join(root, 'config', 'revision-types.json')).types.map(({ code, label, example }) => ({ code, label, example })) });
     }
     if (method === 'GET' && parts[0] === 'products' && parts.length === 1) {
       const list = listIds().map(productSummary).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
