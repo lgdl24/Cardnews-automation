@@ -28,13 +28,14 @@ function buildThemeCss(theme, htmlDir) {
 }
 
 // extraImages: 입력에서 용도가 제형·배경인 사진 파일명 { texture, scene } (#74). 묶음 템플릿이 {{texture}}·{{scene}} 자리에 넣고, 없으면 대체 모양
-function buildCardHtml({ card, cards = [], total, product, tpl, theme, htmlDir, imageDir, imageCrop = null, extraImages = {} }) {
+// imageFile: 카드에 쓸 제품 사진 파일(누끼, #134). 없으면 images/의 원본
+function buildCardHtml({ card, cards = [], total, product, tpl, theme, htmlDir, imageDir, imageCrop = null, extraImages = {}, imageFile = null }) {
   const template = fs.readFileSync(path.join(paths.root, tpl.file), 'utf8');
   const baseCss = fs.readFileSync(path.join(paths.root, 'templates', 'base.css'), 'utf8');
   const copy = card.copy || {};
   const useImage = tpl.image !== 'none' && card.image;
   const imageSrc = useImage
-    ? path.relative(htmlDir, path.join(imageDir, card.image)).split(path.sep).join('/')
+    ? path.relative(htmlDir, imageFile || path.join(imageDir, card.image)).split(path.sep).join('/')
     : '';
 
   const values = {

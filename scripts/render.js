@@ -40,6 +40,50 @@ async function colorsFor({ data, input, imageDir, baseColor, browser, pairMin = 
   return decideColors({ mode, baseColor, pixels, image, readError, pairMin });
 }
 
+/**
+ * 제품 사진 누끼 (#134). 투명하지 않은 사진만 AI 배경과 같은 방법(ai-card.js PAGE_FNS의 cutout: 테두리에 이어진 배경색 지우기)으로
+ * 투명 PNG를 만들어 outDir에 둬요. 원본보다 새 누끼가 있으면 다시 만들지 않아요.
+ * @returns {Promise<Map<string, string>>} 사진 파일명 → 카드에 쓸 누끼 파일 (이미 투명하거나 실패하면 빠짐 → 원본 사용)
+ */
+async function productCutouts({ images, imageDir, outDir, startBrowser }) {
+  const out = new Map();
+  const todo = images.filter((img) => fs.existsSync(path.join(imageDir, img)));
+  if (!todo.length) return out;
+  const { PAGE_FNS } = require('./ai-card');
+  const page = await (await startBrowser()).newPage();
+  try {
+    await page.setContent('<!doctype html><title>cutout</title>');
+    await page.addScriptTag({ content: PAGE_FNS });
+    for (const img of todo) {
+      const src = path.join(imageDir, img);
+      const file = path.join(outDir, `${img.replace(/\./g, '_')}.png`);
+      if (fs.existsSync(file) && fs.statSync(file).mtimeMs >= fs.statSync(src).mtimeMs) { out.set(img, file); continue; }
+      const url = `data:${/\.png$/i.test(img) ? 'image/png' : 'image/jpeg'};base64,${fs.readFileSync(src).toString('base64')}`;
+      try {
+        const cut = await page.evaluate(async (s) => {
+          const im = await window.loadImg(s);
+          const c = window.canvasOf(im.naturalWidth, im.naturalHeight);
+          const g = c.getContext('2d');
+          g.drawImage(im, 0, 0);
+          const p = g.getImageData(0, 0, c.width, c.height).data;
+          for (let i = 3; i < p.length; i += 4) if (p[i] < 250) return null; // 이미 투명한 사진은 그대로 (가장자리를 깎지 않게)
+          return window.cutout(s);
+        }, url);
+        if (!cut) continue;
+        fs.mkdirSync(outDir, { recursive: true });
+        fs.writeFileSync(file, Buffer.from(cut.b64, 'base64'));
+        out.set(img, file);
+        console.log(`제품 사진 누끼: ${img} → ${path.relative(paths.root, file)}`);
+      } catch (e) {
+        console.log(`제품 사진 누끼를 만들지 못했어요: ${img} (${String(e.message || e).split('\n')[0]}) — 원본 사진을 써요`);
+      }
+    }
+  } finally {
+    await page.close();
+  }
+  return out;
+}
+
 function reportColors(report, colors) {
   if (colors.note) report.warn('카드 색', colors.note);
   for (const c of colors.checks.filter((x) => !x.ok)) {
@@ -141,6 +185,15 @@ async function main() {
   const tplOf = (card) => (isBrand ? brandTemplate(templates[card.template], data.brand_mood, card.template, paths.root) : templates[card.template]);
   if (isBrand) console.log(`카드 배치: ${layoutOf(data.brand_mood)}`);
 
+  // 제품 사진 누끼 (#134): 투명하지 않은 사진(흰·단색 배경)은 테두리에 이어진 배경색을 지운 투명 PNG를
+  // output/cutout/에 만들어 카드에 써요. 이미 투명한 사진은 그대로, 원본 파일은 바꾸지 않아요.
+  // 이전에는 누끼를 AI 배경 요청에만 써서, 카드에는 흰 사각형째로 얹혔어요.
+  const productFiles = await productCutouts({
+    images: [...new Set(targets.filter((c) => c.image && tplOf(c).image !== 'none').map((c) => c.image))],
+    imageDir, outDir: path.join(paths.product(id), 'output', 'cutout'), startBrowser,
+  });
+  const fileOf = (img) => productFiles.get(img) || path.join(imageDir, img);
+
   // 새 묶음의 제품 사진만 투명 여백 계산. 원본 파일은 그대로 둠.
   const imageCrops = new Map();
   if (targets.some(c => templates[c.template].trimImage && c.image)) {
@@ -148,7 +201,7 @@ async function main() {
     try {
       for (const card of targets) {
         if (!templates[card.template].trimImage || !card.image || imageCrops.has(card.image)) continue;
-        const sample = await readPixels(cropPage, path.join(imageDir, card.image), { withBounds: true });
+        const sample = await readPixels(cropPage, fileOf(card.image), { withBounds: true });
         imageCrops.set(card.image, sample.bounds);
       }
     } finally { await cropPage.close(); }
@@ -169,6 +222,7 @@ async function main() {
   for (const card of targets) {
     const html = buildCardHtml({
       card, cards: data.cards, total: data.cards.length, product, tpl: tplOf(card), theme: cardTheme, htmlDir, imageDir, imageCrop: imageCrops.get(card.image),
+      imageFile: card.image ? fileOf(card.image) : null,
       extraImages: bgs.has(card.no) ? { ...extraImages, sceneFile: bgs.get(card.no).file, bakedProduct: bgs.get(card.no).baked } : extraImages,
     });
     fs.writeFileSync(path.join(htmlDir, `card-${pad(card.no)}.html`), html);
