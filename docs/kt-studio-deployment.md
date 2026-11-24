@@ -120,6 +120,31 @@ sudo systemctl daemon-reload && sudo systemctl enable --now cardnews-deploy.time
 - 되돌리기 훈련: `sudo /opt/cardnews/deploy/cardnews-deploy.sh --rollback-drill` — 지금 버전을 복사해 일부러 고장 낸 버전으로 전환한 뒤, 고장 감지 → 원래 버전 복귀 → 정상 확인까지 해요. 작업실이 1~2분 끊기고, 작업·게시가 있으면 하지 않아요.
 - 실제 인스타 게시 시험 중에는 게시가 진행·예약된 동안 자동으로 미뤄요. 그래도 그 시간에는 병합하지 않는 게 좋아요.
 
+### 실패 메일 알림 (#123)
+
+배포가 실패하면 담당자 메일로 알려요. KT 서버는 메일 포트(25·465·587)가 막혀 있어 HTTPS 메일 API(Resend)로 보내요.
+
+- 보내는 경우: ① main 커밋의 CI 실패 ② 빌드 실패 ③ 새 버전이 정상 응답하지 않아 되돌림 ④ 되돌린 뒤에도 이상. 같은 커밋은 한 번만 시도하므로 메일도 한 번만 와요. 배포를 미룬 경우(작업·게시 중)는 보내지 않아요.
+- 제목 `[카드뉴스 KT] <무엇이 실패> (<커밋 7자리>)`, 본문에 커밋 주소·시각·지금 서비스 중인 버전·기록 위치(`/opt/cardnews/DEPLOY.log`, `.../deploy/build-<커밋>.log`).
+- 설정이 없으면 알림 없이 배포만 해요. 메일 전송이 실패해도 배포 결과는 바뀌지 않아요.
+- 보내는 코드 `ops/kt/deploy/notify.py`, 키는 출력·기록에 남기지 않아요.
+
+설정(한 번):
+
+1. 받을 주소로 resend.com에 가입해요. 무료 요금제는 **가입한 주소로만** 보낼 수 있어요(하루 100통). 받는 사람을 늘리려면 도메인을 인증하고 `NOTIFY_FROM`을 그 도메인 주소로 바꿔요.
+2. API Keys → Create API Key, 권한 `Sending access`. 키는 채팅·Git·노션에 붙여 넣지 않아요.
+3. 서버에서 한 줄씩:
+   ```bash
+   sudo install -m 600 -o root -g root /dev/null /etc/cardnews/notify.env
+   sudo nano /etc/cardnews/notify.env
+   # RESEND_API_KEY=re_...
+   # NOTIFY_EMAIL=<받는 주소>   (여러 명이면 쉼표로)
+   sudo /opt/cardnews/deploy/cardnews-deploy.sh --test-notify
+   ```
+4. 시험 메일이 안 보이면 스팸함을 확인해요. 학교 메일(Google Workspace)은 처음에 스팸으로 갈 수 있어요.
+
+배포 스크립트·`notify.py`는 자동 배포 대상이 아니라서, 바뀌면 `/opt/cardnews/deploy/`에 직접 설치해요(root, 0750).
+
 ## 설치 후 확인
 
 1. 기존 서비스와 도메인 설정을 확인하고, 서비스 파일을 systemd에 등록해요. 시험할 때는 `publish.env`에 `CARDNEWS_IG_SCHEDULE=off`를 넣고 가상 제품 폴더를 사용해요. 사용자가 기존 서버를 운영 중이면 서비스 이름과 도메인이 겹치지 않게 해요.
