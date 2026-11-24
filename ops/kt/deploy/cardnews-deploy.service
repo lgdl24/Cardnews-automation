@@ -1,0 +1,13 @@
+# KT 자동 배포 (#120). cardnews-deploy.timer가 5분마다 실행해요.
+# 빌드는 스크립트 안에서 권한 없는 cardnews-build 계정으로 해요.
+[Unit]
+Description=Cardnews auto deploy from GitHub main
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/cardnews/deploy/cardnews-deploy.sh
+TimeoutStartSec=30min
+Nice=10
+PrivateTmp=true

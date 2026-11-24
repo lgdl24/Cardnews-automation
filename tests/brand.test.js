@@ -192,6 +192,8 @@ test('작업실: 구성안 작업 전에 브랜드 스냅샷, 문구 작업 뒤 
   let releaseBg;
   const studio = createStudio({
     productsDir: dir,
+    // 실제 claude가 없는 CI에서도 '설치됨'으로 보이게 가짜 CLI를 씀 (작업 실행은 아래 runJob으로 바꿈)
+    bin: path.join(__dirname, 'fixtures', 'fake-claude.js'),
     reportsDir: path.join(dir, '_reports'),
     exportConfigFile: path.join(path.dirname(dir), `${path.basename(dir)}-export.json`),
     webIndexFile: path.join(dir, '_web', 'index.json'),

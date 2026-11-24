@@ -44,6 +44,8 @@
 .skip-link:focus { top: 10px; }
 
 .footer { color: var(--text-2); font-size: 12px; }
+.footer code { font-size: 12px; }
+.footer-warn { color: var(--st-failed); }
 .footer-inner { max-width: var(--page-width); margin: 0 auto; padding: 20px var(--gutter) 28px; display: flex; flex-wrap: wrap; gap: 4px 20px; border-top: 1px solid var(--line); }
 
 /* ── 페이지 머리 */

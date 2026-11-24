@@ -76,6 +76,50 @@ sudo fail2ban-client status cardnews-studio-auth
 
 KT 앱 폴더는 Git이 아니에요. 파일을 바꿀 때는 `/opt/cardnews/backup-<날짜>-<이슈>/`에 원본을 두고, `/opt/cardnews/DEPLOY.log`에 날짜·이슈·바꾼 파일·기준 커밋을 한 줄 남겨요. 되돌릴 때는 백업 파일을 제자리에 복사하고 해당 서비스를 다시 켜요.
 
+## 자동 배포 (#120)
+
+main에 병합되면 KT가 스스로 가져가 배포해요. GitHub에는 서버 접속 정보를 두지 않아요.
+
+| 단계 | 내용 |
+| --- | --- |
+| CI | `.github/workflows/ci.yml`이 PR·main push에서 `npm test`, 웹 빌드, `npm run test:web`을 돌려요. 검사 이름은 `CI`이고, main 보호 규칙의 필수 검사예요. |
+| 확인 | `cardnews-deploy.timer`가 5분마다 `/opt/cardnews/deploy/cardnews-deploy.sh`를 root로 실행해요. 공개 저장소 main의 새 커밋을 가져오고, 그 커밋의 `CI`가 성공일 때만 진행해요(GitHub API, 인증 없음). |
+| 미루기 | 작업실의 제작 작업 진행·대기, Claude·Codex 실행, 터미널 작업(`.job.json`), 인스타 게시 진행·예약 실행 중, 30분 안 예약이 있으면 다음 확인으로 미뤄요(`busy-check.py`). |
+| 빌드 | 권한 없는 `cardnews-build` 계정이 `/opt/cardnews/releases/.build-<커밋>`에 `git archive` → `npm ci` → 웹 빌드 → Playwright Chromium 확인을 해요. 끝나면 root 소유·읽기 전용으로 바꿔 `/opt/cardnews/releases/<커밋>`에 둬요. 저장소의 새 코드를 root로 실행하지 않아요. |
+| 전환 | `/opt/cardnews/app` 연결(심볼릭 링크)을 새 릴리스로 바꾸고 `cardnews-publish`·`cardnews-studio`를 다시 켜요. 게이트웨이(Caddy)는 그대로예요. |
+| 확인·되돌리기 | 1분 안에 작업실 `/api/studio/status` 200과 게시 서비스 응답이 없으면 직전 릴리스로 되돌려요. 실패·CI 실패 커밋은 `/var/lib/cardnews/deploy/failed-<커밋>`으로 표시해 다시 시도하지 않아요. |
+| 기록 | `/opt/cardnews/DEPLOY.log`, 빌드 출력 `/var/lib/cardnews/deploy/build-<짧은 커밋>.log`, 상태 `/var/lib/cardnews/deploy/status.json`(작업실 하단에 배포 버전·실패 표시). 릴리스는 현재·직전 포함 3개만 남겨요. |
+
+자동 배포는 앱 코드만 바꿔요. `ops/kt/`의 Caddyfile·fail2ban·서비스 파일과 `/etc/cardnews/` 설정이 바뀌면 지금처럼 백업 후 직접 적용해요.
+
+### 첫 설치 (한 번)
+
+```bash
+sudo useradd --system --home-dir /var/lib/cardnews-build --create-home --shell /usr/sbin/nologin cardnews-build
+sudo install -d -o cardnews-build -g cardnews-build -m 0755 /opt/cardnews/repo.git
+sudo runuser -u cardnews-build -- git init -q --bare /opt/cardnews/repo.git
+sudo chown -R cardnews-build:cardnews-build /opt/cardnews/browsers     # Playwright 버전이 바뀌면 빌드 계정이 받아요
+sudo install -d -o root -g root -m 0755 /opt/cardnews/releases /opt/cardnews/deploy
+sudo install -m 0750 ops/kt/deploy/cardnews-deploy.sh ops/kt/deploy/busy-check.py /opt/cardnews/deploy/
+sudo install -m 0644 ops/kt/deploy/cardnews-deploy.service ops/kt/deploy/cardnews-deploy.timer /etc/systemd/system/
+# 기존 앱 폴더를 첫 릴리스로 옮기고 연결로 바꿔요 (작업·게시가 없을 때)
+sudo mv /opt/cardnews/app /opt/cardnews/releases/legacy-<날짜>
+sudo ln -s /opt/cardnews/releases/legacy-<날짜> /opt/cardnews/app
+echo 'CARDNEWS_DEPLOY_STATUS_FILE=/var/lib/cardnews/deploy/status.json' | sudo tee -a /etc/cardnews/studio.env
+sudo systemctl restart cardnews-publish cardnews-studio
+sudo systemctl daemon-reload && sudo systemctl enable --now cardnews-deploy.timer
+```
+
+### 운영
+
+- 지금 바로 확인: `sudo systemctl start cardnews-deploy` → `tail /opt/cardnews/DEPLOY.log`
+- 다음 확인 시각: `systemctl list-timers cardnews-deploy.timer`
+- 실패한 커밋을 다시 시도: 원인을 고친 새 커밋을 병합해요. 같은 커밋을 다시 하려면 `sudo rm /var/lib/cardnews/deploy/failed-<커밋>`
+- 손으로 되돌리기: `ls -t /opt/cardnews/releases` → `sudo ln -sfn /opt/cardnews/releases/<이전> /opt/cardnews/app && sudo systemctl restart cardnews-publish cardnews-studio`
+- 자동 배포 멈추기: `sudo systemctl disable --now cardnews-deploy.timer`
+- 되돌리기 훈련: `sudo /opt/cardnews/deploy/cardnews-deploy.sh --rollback-drill` — 지금 버전을 복사해 일부러 고장 낸 버전으로 전환한 뒤, 고장 감지 → 원래 버전 복귀 → 정상 확인까지 해요. 작업실이 1~2분 끊기고, 작업·게시가 있으면 하지 않아요.
+- 실제 인스타 게시 시험 중에는 게시가 진행·예약된 동안 자동으로 미뤄요. 그래도 그 시간에는 병합하지 않는 게 좋아요.
+
 ## 설치 후 확인
 
 1. 기존 서비스와 도메인 설정을 확인하고, 서비스 파일을 systemd에 등록해요. 시험할 때는 `publish.env`에 `CARDNEWS_IG_SCHEDULE=off`를 넣고 가상 제품 폴더를 사용해요. 사용자가 기존 서버를 운영 중이면 서비스 이름과 도메인이 겹치지 않게 해요.
