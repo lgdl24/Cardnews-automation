@@ -56,6 +56,23 @@ test('claude 인자: 도구를 제한하고, 이 제품의 cards.json과 허용 
   assert.ok(!args.some((a) => a.includes('[웹 모드]')), '지시문은 인자가 아니라 stdin으로');
 });
 
+test('claude 인자: 작업 폴더 밖 읽기·쓰기를 막고 로그인 정보 경로는 이름으로도 막는다 (#116)', () => {
+  const args = jr.claudeArgs({ productId: ID });
+  // 경로 제한 없는 읽기 도구 허용 금지: 작업 폴더 안 읽기는 승인 없이 되고, 밖은 dontAsk로 거부
+  for (const bare of ['Read', 'Glob', 'Grep']) assert.ok(!jr.allowedTools(ID).includes(bare), `${bare}를 경로 제한 없이 허용하지 않음`);
+  const settings = JSON.parse(args[args.indexOf('--settings') + 1]);
+  assert.equal(settings.permissions.blockReadsOutsideWorkingDirectories, true);
+  assert.equal(settings.permissions.blockWritesOutsideWorkingDirectories, true);
+  const start = args.indexOf('--disallowedTools') + 1;
+  const end = args.findIndex((a, i) => i >= start && a.startsWith('--'));
+  const deny = args.slice(start, end);
+  for (const rule of ['Read(~/.claude/.credentials.json)', 'Read(~/.codex/**)', 'Read(//etc/cardnews/**)']) assert.ok(deny.includes(rule), rule);
+  assert.ok(deny.every((r) => r.startsWith('Read(')), '도구 이름만 적은 차단 규칙은 도구 자체를 없애므로 쓰지 않음');
+  // 차단 인자가 --allowedTools 값 목록에 섞이지 않음
+  const allowedEnd = args.findIndex((a, i) => i > args.indexOf('--allowedTools') && a.startsWith('--'));
+  assert.equal(args[allowedEnd], '--settings');
+});
+
 test('지시문: 웹 모드 plan·copy·revise와 평가 모드를 채우고, 빠진 값은 오류', () => {
   const plan = jr.fillPrompt({ mode: 'web', kind: 'plan', vars: { product_id: ID } });
   assert.match(plan, /^\[웹 모드\] 구성안 작업/);

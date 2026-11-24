@@ -25,11 +25,12 @@ const RULE_EXCLUDE = new Set(['docs/project-context.md', 'docs/handoff.md', 'doc
 const PRODUCT_EXCLUDE = new Set(['log.jsonl', '.job.json', 'output']);
 
 // Claude가 쓸 수 있는 도구와, 묻지 않고 허용하는 것 (그 밖은 dontAsk로 거부)
+// Read·Glob·Grep은 허용 목록에 넣지 않음: 작업 폴더 안 읽기는 승인 없이 되고, 밖은 dontAsk로 거부돼요 (#116)
 const TOOLS = ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash', 'Skill'];
 function allowedTools(productId) {
   const p = productId;
   return [
-    'Read', 'Glob', 'Grep', 'Skill',
+    'Skill',
     `Edit(./products/${p}/cards.json)`, `Write(./products/${p}/cards.json)`,
     `Bash(npm run check -- ${p})`,
     `Bash(npm run validate -- ${p})`,
@@ -97,6 +98,16 @@ function fillPrompt({ mode, kind, vars, root = ROOT, overlayDir = null }) {
   return out;
 }
 
+// 작업 폴더 밖 차단 (#116): 서버(KT)에서는 같은 계정 홈에 Claude·Codex 로그인 정보가 있어요.
+// 외부 글(브랜드 페이지·자료)에 숨은 지시가 있어도 작업 폴더 밖 파일을 읽거나 쓰지 못하게 해요.
+// - blockReads/WritesOutsideWorkingDirectories: 파일 도구는 밖을 거부, 밖을 읽는 cat 등 명령은 승인이 필요 → dontAsk라 거부 (Claude Code 2.1.257+)
+// - 로그인 정보·서버 설정 경로는 이름으로도 막아요 (위 설정을 모르는 옛 버전 대비)
+const GUARD_SETTINGS = JSON.stringify({ permissions: { blockReadsOutsideWorkingDirectories: true, blockWritesOutsideWorkingDirectories: true } });
+const SECRET_READ_DENY = ['Read(~/.claude/.credentials.json)', 'Read(~/.codex/**)', 'Read(~/.ssh/**)', 'Read(~/.config/**)', 'Read(//etc/cardnews/**)', 'Read(//proc/**)', 'Read(**/.env)'];
+function guardArgs() {
+  return ['--settings', GUARD_SETTINGS, '--disallowedTools', ...SECRET_READ_DENY];
+}
+
 // ── 2) claude -p 인자. 지시문은 stdin으로 넘김 (--allowedTools가 여러 값을 받으므로 인자와 섞이지 않게)
 function claudeArgs({ productId, maxTurns = 40, model }) {
   const args = [
@@ -105,6 +116,7 @@ function claudeArgs({ productId, maxTurns = 40, model }) {
     '--permission-mode', 'dontAsk',
     '--tools', TOOLS.join(','),
     '--allowedTools', ...allowedTools(productId),
+    ...guardArgs(),
     '--setting-sources', 'project',
     '--strict-mcp-config',
     '--no-session-persistence',
@@ -424,6 +436,6 @@ async function runJob({
 
 module.exports = {
   ROOT, JOB_KINDS, MODES, TOOLS, RULE_ENTRIES, RULE_EXCLUDE,
-  allowedTools, newJobId, createWorkspace, fillPrompt, claudeArgs, defaultClaudeBin, claudeCommand, claudeEnv,
+  allowedTools, guardArgs, newJobId, createWorkspace, fillPrompt, claudeArgs, defaultClaudeBin, claudeCommand, claudeEnv,
   describeMessage, parseResultReport, verifyJob, mergeJob, errorCodeOf, runJob,
 };
