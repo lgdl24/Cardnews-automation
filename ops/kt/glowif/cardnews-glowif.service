@@ -1,0 +1,27 @@
+# Glowif 하루 한 번 초안 만들기 (#129). cardnews-glowif.timer가 실행해요.
+# 리뷰 ZIP에서 근거가 충분한 주제 중 아직 초안이 없는 주제 하나만 → GPT 제품 누끼 + 구성안(검토 대기).
+# 게시·예약은 하지 않아요. 남은 주제가 없으면 아무것도 만들지 않고 끝나요.
+# 작업실과 같은 계정·제품 폴더·Codex 로그인을 써요 (/opt/cardnews/app은 자동 배포가 바꾸는 현재 버전).
+[Unit]
+Description=Cardnews Glowif daily draft
+After=network-online.target cardnews-studio.service
+Wants=network-online.target
+ConditionPathExists=/var/lib/cardnews/glowif/aihub-71603.zip
+
+[Service]
+Type=oneshot
+User=cardnews-studio
+Group=cardnews-web
+SupplementaryGroups=cardnews-data
+UMask=0007
+WorkingDirectory=/opt/cardnews/app
+EnvironmentFile=/etc/cardnews/studio.env
+Environment=CARDNEWS_PRODUCTS_DIR=/var/lib/cardnews/products
+Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/cardnews/browsers
+Environment=PATH=/opt/cardnews/runtime/node/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/cardnews/runtime/node/bin/node scripts/glowif.js /var/lib/cardnews/glowif/aihub-71603.zip --daily
+TimeoutStartSec=30min
+Nice=5
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true

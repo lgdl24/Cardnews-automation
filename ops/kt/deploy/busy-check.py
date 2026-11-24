@@ -6,6 +6,7 @@
 
 - 제작 작업: 작업실 상태(/api/studio/status 응답 파일)의 진행·대기 작업
 - 터미널 제작 작업: products/<제품ID>/.job.json
+- Glowif 초안 만들기: products/.glowif-<제품ID>.lock (#129)
 - 인스타 게시: products/<제품ID>/output/instagram/ig-publish.json의 진행 단계, 실행 중 예약,
   --guard-minutes 안에 잡힌 예약(시각이 지났어도 아직 'scheduled'면 곧 실행될 수 있어 포함)
 """
@@ -36,6 +37,9 @@ def reasons_for(products, studio_status=None, guard_minutes=30, now=None):
             out.append(f'대기 중인 제작 작업 {len(queue)}개')
     for f in sorted(glob.glob(os.path.join(products, '*', '.job.json'))):
         out.append(f"{os.path.basename(os.path.dirname(f))}: 터미널 제작 작업 진행 중")
+    # Glowif 초안 만들기 (#129): scripts/glowif.js가 products/.glowif-<제품ID>.lock 폴더를 잡고 있는 동안
+    for f in sorted(glob.glob(os.path.join(products, '.glowif-*.lock'))):
+        out.append(f"{os.path.basename(f)[1:-5]}: Glowif 초안 만드는 중")
     for f in sorted(glob.glob(os.path.join(products, '*', 'output', 'instagram', 'ig-publish.json'))):
         pid = f.split(os.sep)[-4]
         try:
