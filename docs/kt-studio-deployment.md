@@ -145,6 +145,17 @@ sudo systemctl daemon-reload && sudo systemctl enable --now cardnews-deploy.time
 
 배포 스크립트·`notify.py`는 자동 배포 대상이 아니라서, 바뀌면 `/opt/cardnews/deploy/`에 직접 설치해요(root, 0750).
 
+## Glowif 하루 한 번 (#129)
+
+리뷰 ZIP으로 가상 제품 초안을 하루 하나씩 만들어요(`docs/glowif.md`). 작업실과 같은 계정·제품 폴더·Codex 로그인을 쓰고, 게시·예약은 하지 않아요.
+
+- 리뷰 ZIP: `/var/lib/cardnews/glowif/aihub-71603.zip` (폴더 `cardnews-studio` 0700, 파일 0600). 공개 저장소·웹 경로에 두지 않아요. AI-Hub 이용 약관상 팀 밖으로 나누지 않아요.
+- 서비스·타이머: `ops/kt/glowif/cardnews-glowif.{service,timer}` → `/etc/systemd/system/`, `systemctl enable --now cardnews-glowif.timer`. 자동 배포 대상이 아니라 바뀌면 직접 설치해요.
+- 확인: `systemctl list-timers cardnews-glowif.timer` · 기록 `journalctl -u cardnews-glowif -n 20`
+- 오늘 만들 주제만 보기: `sudo -u cardnews-studio env CARDNEWS_PRODUCTS_DIR=/var/lib/cardnews/products /opt/cardnews/runtime/node/bin/node /opt/cardnews/app/scripts/glowif.js /var/lib/cardnews/glowif/aihub-71603.zip --daily --dry-run`
+- 지금 한 번 실행: `sudo systemctl start cardnews-glowif` (GPT 제품 이미지 1장 생성)
+- 만드는 동안(`products/.glowif-*.lock`)에는 자동 배포를 미뤄요.
+
 ## 설치 후 확인
 
 1. 기존 서비스와 도메인 설정을 확인하고, 서비스 파일을 systemd에 등록해요. 시험할 때는 `publish.env`에 `CARDNEWS_IG_SCHEDULE=off`를 넣고 가상 제품 폴더를 사용해요. 사용자가 기존 서버를 운영 중이면 서비스 이름과 도메인이 겹치지 않게 해요.

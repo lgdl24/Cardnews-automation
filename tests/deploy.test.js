@@ -52,6 +52,12 @@ test('바쁨 확인: 제작 작업 진행·대기, 터미널 작업이 있으면
   assert.ok(w.check(['--studio-status', broken]).busy, '상태를 못 읽으면 안전하게 미룸');
 });
 
+test('바쁨 확인: Glowif 초안을 만드는 중(잠금 폴더)이면 미뤄요 (#129)', () => {
+  const w = workspace();
+  fs.mkdirSync(path.join(w.products, '.glowif-light-layer-gel.lock')); // scripts/glowif.js의 `.${제품ID}.lock`
+  assert.deepEqual(w.check().lines, ['glowif-light-layer-gel: Glowif 초안 만드는 중']);
+});
+
 test('바쁨 확인: 인스타 게시 진행·예약 실행 중·30분 안 예약이면 미루고, 먼 예약은 괜찮아요', () => {
   const w = workspace();
   w.write(igState('up'), { current: { state: 'uploading' } });

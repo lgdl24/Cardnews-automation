@@ -126,12 +126,27 @@ async function createDraft(stats, candidate, { image, productsDir = path.dirname
   }
 }
 
+const productsRoot = () => path.dirname(paths.product('glowif-x'));
+
+/**
+ * 매일 실행(#129): 근거 기준을 넘는 주제 중 아직 초안이 없는 첫 주제 하나만 고름.
+ * 이미 만든 주제(같은 이름의 제품 폴더)와 다른 실행이 준비 중인 주제(잠금 폴더)는 건너뜀. 없으면 null
+ */
+function pickDaily(ranked, productsDir = productsRoot()) {
+  return ranked.filter((hit) => hit.eligible).find((hit) => {
+    const id = `glowif-${hit.topic.slug}`;
+    return !fs.existsSync(path.join(productsDir, id)) && !fs.existsSync(path.join(productsDir, `.${id}.lock`));
+  }) || null;
+}
+
 async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: { scan: { type: 'boolean' }, topic: { type: 'string' }, image: { type: 'string' } },
+    options: { scan: { type: 'boolean' }, topic: { type: 'string' }, image: { type: 'string' }, daily: { type: 'boolean' }, 'dry-run': { type: 'boolean' } },
   });
-  if (positionals.length !== 1) throw new Error('사용법: npm run glowif -- <AI-Hub ZIP> [--scan] [--topic 주제] [--image 투명PNG]');
+  if (positionals.length !== 1) throw new Error('사용법: npm run glowif -- <AI-Hub ZIP> [--scan] [--topic 주제] [--image 투명PNG] | --daily [--dry-run]');
+  if (values.daily && (values.topic || values.image || values.scan)) throw new Error('--daily는 --topic·--image·--scan과 함께 쓰지 않아요.');
+  if (values['dry-run'] && !values.daily) throw new Error('--dry-run은 --daily와 함께 써요.');
   const stats = scan(positionals[0]);
   const ranked = candidates(stats);
   console.log(`AI-Hub 리뷰 ${stats.reviews}건 · ${stats.from ?? '?'}~${stats.to ?? '?'}`);
@@ -139,6 +154,19 @@ async function main() {
     console.log(`- ${hit.topic.label} (${hit.id}): 리뷰 ${hit.reviews}건 / 상품명 ${hit.products}개 → ${hit.topic.name}${hit.eligible ? '' : ' (근거 부족)'}`);
   }
   if (values.scan) return;
+  if (values.daily) {
+    const pick = pickDaily(ranked);
+    const eligible = ranked.filter((hit) => hit.eligible).length;
+    if (!pick) {
+      console.log(`오늘은 새로 만들 주제가 없어요. 근거가 충분한 주제 ${eligible}개 모두 초안이 있어요. 새 리뷰 자료가 들어오면 다시 찾아요.`);
+      return;
+    }
+    console.log(`오늘 만들 주제: ${pick.topic.label} (${pick.id}) → ${pick.topic.name}`);
+    if (values['dry-run']) return;
+    const result = await createDraft(stats, pick);
+    console.log(result.status === 'created' ? `구성안 검토 대기: /studio/${result.id}` : `이미 만든 주제예요: /studio/${result.id}`);
+    return;
+  }
   const selected = values.topic ? ranked.find((hit) => hit.id === values.topic) : ranked.find((hit) => hit.eligible);
   if (!selected && values.topic) throw new Error('목록에 있는 주제 ID를 입력해 주세요.');
   if (!selected?.eligible) {
@@ -153,4 +181,4 @@ async function main() {
 
 if (require.main === module) main().catch((err) => { console.error(err.message); process.exitCode = 1; });
 
-module.exports = { scan, candidates, createDraft, cutoutPrompt };
+module.exports = { scan, candidates, createDraft, cutoutPrompt, pickDaily };

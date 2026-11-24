@@ -60,6 +60,40 @@ test('Glowif ZIP: 부정 스킨케어 리뷰만 집계하며 원문과 상품명
   assert.doesNotMatch(JSON.stringify(stats), /PRIVATE|STORE|OTHER/);
 });
 
+test('Glowif 매일 실행(#129): 초안이 없는 다음 주제를 하나만 고르고, 다 만들었으면 건너뛰어요', (t) => {
+  const dir = temp(t);
+  const { pickDaily } = require('../scripts/glowif');
+  const hit = (topic, reviews, products) => ({ id: topic.id, reviews, products, topic, eligible: reviews >= 5 && products >= 3 });
+  const ranked = [hit(topics[0], 588, 120), hit(topics[1], 83, 48), hit(topics[2], 60, 26), hit({ ...topics[2], id: 'weak', slug: 'weak' }, 4, 2)];
+  assert.equal(pickDaily(ranked, dir).id, 'sticky-finish', '첫날: 1순위');
+  fs.mkdirSync(path.join(dir, `glowif-${topics[0].slug}`));
+  assert.equal(pickDaily(ranked, dir).id, 'strong-scent', '1순위 초안이 있으면 다음 주제');
+  fs.mkdirSync(path.join(dir, `.glowif-${topics[1].slug}.lock`));
+  assert.equal(pickDaily(ranked, dir).id, 'layer-pilling', '다른 실행이 준비 중인 주제도 건너뜀');
+  fs.mkdirSync(path.join(dir, `glowif-${topics[2].slug}`));
+  assert.equal(pickDaily(ranked, dir), null, '근거 부족 주제는 만들지 않음');
+});
+
+test('Glowif 매일 실행(#129): 남은 주제가 없으면 이미지 생성 없이 0으로 끝나고, 잘못된 조합은 막아요', (t) => {
+  const dir = temp(t);
+  const zip = path.join(dir, 'sample.zip');
+  const rows = [0, 1, 2, 3, 4].map((n) => ({ Index: n, Source: '쇼핑몰', Domain: '화장품', MainCategory: '스킨케어', ProductName: `S-${n % 3}`, RawText: `r${n}`, RDate: '20220101', Aspects: [{ Aspect: '사용감', SentimentPolarity: '-1', SentimentText: '끈적해요' }] }));
+  spawnSync(bin, ['-c', 'import sys, zipfile; z=zipfile.ZipFile(sys.argv[1], "w"); z.writestr("Sample/쇼핑몰/스킨케어.json", sys.stdin.read()); z.close()', zip], { input: JSON.stringify(rows), encoding: 'utf8' });
+  const products = path.join(dir, 'products');
+  fs.mkdirSync(path.join(products, `glowif-${topics[0].slug}`), { recursive: true });
+  const run = (...args) => spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'glowif.js'), zip, ...args], { encoding: 'utf8', env: { ...process.env, CARDNEWS_PRODUCTS_DIR: products, CODEX_BIN: '/nonexistent/codex' } });
+  const done = run('--daily');
+  assert.equal(done.status, 0, done.stderr);
+  assert.match(done.stdout, /오늘은 새로 만들 주제가 없어요/);
+  fs.rmSync(path.join(products, `glowif-${topics[0].slug}`), { recursive: true });
+  const dry = run('--daily', '--dry-run');
+  assert.equal(dry.status, 0, dry.stderr);
+  assert.match(dry.stdout, /오늘 만들 주제: 바른 뒤 끈적임/);
+  assert.equal(fs.readdirSync(products).length, 0, '미리 보기는 아무것도 만들지 않음');
+  assert.match(run('--daily', '--topic', 'sticky-finish').stderr, /함께 쓰지 않아요/);
+  assert.match(run('--dry-run').stderr, /--daily와 함께/);
+});
+
 test('Glowif 문구는 세 주제 모두 검증을 통과하고 부제나 마무리 규칙이 틀리면 막혀요', (t) => {
   const dir = temp(t);
   const validate = (id) => spawnSync(process.execPath, ['scripts/validate.js', id, '--no-log'], {
