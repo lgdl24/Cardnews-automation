@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-24 | Claude | #116 · `fix/116-kt-studio-hardening` (`feat/112` 위) | **KT 작업실 보안 보강**: 제작 작업·자료 채우기의 Claude가 작업 폴더 밖을 못 읽게 `--settings`(`blockReads/WritesOutsideWorkingDirectories`, Claude Code 2.1.257+)와 로그인 정보 경로 `Read(...)` 차단을 넣고 경로 제한 없는 Read·Glob·Grep 허용을 뺐어요. Caddy 접근 기록(JSON)·HSTS, fail2ban(401 10회/10분 → 443 1시간 차단). KT에 반영·확인 완료(가짜 파일 시험, 실제 IP 기록, 차단 규칙). 자세한 내용은 `docs/kt-studio-deployment.md` 「보안 보강」 |
 | 2026-11-18 | Codex | #112 · `feat/112-kt-studio-publish` | KT 작업실과 게시 JPEG의 기준 주소를 무료 서브도메인 HTTPS로 바꿨어요. 팀원별 로그인, 비로그인 접근 차단, 게시 프로세스와 외부의 JPEG 조회를 확인했어요. |
 | 2026-11-18 | Codex | #110 · `feat/110-instagram-publish-unified` · [PR #111](https://github.com/lgdl24/Cardnews-automation/pull/111) | 사용자 승인으로 #109를 main에 병합했어요. CLI·웹 게시 관리자/기록·프로세스 잠금·불분명 상태·예약을 통합했고 실제 게시 없이 265/31 검사·빌드를 통과했어요. 사용법은 `docs/instagram-publish.md`예요. |
 | 2026-11-17 | Codex | #107 · `feat/107-instagram-caption` · [PR #109](https://github.com/lgdl24/Cardnews-automation/pull/109) | B 방식으로 승인 근거 기반의 새 게시 글 작성·별도 의미 검토를 추가했어요. 첫 줄 AI 활용·맥락별 태그, 카드/원문/규칙 변경 무효화, CLI·웹·점검 캡션 일치와 사람 재확인을 연결했어요. 편집 UI·실제 게시·예약은 실행하지 않았어요. 아래 #107 절을 확인해요. |
@@ -17,7 +18,15 @@
 | 2026-11-17 | Codex | #96 · `fix/96-instagram-unified-login` (`feat/instagram` 위), PR #99 | Unified Login·게시 권한·한도 확인 지원, Bearer 헤더와 오류 토큰 숨김. 이전 실험 이미지의 GPT 사용 표시도 검토에 반영. 게시 명령의 `check` 이름 충돌 수정, Cloudflare는 연결 등록을 기다린 뒤 DNS 전파 15초 대기. 사용자 승인 후 젤크림 5장 첫 실제 게시·캡션·순서 검증 완료. 아래 게시 링크와 기록 위치 참조 |
 | 2026-11-17 | Claude | #94 · `feat/94-rules-v2` | **규칙 v2: 문제 제시 → 해결** (이용석, 11.11 멘토 피드백): `config/skill-version.json` v2. 1번 표지 제목은 원문 사용감·상황을 뒤집은 소비자 문제(뒤집은 근거 ID를 1번 `intent`·`evidence`에), 2번은 그 답, 마지막은 다시 묶음. 질환·기능성 단어를 문제로 쓰지 않고 해결 단정 금지(`docs/style-guide.md` '문제 제시 → 해결', `cardnews-content` Skill 2·3·4·5단계). 데이터 규격·검증·템플릿은 그대로라 v1과 같은 잣대로 비교. 테스트의 실행ID는 버전을 `config/skill-version.json`에서 읽음, 웹 데이터 예시 `index.json` 현재 버전 v2 |
 | 2026-11-17 | Claude | #100 · `feat/100-brand-layouts` (#93·#97 위) | **브랜드 무드 배치** (이용석): `brand_mood.layout` = panel(기존 반투명 면)·editorial(면 없이 큰 영문 세리프 단어·가는 선)·immersive(어두운 장면·흰 글자 가운데). 레퍼런스마다 `layout_id`, 구성안에서 고른 레퍼런스의 배치로 출력(`templates/brand/<배치>/`). 배치별 제품 자리·배경 구도 `scripts/lib/brand.js` BRAND_LAYOUTS(panel 아니면 배경 key에 배치 포함). 새 문구 칸 `display`(영문 장식 단어, 근거 원문 단어의 영어만). 브랜드 묶음에 Pretendard Light(300) |
-| 2026-11-17 | Claude | #97 · `feat/97-mood-references` | **템플릿 레퍼런스** (이용석): `config/mood-references.json` — 비슷한 무드의 뷰티 카드뉴스 템플릿 12개를 특징 글로(이미지 없음, 링크만). 사용자가 고르는 카테고리가 아님. 구성안 작업에서 브랜드 페이지 분위기와 `mood` 단어가 가까운 1~2개를 찾아 `brand_mood`의 장면·사진 연출·색 쓰는 법에 참고(색 값은 브랜드 페이지), evidence에 "레퍼런스 <id>". 설명 `docs/designs/mood-references.md`, 핀터레스트 조사 `docs/research/beauty-cardnews-pinterest.md`, 검사 `tests/mood-references.test.js` |
+
+## 현재 작업 — KT 작업실 보안 보강 #116 (Claude, 2026-11-24)
+
+- 배경: 11.24 KT 작업실 서비스 계정(`cardnews-studio`, 홈 `/var/lib/cardnews/ai-home`)에 Claude Code(본인 구독)·Codex(ChatGPT 기기 코드) 로그인을 마쳤어요. CLI는 `/opt/cardnews/runtime/ai-cli/bin/`, Node는 `/opt/cardnews/runtime/node/bin/`에 있어요(서비스 계정 셸에서 `codex`를 직접 쓰려면 그 Node 경로를 `PATH`에 넣어야 해요).
+- 문제: 제작 작업이 Read·Glob·Grep을 경로 제한 없이 허용해서, KT에서 시험해 보니 작업 폴더 밖 홈·`~/.codex/`의 가짜 파일이 실제로 읽혔어요.
+- 변경: `scripts/lib/job-runner.js` `guardArgs()`(설정 + 차단 규칙)를 제작 작업·`extract-input.js`에 적용, 테스트 `tests/job-runner.test.js` 추가. `ops/kt/Caddyfile` 접근 기록·HSTS, `ops/kt/fail2ban/` 필터·jail, 운영 안내 「보안 보강」 절.
+- KT 반영(11.24, 기준 `e40bf1a` 위에 파일 교체): `job-runner.js`·`extract-input.js` 교체(백업 `/opt/cardnews/backup-20261124-116/`), 서버 Caddyfile 공개 사이트 2곳에 접근 기록·HSTS(백업 `/etc/cardnews/Caddyfile.before-116`), fail2ban 설치·`cardnews-studio-auth` jail. 기록은 `/opt/cardnews/DEPLOY.log`.
+- 확인: 고친 뒤 같은 시험에서 안쪽 파일만 읽히고 밖·`.codex`·`cat`은 거부. 외부에서 비로그인 401·HSTS 헤더, 기록된 IP = 실제 접속 공인 IP, 필터가 401을 찾고 시험 IP `banip`으로 방화벽 규칙 생성·해제. `npm test`·`test:web`·웹 빌드 결과는 PR에 적어요.
+- 남은 일: ① #111 → #113 → 이 PR 순서로 병합하고 main 기준으로 KT 재배포 ② Claude 구독 로그인이라 서버의 Claude 기능은 이규동 본인 사용 기준(팀원도 쓰면 Claude Console API 키로 바꾸기) ③ Meta 연결·KT 실제 게시 1회(승인 뒤) ④ 노션 트래커 갱신.
 
 ## 현재 작업 — KT 팀 작업실과 고정 게시 주소 #112 (Codex, 2026-11-18)
 

@@ -1,0 +1,12 @@
+# /etc/fail2ban/jail.d/cardnews-studio.local (#116)
+# 10분 안에 로그인 실패(401)가 10번 넘는 IP를 1시간 동안 HTTPS(443)에서 막아요. SSH(22)는 막지 않아요.
+# 팀원이 잘못 막혔을 때: sudo fail2ban-client set cardnews-studio-auth unbanip <IP>
+[cardnews-studio-auth]
+enabled  = true
+filter   = cardnews-studio-auth
+logpath  = /var/log/cardnews-gateway/access.log
+backend  = auto
+port     = https
+maxretry = 10
+findtime = 10m
+bantime  = 1h

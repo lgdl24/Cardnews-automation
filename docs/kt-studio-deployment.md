@@ -38,6 +38,44 @@
 
 공인 IP에서 도메인으로 옮길 때는 도메인의 A 레코드를 서버 IP에 연결하고, 기존 HTTPS 443에서 새 인증서를 발급해요. 새 주소를 팀 인증 뒤에 먼저 붙여 브라우저에서 확인한 뒤, 작업실 origin과 게시 이미지 기준 주소를 같이 바꿔요. 기존 IP와 SSH 미리보기를 함께 제공할 때는 게이트웨이가 해당 주소의 정확한 브라우저 origin만 새 origin으로 전달해요. 새 도메인에서 외부 JPEG 조회와 게시 계정의 HEAD 확인을 모두 검사해요.
 
+## 보안 보강 (#116)
+
+인증서가 공개 기록(Certificate Transparency)에 남아서 작업실 주소는 누구나 찾을 수 있어요. 팀 로그인 뒤에서 돌아가는 Claude가 외부 글을 읽기 때문에 아래 세 가지를 함께 켜 둬요.
+
+### 서버 Claude는 작업 폴더 밖을 못 읽어요
+
+- 제작 작업(`scripts/lib/job-runner.js`)과 자료로 채우기(`scripts/lib/extract-input.js`)는 `--settings`로 `permissions.blockReadsOutsideWorkingDirectories`·`blockWritesOutsideWorkingDirectories`를 켜요. 파일 도구는 작업 폴더 밖을 거부하고, 밖을 읽는 `cat` 같은 명령은 승인이 필요해져 `dontAsk` 모드에서 거부돼요. **Claude Code 2.1.257 이상**이 필요해요. 서버 CLI를 바꾸면 `claude --version`으로 확인해요.
+- 로그인 정보·서버 설정 경로(`~/.claude/.credentials.json`, `~/.codex/**`, `~/.ssh/**`, `~/.config/**`, `/etc/cardnews/**`, `/proc/**`, `.env`)는 `--disallowedTools`의 `Read(...)` 규칙으로도 막아요.
+- 경로 제한 없는 `Read`·`Glob`·`Grep` 허용은 없앴어요. 작업 폴더 안 읽기는 승인 없이 돼요.
+- 확인 방법: 작업실 서비스 계정으로 임시 작업 폴더를 만들고, 홈과 `~/.codex/`에 가짜 파일을 둔 뒤 같은 인자로 `claude -p`에 네 가지(안쪽 Read, 홈 Read, `cat`, `.codex` Read)를 시켜요. 안쪽만 읽히면 정상이에요. 끝나면 가짜 파일을 지워요. 11.24 KT에서 고치기 전에는 홈·`.codex` 가짜 파일이 읽혔고, 고친 뒤에는 둘 다 거부됐어요.
+
+### 접근 기록과 HTTPS 강제
+
+- 공개 사이트마다 Caddy `log`(JSON, `/var/log/cardnews-gateway/access.log`, 10MiB·5개 순환)와 `Strict-Transport-Security: max-age=31536000`을 넣어요(`ops/kt/Caddyfile`). Caddy는 Authorization·Cookie 헤더 값을 기록에서 가려요.
+- 기록 폴더는 게이트웨이 계정이 써요: `sudo install -d -o cardnews-gateway -g adm -m 0750 /var/log/cardnews-gateway`
+- 적용 전 `caddy validate --config <새 파일> --adapter caddyfile`을 게이트웨이 계정과 같은 `XDG_*` 환경으로 실행하고, 통과할 때만 바꿔요. 관리 API를 끈 설정이라 적용은 `sudo systemctl restart cardnews-gateway`예요(몇 초 끊겨요).
+- **기록된 IP가 실제 접속 IP인지 먼저 확인해요.** NAT 장비 주소만 찍히면 차단이 팀 전체를 막아요. 11.24 KT는 Static NAT 뒤에서도 접속한 공인 IP가 그대로 기록되는 것을 SSH 접속 IP와 대조해 확인했어요.
+
+### 로그인 실패 반복 차단 (fail2ban)
+
+`ops/kt/fail2ban/`의 필터·jail을 써요. 10분 안에 401이 10번 넘는 IP를 1시간 동안 443에서 막아요. 브라우저는 처음 접속할 때 로그인 창을 띄우려고 401을 한 번 받으므로 기준을 넉넉히 뒀어요. SSH(22)는 이 규칙으로 막지 않아요(Ubuntu 기본 `sshd` jail은 따로 켜져 있어요).
+
+```bash
+sudo apt-get install -y fail2ban
+sudo install -m 0644 ops/kt/fail2ban/cardnews-studio-auth.conf /etc/fail2ban/filter.d/
+sudo install -m 0644 ops/kt/fail2ban/cardnews-studio.local /etc/fail2ban/jail.d/
+sudo fail2ban-regex /var/log/cardnews-gateway/access.log /etc/fail2ban/filter.d/cardnews-studio-auth.conf
+sudo systemctl enable --now fail2ban
+sudo fail2ban-client status cardnews-studio-auth
+```
+
+- 팀원이 잘못 막혔을 때: `sudo fail2ban-client set cardnews-studio-auth unbanip <IP>`
+- 차단 동작 시험은 실제 팀 IP 대신 문서용 주소(`203.0.113.x`)로 `banip` → 방화벽 규칙 확인 → `unbanip` 해요.
+
+### 서버 반영 기록
+
+KT 앱 폴더는 Git이 아니에요. 파일을 바꿀 때는 `/opt/cardnews/backup-<날짜>-<이슈>/`에 원본을 두고, `/opt/cardnews/DEPLOY.log`에 날짜·이슈·바꾼 파일·기준 커밋을 한 줄 남겨요. 되돌릴 때는 백업 파일을 제자리에 복사하고 해당 서비스를 다시 켜요.
+
 ## 설치 후 확인
 
 1. 기존 서비스와 도메인 설정을 확인하고, 서비스 파일을 systemd에 등록해요. 시험할 때는 `publish.env`에 `CARDNEWS_IG_SCHEDULE=off`를 넣고 가상 제품 폴더를 사용해요. 사용자가 기존 서버를 운영 중이면 서비스 이름과 도메인이 겹치지 않게 해요.

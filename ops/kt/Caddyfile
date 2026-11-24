@@ -1,4 +1,15 @@
 {$CARDNEWS_STUDIO_DOMAIN} {
+	# 접근 기록(JSON): fail2ban이 로그인 실패(401)를 반복한 IP를 막는 데 써요 (#116).
+	# Caddy는 Authorization·Cookie 헤더 값을 기록에서 가려요.
+	log {
+		output file /var/log/cardnews-gateway/access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+		format json
+	}
+	header Strict-Transport-Security "max-age=31536000"
+
 	@instagramImage {
 		method GET HEAD
 		path_regexp ^/ig-media/[a-f0-9]{32}/card-[0-9]{2}\.jpg$

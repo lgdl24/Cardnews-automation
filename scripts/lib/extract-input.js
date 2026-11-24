@@ -83,6 +83,7 @@ function extractInput({ files, bin = jobRunner.defaultClaudeBin(), timeoutMs = 6
   const prompt = buildExtractPrompt(fields, materials.map((m) => m.name));
   const exec = run || ((cwd) => new Promise((resolve) => {
     const args = ['-p', '--output-format', 'json', '--permission-mode', 'dontAsk', '--tools', 'Read,Glob', '--allowedTools', 'Read(./materials/**)', 'Glob',
+      ...jobRunner.guardArgs(),
       '--setting-sources', 'project', '--strict-mcp-config', '--no-session-persistence', '--max-turns', '20'];
     const [cmd, cmdArgs] = jobRunner.claudeCommand(bin, args);
     const child = spawn(cmd, cmdArgs, { cwd, env: process.env, stdio: ['pipe', 'pipe', 'pipe'] });
