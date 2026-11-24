@@ -526,7 +526,7 @@ function createStudio({
     }
     const images = [].concat(body.images || []);
     const prepared = images.map((img) => {
-      const file = String(img.file || '').trim();
+      const file = String(img.file || '').normalize('NFC').trim(); // Mac 한글 이름(NFD) → 완성형 (#132)
       if (!FILE_RE.test(file)) throw new HttpError(400, `이미지 파일명은 영문·숫자·한글과 .png·.jpg만 쓸 수 있어요: ${file}`);
       let data = null;
       if (img.data) {
