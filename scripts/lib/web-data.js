@@ -23,7 +23,11 @@ function buildLabels() {
     kinds: KINDS,
     stages: STAGE_LABELS,
     roles: ROLE_LABELS,
-    templates: Object.fromEntries(Object.entries(templates).filter(([k]) => !k.startsWith('_')).map(([k, v]) => [k, v.label])),
+    // 기본 템플릿 + 디자인 묶음 전용 템플릿(브랜드 무드의 question 등, #136). 같은 이름이면 기본 이름표
+    templates: Object.fromEntries([
+      ...Object.values(templates._designs || {}).flatMap((d) => Object.entries(d).filter(([k, v]) => !k.startsWith('_') && v && v.label).map(([k, v]) => [k, v.label])),
+      ...Object.entries(templates).filter(([k]) => !k.startsWith('_')).map(([k, v]) => [k, v.label]),
+    ]),
     revision_types: Object.fromEntries(revisionTypes.map((t) => [t.code, t.label])),
     phases: PHASES,
   };

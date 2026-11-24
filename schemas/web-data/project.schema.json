@@ -232,7 +232,8 @@
           "$ref": "../cards.schema.json#/$defs/card/properties/role"
         },
         "template": {
-          "$ref": "../cards.schema.json#/$defs/card/properties/template"
+          "enum": ["cover", "image", "description", "question"],
+          "description": "기본 템플릿(cards.schema)과 디자인 묶음 전용 템플릿(config/templates.json _designs, 예: 브랜드 무드의 question). templates.json과 같은지 테스트가 확인 (#136)"
         },
         "intent": {
           "type": "string"

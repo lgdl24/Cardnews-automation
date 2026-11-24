@@ -84,6 +84,42 @@ test('npm 명령: 작업에 쓰는 check·validate·render 앞뒤로 npm이 자�
   }
 });
 
+test('작업 반영: 그룹 상속 폴더(KT 제품 폴더)로 복사한 결과는 폴더 그룹으로 맞춰요 (#136)', (t) => {
+  // Node의 copyFileSync·cpSync는 원본 그룹을 가져와서, 게시 서비스(폴더 그룹)가 cards.json을 못 읽었어요
+  const { inheritGroup } = require('../scripts/lib/common');
+  if (process.platform === 'win32') return t.skip('Windows는 그룹 권한이 달라요');
+  const primary = process.getgid();
+  const other = require('child_process').execSync('id -G').toString().trim().split(/\s+/).map(Number).find((g) => g !== primary);
+  if (other === undefined) return t.skip('그룹이 하나뿐이라 시험할 수 없어요');
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'cardnews-group-'));
+  t.after(() => fs.rmSync(base, { recursive: true, force: true }));
+  const uid = process.getuid();
+  const products = path.join(base, 'products');
+  fs.mkdirSync(products);
+  fs.chownSync(products, uid, other);
+  fs.chmodSync(products, 0o2770);
+  const ws = path.join(base, 'ws', 'demo');
+  fs.mkdirSync(path.join(ws, 'output', 'png'), { recursive: true });
+  fs.writeFileSync(path.join(ws, 'cards.json'), '{}');
+  fs.writeFileSync(path.join(ws, 'output', 'png', 'card-01.png'), 'x');
+  const productDir = path.join(products, 'demo');
+  fs.mkdirSync(productDir);
+  fs.chownSync(productDir, uid, other);
+  fs.chmodSync(productDir, 0o2770);
+  jr.mergeJob({ wsProduct: ws, productDir, ok: true });
+  // 운영체제마다 복사 동작이 달라서, 원본 그룹이 따라온 상태를 만든 뒤 다시 맞추는 것도 확인
+  for (const f of ['cards.json', 'output/png/card-01.png']) fs.chownSync(path.join(productDir, f), uid, primary);
+  inheritGroup(path.join(productDir, 'cards.json'));
+  inheritGroup(path.join(productDir, 'output'));
+  for (const f of ['cards.json', 'output', 'output/png', 'output/png/card-01.png']) assert.equal(fs.statSync(path.join(productDir, f)).gid, other, f);
+  // 그룹 상속 폴더가 아니면(개인 PC) 바꾸지 않음
+  const plain = path.join(base, 'plain.json');
+  fs.writeFileSync(plain, '{}');
+  fs.chownSync(plain, uid, primary);
+  inheritGroup(plain);
+  assert.equal(fs.statSync(plain).gid, primary);
+});
+
 test('지시문: 웹 모드 plan·copy·revise와 평가 모드를 채우고, 빠진 값은 오류', () => {
   const plan = jr.fillPrompt({ mode: 'web', kind: 'plan', vars: { product_id: ID } });
   assert.match(plan, /^\[웹 모드\] 구성안 작업/);

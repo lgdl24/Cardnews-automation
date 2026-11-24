@@ -21,6 +21,7 @@
       "closing": "마무리"
     },
     "templates": {
+      "question": "문제 제시 표지형",
       "cover": "표지형",
       "image": "이미지 강조형",
       "description": "설명형"

@@ -8,6 +8,8 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-24 | Claude | #136 · `fix/136-export-publish-perms` | **KT 내보내기·인스타 게시**: ① 웹 데이터 `project.schema.json`의 template이 기본 템플릿만 받아 브랜드 무드 `question`(#114) 카드가 있으면 "스키마 검사 실패" → 디자인 묶음 전용 템플릿 허용·이름표 추가, `templates.json`과 어긋나면 테스트 실패. ② Node `copyFileSync`·`cpSync`·`renameSync`가 임시 폴더(cardnews-web) 그룹을 가져와 제품 폴더 그룹 상속(cardnews-data)이 무시 → 게시 서비스가 `cards.json`을 못 읽어 "카드 데이터가 없어요". `common.inheritGroup`으로 작업 반영·AI 카드·AI 배경·Glowif 뒤 폴더 그룹으로 맞춤. 서버 기존 파일은 `chgrp -R cardnews-data`로 바로잡음 |
+| 2026-11-24 | Claude | #134 · `fix/134-render-cutout` | **최종 카드 제품 사진 누끼**: 누끼를 AI 배경 요청에만 써서 흰 배경 사진이 카드에 흰 사각형째로 얹혔음. `render.js`가 투명하지 않은 제품 사진의 누끼를 `output/cutout/<파일>_png.png`로 만들어 카드에 씀(원본보다 새로우면 재사용, 이미 투명하면 원본). 원본 `images/`는 그대로 |
 | 2026-11-24 | Claude | #132 · `fix/132-nfd-filenames` | **Mac 한글 파일 이름**: Mac은 파일 이름을 자모를 푼 NFD로 넘겨 `가-힣` 검사에 걸렸음(자료로 채우기 거절, 제품 사진 이름이 `image.png`로 바뀜). 브라우저(`ProductFormPage` 파일 이름 정리·자료 이름)와 서버(`extract-input` 자료 이름·`studio-api` 이미지 이름) 모두 `normalize('NFC')` 뒤 검사 |
 | 2026-11-24 | Claude | #129 · `feat/129-glowif-daily` | **Glowif 하루 한 번**: `npm run glowif -- <ZIP> --daily`는 근거 기준을 넘는 주제 중 초안·잠금이 없는 첫 주제 하나만 만들고, 없으면 GPT 호출 없이 끝남(`--dry-run`은 고르기만). 이전에는 1순위 주제가 있으면 "이미 만든 주제"로 끝나 다음 주제로 넘어가지 않았음. KT `cardnews-glowif.timer`(매일 04:13±10분, 작업실 계정), ZIP은 서버 `/var/lib/cardnews/glowif/aihub-71603.zip`(작업실 계정만 읽기, 저장소·웹에 없음). Glowif 잠금 중에는 자동 배포 미룸(`busy-check.py`). 운영 안내 「Glowif 하루 한 번」 |
 | 2026-11-24 | Codex | #127 · `feat/127-glowif-review-drafts` | **Glowif 첫 제작 흐름**. 로컬 AI-Hub ZIP 집계 → 가상 제품 누끼·v2 구성안 → Glowif 목록 → 기존 구성안 승인·문구 검증·GPT 5장 디자인·최종 검토를 연결했어요. [실행과 검토 방법](glowif.md) |

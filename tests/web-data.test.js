@@ -44,10 +44,28 @@ test('labels의 키·이름은 검증 코드와 config 파일과 같다', () => 
   const { labels } = index;
   assert.deepEqual(Object.keys(labels.stages), STAGES);
   assert.deepEqual(Object.keys(labels.roles), ROLES);
-  assert.deepEqual(labels.templates, Object.fromEntries(Object.entries(templates).filter(([k]) => !k.startsWith('_')).map(([k, v]) => [k, v.label])));
+  assert.deepEqual(labels.templates, Object.fromEntries([
+    ...Object.values(templates._designs).flatMap((d) => Object.entries(d).filter(([k, v]) => !k.startsWith('_') && v && v.label).map(([k, v]) => [k, v.label])),
+    ...Object.entries(templates).filter(([k]) => !k.startsWith('_')).map(([k, v]) => [k, v.label]),
+  ]));
   assert.deepEqual(labels.revision_types, Object.fromEntries(revisionTypes.map((t) => [t.code, t.label])));
   assert.deepEqual(labels.phases, PHASES);
   assert.deepEqual(Object.keys(labels.kinds), readJson('schemas/web-data/index.schema.json').$defs.kind.enum);
+});
+
+test('웹 데이터 template은 config/templates.json의 모든 템플릿(디자인 묶음 전용 포함)을 받는다 (#136)', () => {
+  // 브랜드 무드의 question(#114)을 쓴 제품이 '스키마 검사 실패'로 내보내지지 않았어요
+  const templates = readJson('config/templates.json');
+  const all = new Set([
+    ...Object.keys(templates).filter((k) => !k.startsWith('_')),
+    ...Object.values(templates._designs).flatMap((d) => Object.keys(d).filter((k) => !k.startsWith('_') && d[k] && d[k].file)),
+  ]);
+  const schema = readJson('schemas/web-data/project.schema.json');
+  const find = (o) => (o && typeof o === 'object' ? (o.properties && o.properties.template && o.properties.role ? o.properties.template : Object.values(o).map(find).find(Boolean)) : null);
+  assert.deepEqual([...find(schema).enum].sort(), [...all].sort());
+  const project = JSON.parse(JSON.stringify(readJson(`${EXAMPLE}/projects/${index.projects[0].id}/project.json`)));
+  project.cards[0].template = 'question';
+  check('project', project);
 });
 
 test('예시 project.json의 원문 근거·분석·카드는 원본 cards.json과 같다 (예시가 실제 결과에서 나옴)', () => {

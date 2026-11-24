@@ -5,7 +5,7 @@ const { spawnSync } = require('node:child_process');
 const { parseArgs } = require('node:util');
 const { topics } = require('../config/glowif.json');
 const { MARKER, glowifInfo, glowifPlan } = require('./lib/glowif-product');
-const { paths, printReport } = require('./lib/common');
+const { paths, printReport, inheritGroup } = require('./lib/common');
 const { appendEvent } = require('./lib/events');
 const { checkInput } = require('./check-input');
 const { validate } = require('./validate');
@@ -132,6 +132,7 @@ async function createDraft(stats, candidate, { image, productsDir = path.dirname
       else process.env.CARDNEWS_PRODUCTS_DIR = previous;
     }
     fs.renameSync(staged, target);
+    inheritGroup(target); // GPT 누끼(Codex 출력) 그룹이 따라오지 않게 (#136)
     return { id, status: 'created' };
   } finally {
     fs.rmSync(lock, { recursive: true, force: true });

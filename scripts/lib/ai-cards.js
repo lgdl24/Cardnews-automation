@@ -3,6 +3,7 @@
 //   - 신선도: 카드 문구·사진·템플릿으로 만든 key가 AI 카드를 만들 때와 같아야 씀 (문구를 고치면 다시 만들어야 함)
 //   - 적용: output/png/card-NN.png 를 AI 카드로 바꾸고, 템플릿 출력은 output/ai-card/template-card-NN.png 로 보관
 //   render.js(다시 출력해도 AI 카드 유지), ai-card.js(만든 뒤 바로 적용), 작업실·피그마 내보내기가 같이 씀
+const { inheritGroup } = require('./common');
 const crypto = require('crypto');
 const { samePng } = require('./ai-disclosure');
 const { glowifInfo } = require('./glowif-product');
@@ -77,6 +78,8 @@ function applyAiCards(productDir, cards, { only = null } = {}) {
     if (!sameFile(target, ai)) {
       fs.copyFileSync(target, path.join(dir, `template-card-${pad(no)}.png`));
       fs.copyFileSync(ai, target);
+      inheritGroup(target); // GPT 이미지(Codex 작업 폴더) 그룹이 따라오지 않게 (#136)
+      inheritGroup(path.join(dir, `template-card-${pad(no)}.png`));
     }
     applied.push(no);
   }

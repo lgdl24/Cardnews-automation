@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { paths, readJson, loadInput, requireProductId, designRecord } = require('./lib/common');
+const { paths, readJson, loadInput, requireProductId, designRecord, inheritGroup } = require('./lib/common');
 const { pad, launchBrowser } = require('./lib/card-html');
 const { runCodex, generatedPath, lockScore, LOCK, PAGE_FNS } = require('./ai-card');
 const { representativeColor, readPixels } = require('./lib/color-mood');
@@ -103,7 +103,7 @@ async function makeCompositeBg({ page, card, mood, cut, dir, tries, timeoutSec, 
       if (r.code === -1 || limit) { record.stop = attempt.error; break; }
       continue;
     }
-    if (path.resolve(gen) !== path.resolve(cwd, 'gen.png')) fs.copyFileSync(gen, path.join(cwd, 'gen.png'));
+    if (path.resolve(gen) !== path.resolve(cwd, 'gen.png')) { fs.copyFileSync(gen, path.join(cwd, 'gen.png')); inheritGroup(path.join(cwd, 'gen.png')); }
     const src = `data:image/png;base64,${fs.readFileSync(gen).toString('base64')}`;
     const P = LOCK.search;
     const d = await page.evaluate(([c, g, b, p]) => window.lockData(c, g, b, p), [cut.b64, src, finalBox, P]);
@@ -143,7 +143,7 @@ async function makeBg({ page, card, mood, dir, tries, timeoutSec, log, backend =
       if (r.code === -1 || limit) { record.stop = attempt.error; break; }
       continue;
     }
-    if (path.resolve(gen) !== path.resolve(cwd, 'gen.png')) fs.copyFileSync(gen, path.join(cwd, 'gen.png'));
+    if (path.resolve(gen) !== path.resolve(cwd, 'gen.png')) { fs.copyFileSync(gen, path.join(cwd, 'gen.png')); inheritGroup(path.join(cwd, 'gen.png')); }
     const src = `data:image/png;base64,${fs.readFileSync(gen).toString('base64')}`;
     const file = `card-${pad(card.no)}.png`;
     fs.writeFileSync(path.join(dir, file), Buffer.from(await page.evaluate(`(${FIT_FN})(${JSON.stringify(src)}, ${FINAL})`), 'base64'));
@@ -260,6 +260,7 @@ async function importBg(id, no, file, { render = true, log = console.log } = {})
   const dir = aiBgDir(pdir);
   fs.mkdirSync(path.join(dir, 'work'), { recursive: true });
   fs.copyFileSync(file, path.join(dir, 'work', `card-${pad(no)}-chat${isPng ? '.png' : isJpg ? '.jpg' : '.webp'}`));
+  inheritGroup(path.join(dir, 'work', `card-${pad(no)}-chat${isPng ? '.png' : isJpg ? '.jpg' : '.webp'}`));
   const mime = isPng ? 'image/png' : isJpg ? 'image/jpeg' : 'image/webp';
   const browser = await launchBrowser();
   const out = `card-${pad(no)}.png`;
