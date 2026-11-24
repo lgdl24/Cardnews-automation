@@ -39,10 +39,28 @@ jobs:
           npm ci --include=dev --no-audit --no-fund
           npm --prefix web ci --include=dev --no-audit --no-fund
 
-      - name: 브라우저·한글 글꼴 설치
+      # 화면·출력 글꼴은 저장소의 Pretendard를 써서 시스템 한글 글꼴은 설치하지 않아요.
+      # Ubuntu 24.04 실행 환경은 apt 설치 때 man-db 색인 갱신으로 몇 분씩 멈출 수 있어 꺼요.
+      - name: Playwright 버전
+        id: pw
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Playwright 브라우저 캐시
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: 브라우저 설치
         run: |
-          npx playwright install --with-deps chromium
-          sudo apt-get install -y -q fonts-noto-cjk
+          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
+          sudo rm -f /var/lib/man-db/auto-update
+          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
 
       - name: 테스트
         run: npm test
