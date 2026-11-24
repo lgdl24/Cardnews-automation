@@ -244,6 +244,7 @@
         "배경은 문구 작업 뒤 GPT가 카드마다 만들어요(글자·제품 없는 장면, npm run ai-bg). 글자는 반투명 면 위에 코드로 얹어요",
         "특징·상세 머리말 'Point N'·사용법 'How to'와 사용법 항목의 'STEP N'·번호는 템플릿이 붙여요. 제목·항목에 다시 쓰지 마세요",
         "카드 배치는 brand_mood.layout(panel·editorial·immersive, 참고한 레퍼런스의 layout_id). 글자 칸 규칙은 배치와 상관없이 같아요",
+        "question(문제 제시 표지형, 규칙 v2): 1번 표지가 '문제 제시'일 때만. title은 질문 한 문장(한 줄 11자), subtitle은 답. 모양은 배치를 따름(dialogue 검색창·chat 말풍선·notice 알림, 그 밖의 배치는 검색창). 마무리 카드는 cover를 그대로 써요 (2026-11-18 Pretendard·나눔명조·Chromium 실측)",
         "display(선택): 배치가 editorial·immersive일 때 크게 까는 영문 장식 단어 하나(예: Light). 그 카드 근거 원문의 한 단어를 영어로 옮긴 것만 쓰고, Best·Perfect 같은 평가·최상급 말은 쓰지 않아요. panel 배치에서는 보이지 않아요"
       ],
       "_measured": "2026-11-05 · Pretendard · Chromium. 측정 최대(전체/한 줄): cover.title 24/9, cover.subtitle 34/18, cover.badge 14/14, image.title 33/17, image.caption 52/28, description.title 34/18, description.items 49/25(긴 단어로 채우면 32/16까지 통과)",
@@ -274,6 +275,16 @@
           "display": { "required": false, "maxChars": 10, "maxCharsPerLine": 10, "maxLines": 1 }
         },
         "image": "optional", "trimImage": true, "roles": ["feature", "detail", "usage"]
+      },
+      "question": {
+        "label": "문제 제시 표지형", "file": "templates/brand/dialogue/question.html",
+        "fields": {
+          "title": { "required": true, "maxChars": 24, "maxCharsPerLine": 11, "maxLines": 3 },
+          "subtitle": { "required": false, "maxChars": 20, "maxCharsPerLine": 10, "maxLines": 2 },
+          "badge": { "required": false, "maxChars": 8, "maxCharsPerLine": 8, "maxLines": 1 },
+          "display": { "required": false, "maxChars": 10, "maxCharsPerLine": 10, "maxLines": 1 }
+        },
+        "image": "optional", "trimImage": true, "roles": ["cover"]
       }
     }
   },

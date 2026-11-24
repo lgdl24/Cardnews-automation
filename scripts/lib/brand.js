@@ -116,16 +116,28 @@ const BRAND_LAYOUTS = {
     },
   },
 };
-// 문제→해결 표지(규칙 v2 질문 제목): 표지만 검색창 모양, 이미지·설명형은 editorial을 그대로 씀 (fallback)
+// 문제 제시 표지형(템플릿 question, 규칙 v2 질문 제목): 배치가 dialogue·chat·notice면 그 모양, 그 밖의 배치는 검색창(dialogue)
+const QUESTION = {
+  frame: { x: 600, y: 380, w: 420, h: 640 },
+  hint: 'Keep the left 55% bright, plain and low-detail: a white rounded box and text will be placed directly on it. Leave an open surface in the lower-right where a product will stand.',
+};
+for (const l of Object.values(BRAND_LAYOUTS)) {
+  if (l.frames) l.frames.question = QUESTION.frame;
+  l.hints = { ...l.hints, question: QUESTION.hint };
+}
+// 표지형 셋은 템플릿 question만 따로, 나머지 카드(마무리 표지 포함)는 editorial (fallback)
 BRAND_LAYOUTS.dialogue = {
   dir: 'templates/brand/dialogue',
   fallback: 'editorial',
-  frames: { ...BRAND_LAYOUTS.editorial.frames, cover: { x: 600, y: 380, w: 420, h: 640 } },
-  hints: {
-    ...BRAND_LAYOUTS.editorial.hints,
-    cover: 'Keep the left 55% bright, plain and low-detail: a white rounded box and text will be placed directly on it. Leave an open surface in the lower-right where a product will stand.',
-  },
+  frames: { ...BRAND_LAYOUTS.editorial.frames, question: QUESTION.frame },
+  hints: { ...BRAND_LAYOUTS.editorial.hints, question: QUESTION.hint },
 };
+// 채팅형·알림형 문제→해결 표지: dialogue와 같이 표지만 따로, 나머지는 editorial
+const qaLayout = (dir, question, hint) => ({ dir, fallback: 'editorial', frames: { ...BRAND_LAYOUTS.editorial.frames, question }, hints: { ...BRAND_LAYOUTS.editorial.hints, question: hint } });
+BRAND_LAYOUTS.chat = qaLayout('templates/brand/chat', { x: 610, y: 420, w: 410, h: 600 },
+  'Keep the left 55% bright, plain and low-detail: chat-bubble shaped boxes and text will be placed directly on it. Leave an open surface in the lower-right where a product will stand.');
+BRAND_LAYOUTS.notice = qaLayout('templates/brand/notice', { x: 620, y: 400, w: 400, h: 620 },
+  'Keep the left 55% bright, plain and low-detail: a white notification card and text will be placed directly on it. Leave an open surface in the lower-right where a product will stand.');
 const layoutOf = (mood) => (mood && BRAND_LAYOUTS[mood.layout] ? mood.layout : 'panel');
 const hintFor = (mood, templateKey) => {
   const h = BRAND_LAYOUTS[layoutOf(mood)].hints;
@@ -188,7 +200,7 @@ const PRODUCT_FRAME = {
   description: { x: 740, y: 96, w: 260, h: 250 },
 };
 // layout: brand_mood.layout (없으면 panel)
-const frameFor = (templateKey, layout = 'panel') => ((BRAND_LAYOUTS[layout] && BRAND_LAYOUTS[layout].frames) || PRODUCT_FRAME)[templateKey] || null;
+const frameFor = (templateKey, layout = 'panel') => ((BRAND_LAYOUTS[layout] && BRAND_LAYOUTS[layout].frames) || { ...PRODUCT_FRAME, question: QUESTION.frame })[templateKey] || null;
 function productBoxFor(templateKey, w, h, size = 1080, layout = 'panel') {
   const fr = frameFor(templateKey, layout);
   if (!fr) return null;

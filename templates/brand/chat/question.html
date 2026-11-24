@@ -1,0 +1,40 @@
+<style>
+/* 브랜드 무드 · 문제→해결 표지, 채팅형 (레퍼런스 chat-probs-solution): 왼쪽 흰 말풍선에 문제 제시(title, 규칙 v2 질문),
+   오른쪽 브랜드 색 말풍선에 답(subtitle), 오른쪽 아래 제품. 템플릿 question(문제 제시 표지형) 전용, 나머지 카드는 editorial.
+   제품 자리는 scripts/lib/brand.js BRAND_LAYOUTS.chat.frames.question과 같게 */
+.card.brand { padding:0; background:linear-gradient(160deg, var(--color-bg) 0%, var(--color-accent) 100%); }
+.brand__scene { position:absolute; inset:0; overflow:hidden; }
+.brand__scene-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
+.has-scene .brand__scene-img { display:block; }
+.ch__veil { position:absolute; inset:0; z-index:1; background:linear-gradient(90deg, color-mix(in srgb, var(--color-surface) 70%, transparent) 0%, color-mix(in srgb, var(--color-surface) 45%, transparent) 50%, transparent 66%); }
+.brand__photo { position:absolute; display:block; object-fit:contain; object-position:center bottom; z-index:2; filter:drop-shadow(0 26px 24px rgb(0 0 0 / .22)); }
+.brand-question .brand__photo { left:610px; top:420px; width:410px; height:600px; }
+.brand-question.no-image .brand__photo, .has-baked .brand__photo { display:none; }
+.ch__top { position:absolute; left:72px; right:72px; top:58px; z-index:3; display:flex; align-items:center; gap:18px; }
+.ch__badge { flex:none; padding:0 22px; height:46px; border:2px solid var(--color-text); border-radius:23px; font-size:24px; font-weight:600; line-height:42px; letter-spacing:.04em; color:var(--color-text); }
+.ch__badge:empty { display:none; }
+.ch__rule { flex:1; height:1.5px; background:color-mix(in srgb, var(--color-text) 35%, transparent); }
+.ch__pager { flex:none; font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:28px; color:var(--color-text); }
+.ch__thread { position:absolute; left:72px; top:180px; width:520px; z-index:3; display:flex; flex-direction:column; gap:20px; }
+.ch__who { font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:26px; color:var(--color-muted); }
+.ch__who--me { align-self:flex-end; color:var(--color-primary); }
+.ch__bubble { max-width:460px; padding:28px 34px; box-shadow:0 14px 34px rgb(0 0 0 / .12); }
+.ch__bubble--q { align-self:flex-start; border-radius:38px 38px 38px 10px; background:var(--color-surface); }
+.ch__bubble--a { align-self:flex-end; border-radius:38px 38px 10px 38px; background:var(--color-primary); }
+.ch-cover__title { font-size:42px; font-weight:600; line-height:1.34; letter-spacing:-0.01em; max-height:169px; color:var(--color-text); }
+.ch-cover__copy { font-family:var(--font-serif), var(--font-family), serif; font-size:46px; font-weight:800; line-height:1.26; letter-spacing:-0.02em; max-height:116px; color:var(--color-on-primary); }
+.ch__foot { position:absolute; left:72px; bottom:56px; width:520px; z-index:3; font-size:21px; font-weight:600; letter-spacing:.12em; color:var(--color-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+</style>
+<article class="card brand brand-question ch role-{{role}} {{imageClass}} {{sceneClass}} {{bakedClass}}">
+  <div class="brand__scene image__frame" aria-hidden="true"><img class="brand__scene-img" src="{{scene}}" alt=""></div>
+  <div class="ch__veil" aria-hidden="true"></div>
+  <img class="brand__photo" style="{{imageCrop}}" src="{{image}}" alt="">
+  <div class="ch__top"><span class="ch__badge">{{badge}}</span><span class="ch__rule"></span><span class="ch__pager">{{page}} / {{total}}</span></div>
+  <div class="ch__thread">
+    <div class="ch__who">your skin</div>
+    <div class="ch__bubble ch__bubble--q"><h1 class="ch-cover__title" data-fit>{{title}}</h1></div>
+    <div class="ch__who ch__who--me">our answer</div>
+    <div class="ch__bubble ch__bubble--a"><div class="ch-cover__copy" data-fit>{{subtitle}}</div></div>
+  </div>
+  <div class="ch__foot">{{product}}</div>
+</article>

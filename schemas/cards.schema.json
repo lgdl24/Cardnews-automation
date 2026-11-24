@@ -28,7 +28,7 @@
       "additionalProperties": false,
       "properties": {
         "source": { "enum": ["snapshot", "product_photo"] },
-        "layout": { "description": "카드 배치 (선택, 없으면 panel). 참고한 레퍼런스의 layout_id (config/mood-references.json). panel: 반투명 면, editorial: 면 없이 큰 영문 단어·가는 선, immersive: 어두운 장면 위 가운데 정렬, dialogue: 표지만 검색창 모양 문제→해결(규칙 v2 질문 제목), 나머지는 editorial", "enum": ["panel", "editorial", "immersive", "dialogue"] },
+        "layout": { "description": "카드 배치 (선택, 없으면 panel). 참고한 레퍼런스의 layout_id (config/mood-references.json). panel: 반투명 면, editorial: 면 없이 큰 영문 단어·가는 선, immersive: 어두운 장면 위 가운데 정렬, dialogue·chat·notice: 표지만 검색창·말풍선·알림 모양 문제→해결(규칙 v2 질문 제목), 나머지는 editorial", "enum": ["panel", "editorial", "immersive", "dialogue", "chat", "notice"] },
         "summary": { "type": "string", "minLength": 1 },
         "palette": {
           "type": "object",
@@ -108,7 +108,7 @@
       "properties": {
         "no": { "type": "integer", "minimum": 1 },
         "role": { "enum": ["cover", "feature", "usage", "detail", "closing"] },
-        "template": { "enum": ["cover", "image", "description"] },
+        "template": { "enum": ["cover", "image", "description"], "description": "기본 템플릿. 디자인 묶음 전용 템플릿(브랜드 무드의 question)과 묶음 전용 칸(display)은 config/templates.json _designs가 정하고 validate가 검사" },
         "intent": { "type": "string", "minLength": 1 },
         "image": { "type": ["string", "null"], "pattern": "^[^/\\\\]+\\.(png|jpe?g|PNG|JPE?G)$" },
         "evidence": { "$ref": "#/$defs/evidence" },
