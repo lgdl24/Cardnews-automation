@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { paths, readJson, requireProductId } = require('./lib/common');
+const { paths, readJson, requireProductId, inheritGroup } = require('./lib/common');
 const { pad, launchBrowser } = require('./lib/card-html');
 const { cardKey, staleTargets, applyAiCards, aiTargets } = require('./lib/ai-cards');
 const { glowifInfo } = require('./lib/glowif-product');
@@ -245,6 +245,7 @@ async function makeCard({ page, card, kind, cut, dir, pdir, topic, tries, timeou
       continue;
     }
     fs.copyFileSync(gen, path.join(cwd, 'gen.png'));
+    inheritGroup(path.join(cwd, 'gen.png'));
     const src = 'data:image/png;base64,' + fs.readFileSync(gen).toString('base64');
     try {
       if (cut) {

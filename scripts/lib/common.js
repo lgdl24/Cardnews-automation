@@ -183,7 +183,34 @@ function requireProductId(argv) {
   return id;
 }
 
+/**
+ * 제품 폴더로 복사·이동한 파일(폴더면 안쪽 전부)의 그룹을 그 폴더의 그룹으로 맞춰요 (#136).
+ * KT 서버의 제품 폴더는 그룹 상속(setgid, cardnews-data)으로 작업실·게시 서비스가 함께 읽는데,
+ * Node의 copyFileSync·cpSync·renameSync는 원본(임시 폴더, cardnews-web) 그룹을 그대로 가져와서 게시 서비스가 못 읽었어요.
+ * 그룹 상속 폴더가 아니면(개인 PC) 아무것도 하지 않아요. 바꿀 수 없으면 건너뛰어요.
+ */
+function inheritGroup(target) {
+  if (process.platform === 'win32' || typeof process.getuid !== 'function') return;
+  let parent;
+  let st;
+  try {
+    parent = fs.statSync(path.dirname(target));
+    st = fs.lstatSync(target);
+  } catch {
+    return;
+  }
+  if (!(parent.mode & 0o2000)) return;
+  const fix = (p, s) => {
+    if (s.isSymbolicLink()) return;
+    if (s.gid !== parent.gid && s.uid === process.getuid()) {
+      try { fs.chownSync(p, s.uid, parent.gid); } catch { /* 그룹을 바꿀 권한이 없으면 그대로 */ }
+    }
+    if (s.isDirectory()) for (const name of fs.readdirSync(p)) fix(path.join(p, name), fs.lstatSync(path.join(p, name)));
+  };
+  fix(target, st);
+}
+
 module.exports = {
   ROOT, paths, readJson, moodInputOf, resolveDesign, designOf, designCatalog, designRecord, loadConfig, normalize, countChars,
-  parseInput, loadInput, createReport, printReport, requireProductId,
+  parseInput, loadInput, createReport, printReport, requireProductId, inheritGroup,
 };

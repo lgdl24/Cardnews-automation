@@ -15,7 +15,7 @@ const { topics: glowifTopics } = require('../../config/glowif.json');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { readJson } = require('./common');
+const { readJson, inheritGroup } = require('./common');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const JOB_KINDS = ['plan', 'copy', 'revise'];
@@ -322,10 +322,12 @@ function mergeJob({ wsProduct, productDir, ok }) {
   if (fs.existsSync(wsLog)) appendLines(path.join(productDir, 'log.jsonl'), fs.readFileSync(wsLog, 'utf8').split('\n').filter(Boolean));
   if (!ok) return applied;
   fs.copyFileSync(path.join(wsProduct, 'cards.json'), path.join(productDir, 'cards.json'));
+  inheritGroup(path.join(productDir, 'cards.json')); // 임시 작업 폴더 그룹이 따라오지 않게 (#136)
   applied.push('cards.json');
   const outDir = path.join(wsProduct, 'output');
   if (fs.existsSync(outDir)) {
     fs.cpSync(outDir, path.join(productDir, 'output'), { recursive: true });
+    inheritGroup(path.join(productDir, 'output'));
     applied.push('output/');
   }
   return applied;
