@@ -165,3 +165,12 @@ test('결과 불분명은 확인 버튼만, 놓친 예약은 이유와 지우기
   await page.getByText('이 버전은 이미 게시했어요', { exact: false }).first().waitFor();
   await capture(page, 'published');
 });
+
+test('터미널에서 게시한 공통 기록도 출처와 링크를 보여주고 재게시를 막아요', async (t) => {
+  const permalink = 'https://www.instagram.com/p/test-cli/';
+  const ig = igStatus({ current: { request_id: 'cli-r', version: 'v-abc', trigger: 'cli', state: 'published', requested_at: ago(30), updated_at: ago(20), finished_at: ago(20), steps: [], progress: { done: 5, total: 5 }, account: 'glowif_lab', media_id: 'cli-m', permalink, error: null }, published: [{ version: 'v-abc', media_id: 'cli-m', permalink, account: 'glowif_lab', published_at: ago(20), trigger: 'cli' }], blockers: ['이 버전은 이미 게시했어요'] });
+  const { page } = await open(t, { ig });
+  await page.getByText(/터미널 게시/).waitFor();
+  assert.equal(await page.getByRole('link', { name: /인스타에서 보기/ }).getAttribute('href'), permalink);
+  assert.equal(await page.getByRole('button', { name: '지금 게시' }).isDisabled(), true);
+});

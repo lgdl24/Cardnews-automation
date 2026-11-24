@@ -1,6 +1,7 @@
 node_modules/
 products/*/output/
 products/*/.job.json
+products/.ig-publish-locks/
 .env
 /data/
 .DS_Store

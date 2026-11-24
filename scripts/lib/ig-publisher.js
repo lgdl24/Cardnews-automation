@@ -15,6 +15,7 @@ const crypto = require('crypto');
 const { resolveCaption } = require('./ig-caption');
 const CAUTION = require('../../config/caution-expressions.json');
 const { explain, IgError } = require('./instagram');
+const { createPublishLock } = require('./ig-publish-lock');
 
 const CFG = require('../../config/instagram.json');
 const pad = (n) => String(n).padStart(2, '0');
@@ -72,6 +73,9 @@ function createPublisher({
   pollMs = CFG.status_poll.interval_ms,
   pollTimeoutMs = CFG.status_poll.timeout_ms,
 }) {
+  fs.mkdirSync(productsDir, { recursive: true });
+  productsDir = fs.realpathSync(productsDir);
+  const lock = createPublishLock(productsDir);
   const dirOf = (id) => path.join(productsDir, id);
   const stateFile = (id) => path.join(dirOf(id), 'output', 'instagram', 'ig-publish.json');
   const iso = () => new Date(now()).toISOString();
@@ -87,7 +91,12 @@ function createPublisher({
     return value;
   }
 
-  const load = (id) => readJsonIf(stateFile(id)) || { current: null, published: [], history: [], schedule: null, acks: null };
+  const load = (id) => {
+    if (!fs.existsSync(stateFile(id))) return { current: null, published: [], history: [], schedule: null, acks: null };
+    const s = readJsonIf(stateFile(id));
+    if (!s || !Array.isArray(s.published) || !Array.isArray(s.history)) throw httpError(409, '게시 기록을 읽지 못했어요. 기록을 확인하기 전에는 다시 게시하지 않아요');
+    return s;
+  };
   const save = (id, s) => writeJsonAtomic(stateFile(id), s);
   function patchCurrent(id, fn) {
     const s = load(id);
@@ -100,9 +109,18 @@ function createPublisher({
 
   // ── 작업실 재시작: 진행 중이던 게시는 이어서 하지 않음 (게시를 보낸 뒤였으면 '확인 필요')
   function recover(ids) {
+    try { return lock.sync('recover', null, () => recoverUnlocked(ids)); }
+    catch (e) { if (e.code !== 'IG_PUBLISH_BUSY') throw e; }
+  }
+  function recoverUnlocked(ids) {
     for (const id of ids) {
       const s = readJsonIf(stateFile(id));
       if (!s) continue;
+      for (const receipt of s.published || []) if (receipt.event_recorded === false) ensurePublishedEvent(id, s, receipt);
+      if (s.current?.state === 'confirming' && s.current.media_id) {
+        finishPublished(id, { media_id: s.current.media_id, permalink: s.current.permalink || null, account: s.current.account });
+        continue;
+      }
       let changed = false;
       if (s.current && ACTIVE.has(s.current.state)) {
         const maybe = MAYBE_PUBLISHED.has(s.current.state);
@@ -190,6 +208,7 @@ function createPublisher({
     if (!snap.approved) out.push('최종 승인한 뒤에 게시할 수 있어요');
     out.push(...snap.captionErrors);
     if (snap.missing.length) out.push(`카드 이미지가 없어요: ${snap.missing.join('·')}번`);
+    if (!snap.cards.length || snap.cards.length > CFG.carousel_max) out.push(`게시할 카드는 1~${CFG.carousel_max}장이어야 해요`);
     if (!check) out.push('게시 전 점검을 하지 못했어요');
     else {
       const bad = check.checks.filter((c) => c.status === 'fail' || c.status === 'todo');
@@ -208,7 +227,9 @@ function createPublisher({
     return out;
   }
 
-  function status(id, { refresh = false } = {}) {
+  function status(id, { refresh = false, recoverState = true } = {}) {
+    const previous = load(id);
+    if (recoverState && !running && (previous.current && ACTIVE.has(previous.current.state) || previous.published.some((p) => p.event_recorded === false))) recover([id]);
     const snap = snapshot(id);
     const s = load(id);
     if (!snap.ok) return { configured: configured(), ready: false, blockers: [snap.reason], state: s };
@@ -282,31 +303,35 @@ function createPublisher({
 
   // ── 게시 실행
   function start(id, { version, trigger = 'manual', scheduleId = null }) {
-    const snap = snapshot(id);
-    if (!snap.ok) throw httpError(409, snap.reason);
-    if (snap.version !== version) throw httpError(409, '화면을 연 뒤 카드나 캡션이 바뀌었어요. 다시 점검한 뒤 게시해 주세요');
-    writeCaption(id, snap.caption);
-    const check = checkOf(id, snap.version, { refresh: true });
-    const s = load(id);
-    const blockers = blockersOf(id, snap, check, s, { forSchedule: trigger === 'schedule' });
-    if (running) blockers.push(running.id === id ? '게시가 진행 중이에요' : '다른 제품을 게시하는 중이에요');
-    if (blockers.length) throw httpError(409, blockers[0]);
-    const req = { request_id: crypto.randomBytes(6).toString('hex'), version, trigger, schedule_id: scheduleId, state: 'requested', requested_at: iso(), updated_at: iso(), steps: [], progress: null, account: null, containers: [], creation_id: null, media_id: null, permalink: null, error: null };
-    if (s.current && !ACTIVE.has(s.current.state)) s.history = [s.current, ...s.history].slice(0, 10);
-    s.current = req;
-    save(id, s);
-    running = { id, request_id: req.request_id };
-    const done = run(id, snap).finally(() => {
-      running = null;
-    });
-    return { request: req, done };
+    const release = lock.acquire({ id, operation: 'publish' });
+    try {
+      const snap = snapshot(id);
+      if (!snap.ok) throw httpError(409, snap.reason);
+      if (snap.version !== version) throw httpError(409, '화면을 연 뒤 카드나 캡션이 바뀌었어요. 다시 점검한 뒤 게시해 주세요');
+      writeCaption(id, snap.caption);
+      const check = checkOf(id, snap.version, { refresh: true });
+      const s = load(id);
+      const blockers = blockersOf(id, snap, check, s, { forSchedule: trigger === 'schedule' });
+      if (running) blockers.push('게시가 진행 중이에요');
+      if (blockers.length) throw httpError(409, blockers[0]);
+      if (trigger === 'schedule' && (!s.schedule || s.schedule.id !== scheduleId || s.schedule.state !== 'scheduled')) throw httpError(409, '예약 상태가 바뀌었어요. 다시 확인해 주세요');
+      const req = { request_id: crypto.randomBytes(6).toString('hex'), version, trigger, schedule_id: scheduleId, caption: snap.caption, state: 'requested', requested_at: iso(), updated_at: iso(), steps: [], progress: null, account: null, containers: [], creation_id: null, media_id: null, permalink: null, error: null };
+      if (s.current && !ACTIVE.has(s.current.state)) s.history = [s.current, ...s.history].slice(0, 10);
+      s.current = req;
+      if (trigger === 'schedule') Object.assign(s.schedule, { state: 'running', started_at: iso() });
+      save(id, s);
+      running = { id, request_id: req.request_id };
+      const done = run(id, snap).finally(() => { running = null; release(); });
+      return { request: req, done };
+    } catch (e) { release(); throw e; }
   }
 
   async function run(id, snap) {
-    const mark = (state, extra = {}) => patchCurrent(id, (c) => {
+    const mark = (state, extra = {}) => patchCurrent(id, (c, s) => {
       c.state = state;
       if (STEPS.some(([k]) => k === state)) c.steps.push({ key: state, at: iso() });
       Object.assign(c, extra);
+      if (['failed', 'unknown'].includes(state) && s.schedule?.id === c.schedule_id) Object.assign(s.schedule, { state, reason: c.error?.message || null });
     });
     let pub = null;
     let igId = null;
@@ -319,11 +344,15 @@ function createPublisher({
       const ig = client();
       const me = await ig.me();
       igId = me.user_id;
-      const limit = await ig.publishingLimit(igId).catch(() => null);
+      if (ig.apiSetup === 'unified') {
+        const granted = ((await ig.permissions()).data || []).filter((p) => p.status === 'granted').map((p) => p.permission);
+        if (['instagram_basic', 'instagram_content_publish'].some((p) => !granted.includes(p))) throw new IgError('인스타 게시 권한이 부족해요');
+      }
+      const limit = await ig.publishingLimit(igId);
       const used = limit?.data?.[0]?.quota_usage;
       const total = limit?.data?.[0]?.config?.quota_total;
       if (Number.isFinite(used) && Number.isFinite(total) && used >= total) throw new IgError('게시 한도(24시간)에 도달했어요. 한도가 회복된 뒤 다시 시도해 주세요');
-      mark('opening_url', { account: me.username });
+      mark('opening_url', { account: me.username, account_id: igId });
       pub = await openPublicUrls(jpgs);
       mark('uploading', { progress: { done: 0, total: pub.urls.length }, public_url_mode: pub.mode });
       const containers = [];
@@ -341,9 +370,11 @@ function createPublisher({
         creationId = car.id;
         await waitReady(ig, creationId);
       }
+      if (snapshot(id).version !== snap.version) throw new Error('준비 중 카드나 캡션이 바뀌었어요. 다시 점검해 주세요');
       mark('publishing', { creation_id: creationId });
       sentPublish = true;
       const published = await ig.call('POST', `${igId}/media_publish`, { creation_id: creationId });
+      if (!published.id) throw new Error('게시 응답에 게시물 ID가 없어요. 실제 게시 여부를 확인해 주세요');
       // 여기부터는 실제로 게시됨: 링크 조회가 실패해도 게시 완료로 기록
       mark('confirming', { media_id: published.id });
       let permalink = null;
@@ -389,12 +420,23 @@ function createPublisher({
     c.permalink = permalink;
     c.finished_at = iso();
     c.updated_at = c.finished_at;
-    if (!s.published.some((p) => p.media_id === media_id)) {
-      s.published.unshift({ version: c.version, media_id, permalink, account: username || c.account, published_at: c.finished_at, trigger: c.trigger });
-      appendEvent(id, 'published', { job_id: null, channel: 'instagram', media_id, permalink, cards: c.progress?.total ?? null, trigger: c.trigger });
-    }
+    if (!s.published.some((p) => p.media_id === media_id)) s.published.unshift({ version: c.version, media_id, permalink, account: username || c.account, published_at: c.finished_at, trigger: c.trigger, event_recorded: false });
     if (s.schedule && s.schedule.state === 'running' && s.schedule.id === c.schedule_id) s.schedule.state = 'done';
     save(id, s);
+    const receipt = s.published.find((p) => p.media_id === media_id);
+    if (receipt.event_recorded === false) ensurePublishedEvent(id, s, receipt);
+  }
+
+  function ensurePublishedEvent(id, s, receipt) {
+    try {
+      const file = path.join(dirOf(id), 'log.jsonl');
+      const logged = fs.existsSync(file) && fs.readFileSync(file, 'utf8').split('\n').some((line) => {
+        try { const e = JSON.parse(line); return e.event === 'published' && e.media_id === receipt.media_id; } catch { return false; }
+      });
+      if (!logged) appendEvent(id, 'published', { job_id: null, channel: 'instagram', media_id: receipt.media_id, permalink: receipt.permalink, cards: s.current?.progress?.total ?? null, trigger: receipt.trigger });
+      receipt.event_recorded = true;
+      save(id, s);
+    } catch { /* 게시 완료 기록을 보존하고 다음 복구 때 제작 로그만 보완해요. */ }
   }
 
   // ── 결과가 불분명할 때: 인스타에서 실제 게시 여부 조회 (조회 전에는 다시 게시 안 함)
@@ -415,30 +457,35 @@ function createPublisher({
     }
     if (c.state !== 'unknown') throw httpError(409, '확인이 필요한 게시가 없어요');
     const me = await ig.me();
+    if (c.account_id && me.user_id !== c.account_id) throw httpError(409, '게시를 요청한 인스타 계정과 현재 연결 계정이 달라요');
     let found = null;
+    let containerState = null;
     if (c.creation_id) {
       const st = await ig.call('GET', c.creation_id, { fields: 'status_code' }).catch(() => null);
+      containerState = st?.status_code || null;
       if (st && st.status_code === 'PUBLISHED') found = { id: null };
     }
     // 최근 게시물 중 요청 뒤에 올라온 같은 캡션
-    const snapCaption = (load(id).current && snapshot(id).caption) || '';
-    const head = snapCaption.split('\n')[0];
+    const snapCaption = c.caption || (snapshot(id).version === c.version ? snapshot(id).caption : null);
     const recent = await ig.call('GET', `${me.user_id}/media`, { fields: 'id,caption,permalink,timestamp', limit: 10 });
     const since = Date.parse(c.requested_at) - 60000;
-    const match = (recent.data || []).find((m) => Date.parse(m.timestamp) >= since && String(m.caption || '').startsWith(head));
-    if (match) found = { id: match.id, permalink: match.permalink || null };
+    const matches = (recent.data || []).filter((m) => snapCaption && Date.parse(m.timestamp) >= since && String(m.caption || '') === snapCaption);
+    if (matches.length === 1) found = { id: matches[0].id, permalink: matches[0].permalink || null };
+    else if (matches.length > 1) found = { id: null };
     if (found && found.id) {
       finishPublished(id, { media_id: found.id, permalink: found.permalink, account: me.username });
     } else if (found) {
       patchCurrent(id, (cur) => {
         cur.error = { message: '인스타에는 게시된 것으로 보이지만 게시물을 찾지 못했어요. 인스타 앱에서 확인해 주세요' };
       });
-    } else {
+    } else if (['ERROR', 'EXPIRED'].includes(containerState)) {
       patchCurrent(id, (cur, st) => {
         cur.state = 'failed';
         cur.error = { message: '인스타에서 게시물을 찾지 못했어요. 게시되지 않았으니 다시 게시할 수 있어요' };
         if (st.schedule && st.schedule.state === 'unknown') st.schedule.state = 'failed';
       });
+    } else {
+      patchCurrent(id, (cur) => { cur.error = { message: '아직 실제 게시 여부를 확정하지 못했어요. 중복 방지를 위해 다시 게시하지 않고 확인 필요 상태를 유지해요' }; });
     }
     return status(id);
   }
@@ -479,26 +526,25 @@ function createPublisher({
       const due = Date.parse(sc.at);
       if (now() < due) continue;
       const setSchedule = (patch) => {
-        const st = load(id);
-        if (st.schedule && st.schedule.id === sc.id) {
-          Object.assign(st.schedule, patch);
-          save(id, st);
-        }
+        return lock.sync('schedule-state', id, () => {
+          const st = load(id);
+          if (st.schedule && st.schedule.id === sc.id && st.schedule.state === 'scheduled') {
+            Object.assign(st.schedule, patch);
+            save(id, st);
+          }
+        });
       };
       if (now() - due > graceMs) {
-        setSchedule({ state: 'missed', reason: `예약 시각(${new Date(due).toLocaleString('ko-KR')})에 작업실이 꺼져 있었어요. 자동으로 게시하지 않았어요` });
+        try { setSchedule({ state: 'missed', reason: `예약 시각(${new Date(due).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})에 작업실이 꺼져 있었어요. 자동으로 게시하지 않았어요` }); } catch (e) { if (e.code !== 'IG_PUBLISH_BUSY') throw e; }
         continue;
       }
       if (running) continue; // 다른 게시가 끝나면 다음 확인 때 실행 (유예 시간 안)
       try {
-        setSchedule({ state: 'running', started_at: iso() });
         const { done } = start(id, { version: sc.version, trigger: 'schedule', scheduleId: sc.id });
-        started.push(done.then((cur) => {
-          if (cur && cur.state !== 'published') setSchedule({ state: cur.state === 'unknown' ? 'unknown' : 'failed', reason: cur.error?.message || null });
-          return cur;
-        }));
+        started.push(done);
       } catch (e) {
-        setSchedule({ state: 'blocked', reason: e.message });
+        if (e.code === 'IG_PUBLISH_BUSY') continue;
+        try { setSchedule({ state: 'blocked', reason: e.message }); } catch (busy) { if (busy.code !== 'IG_PUBLISH_BUSY') throw busy; }
       }
     }
     return Promise.all(started);
@@ -530,7 +576,14 @@ function createPublisher({
     };
   }
 
-  return { status, acknowledge, account, start, verify, schedule, cancelSchedule, tick, recover, startTimer, stopTimer, summary, running: () => running, stateFile };
+  return {
+    status, account, start, tick, recover, startTimer, stopTimer, summary,
+    acknowledge: (id, o) => lock.sync('acknowledge', id, () => acknowledge(id, o)),
+    schedule: (id, o) => lock.sync('schedule', id, () => schedule(id, o)),
+    cancelSchedule: (id) => lock.sync('cancel-schedule', id, () => cancelSchedule(id)),
+    verify: (id) => lock.asyncRun('verify', id, () => verify(id)),
+    running: () => running, stateFile,
+  };
 }
 
 function httpError(status, message) {

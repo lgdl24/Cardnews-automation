@@ -146,54 +146,24 @@ test('통신·처리 오류에서도 토큰을 숨기고 로그인 방식에 맞
   assert.ok(!explain(error).includes('instagram_business_'));
 });
 
-test('publish 명령 전체 흐름: 준비·점검 뒤 계정 확인과 게시 기록까지 연결되고 승인 전에는 차단한다', async () => {
+test('publish 명령은 웹과 같은 기록·버전·사람 확인을 쓰고 승인 전에는 차단해요', async (t) => {
   const { publish } = require('../scripts/instagram');
-  const { stampProduct } = require('../scripts/lib/ai-disclosure');
-  const ws = makeWorkspace({ from: 'toneup-sunscreen-r1' });
-  fs.mkdirSync(ws.file('output', 'png'), { recursive: true });
-  const data = ws.readCards();
-  for (const card of data.cards) {
-    const name = `card-${String(card.no).padStart(2, '0')}.png`;
-    fs.copyFileSync(path.join(ROOT, 'docs/examples/web-data/projects/toneup-sunscreen-r1/png', name), ws.file('output', 'png', name));
-  }
-  fs.writeFileSync(ws.file('output', 'render-report.json'), JSON.stringify({ results: data.cards.map((card) => ({ no: card.no, issues: [] })) }));
-  stampProduct(ws.file(), { cards: data.cards });
-  seedCaption(ws);
-  const posts = [];
-  let accountChecks = 0;
-  const ig = {
-    apiSetup: 'unified',
-    me: async () => { accountChecks++; return { user_id: '17841', username: 'test_account' }; },
-    permissions: async () => ({ data: ['instagram_basic', 'instagram_content_publish'].map((permission) => ({ permission, status: 'granted' })) }),
-    publishingLimit: async () => ({ data: [{ quota_usage: 0, config: { quota_total: 100 } }] }),
-    publishImages: async (id, urls, caption) => {
-      posts.push({ id, urls, caption });
-      return { media_id: 'media-test', permalink: 'https://www.instagram.com/p/test-post/' };
-    },
-  };
-  const previous = { CARDNEWS_PRODUCTS_DIR: process.env.CARDNEWS_PRODUCTS_DIR, CARDNEWS_NO_LOG: process.env.CARDNEWS_NO_LOG };
-  process.env.CARDNEWS_PRODUCTS_DIR = ws.dir;
-  process.env.CARDNEWS_NO_LOG = '1';
-  try {
-    const result = await publish(ws.id, { ig, baseUrl: 'https://images.example', log: () => {} });
-    assert.equal(result.media_id, 'media-test');
-    assert.equal(accountChecks, 1);
-    assert.equal(posts.length, 1);
-    assert.equal(posts[0].id, '17841');
-    assert.deepEqual(posts[0].urls, data.cards.map((card) => `https://images.example/card-${String(card.no).padStart(2, '0')}.jpg`));
-    assert.match(posts[0].caption.split('\n')[0], /AI 활용/);
-    assert.equal(JSON.parse(fs.readFileSync(ws.file('output/instagram/published.json'), 'utf8')).permalink, result.permalink);
-    ws.editCards((cards) => { cards.stage = 'copy'; });
-    await assert.rejects(publish(ws.id, { ig, baseUrl: 'https://images.example', log: () => {} }), /최종 승인/);
-    assert.equal(accountChecks, 1);
-    assert.equal(posts.length, 1);
-  } finally {
-    for (const [key, value] of Object.entries(previous)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-    ws.cleanup();
-  }
+  const { setup, fakeIg } = require('./ig-publisher-helpers');
+  const { ws, pub, ig, events } = setup({ ig: fakeIg() });
+  t.after(ws.cleanup);
+  const st = pub.status(ws.id);
+  const result = await publish(ws.id, { publisher: pub, version: st.version, confirm: true, log: () => {} });
+  assert.equal(result.media_id, 'media-1');
+  assert.equal(result.trigger, 'cli');
+  const record = JSON.parse(fs.readFileSync(ws.file('output/instagram/ig-publish.json'), 'utf8'));
+  assert.equal(record.published[0].permalink, result.permalink);
+  assert.equal(fs.existsSync(ws.file('output/instagram/published.json')), false, '새 게시에 옛 형식 기록을 만들지 않아요');
+  assert.equal(events.length, 1);
+  assert.throws(() => pub.start(ws.id, { version: st.version }), /이미 게시/);
+  ws.editCards((d) => { d.stage = 'copy'; });
+  const changed = pub.status(ws.id);
+  await assert.rejects(publish(ws.id, { publisher: pub, version: changed.version, confirm: true, log: () => {} }), /최종 승인/);
+  assert.equal(ig.calls.filter((c) => c.path.endsWith('media_publish')).length, 1);
 });
 
 test('이전 조립 방식 비교: 안내·카드 목록·해시태그를 이어 붙여요', () => {
