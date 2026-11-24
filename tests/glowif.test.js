@@ -74,6 +74,15 @@ test('Glowif 매일 실행(#129): 초안이 없는 다음 주제를 하나만 �
   assert.equal(pickDaily(ranked, dir), null, '근거 부족 주제는 만들지 않음');
 });
 
+test('Glowif 매일 실행(#129): Codex 실패 이유(사용량 한도·로그인·기타)를 기록에 남겨요', () => {
+  const { codexFailure } = require('../scripts/glowif');
+  const limit = 'Reading prompt from stdin...\nERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again at 7:53 PM.\n';
+  assert.equal(codexFailure(limit), 'Codex 이미지 생성 사용량 한도에 걸렸어요 (다시 가능: 7:53 PM). 다음 실행 때 다시 만들어요.');
+  assert.match(codexFailure('Error: Not logged in'), /codex login을 다시/);
+  assert.match(codexFailure('warning: x\nERROR: stream disconnected'), /\(Codex: ERROR: stream disconnected\)$/);
+  assert.equal(codexFailure(''), 'GPT 제품 누끼를 만들지 못했어요. Codex 로그인과 이미지 생성 사용량을 확인해 주세요.');
+});
+
 test('Glowif 매일 실행(#129): 남은 주제가 없으면 이미지 생성 없이 0으로 끝나고, 잘못된 조합은 막아요', (t) => {
   const dir = temp(t);
   const zip = path.join(dir, 'sample.zip');

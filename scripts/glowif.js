@@ -36,6 +36,18 @@ function cutoutPrompt(topic) {
 Save a square PNG at ./out.png with a genuine transparent background. One complete product, centered, with room around all sides. Contemporary skincare photography, crisp Korean beauty brand design. The package is a new fictional design. Do not add another product, people, hands, scenes, cast shadows, ingredient or performance claims, or certification badges. Use the image generation tool, with transparency enabled. Reply with only ./out.png.`;
 }
 
+// Codex가 실패한 이유를 한 줄로 (#129). 작업 폴더(잠금)는 끝나면 지워져서, 서버에서 혼자 돌 때는 이 줄이 기록에 남는 유일한 단서예요
+function codexFailure(out = '') {
+  const text = String(out);
+  if (/usage limit/i.test(text)) {
+    const at = text.match(/try again at ([^.\n]+)/i);
+    return `Codex 이미지 생성 사용량 한도에 걸렸어요${at ? ` (다시 가능: ${at[1].trim()})` : ''}. 다음 실행 때 다시 만들어요.`;
+  }
+  if (/not logged in|please log ?in|unauthorized|401/i.test(text)) return 'Codex 로그인이 풀렸어요. 서버에서 작업실 계정으로 codex login을 다시 해 주세요.';
+  const last = text.split('\n').map((l) => l.trim()).filter((l) => /error|fail|denied|timed? ?out/i.test(l)).slice(-2).join(' / ');
+  return `GPT 제품 누끼를 만들지 못했어요. Codex 로그인과 이미지 생성 사용량을 확인해 주세요.${last ? ` (Codex: ${last.slice(0, 300)})` : ''}`;
+}
+
 async function checkCutout(file) {
   const bytes = fs.readFileSync(file);
   if (bytes.length < 33 || !bytes.subarray(0, 8).equals(PNG) || bytes.length > 12 * 1024 * 1024) {
@@ -97,7 +109,7 @@ async function createDraft(stats, candidate, { image, productsDir = path.dirname
     if (!file) {
       const generation = await runCodex(lock, cutoutPrompt(topic), 360, { image: null, env: codexImageEnv() });
       file = generatedPath(generation.out, lock);
-      if (!file) throw new Error('GPT 제품 누끼를 만들지 못했어요. Codex 로그인과 이미지 생성 사용량을 확인해 주세요.');
+      if (!file) throw new Error(codexFailure(generation.out));
     }
     await checkCutout(file);
     fs.copyFileSync(file, path.join(images, 'main.png'));
@@ -181,4 +193,4 @@ async function main() {
 
 if (require.main === module) main().catch((err) => { console.error(err.message); process.exitCode = 1; });
 
-module.exports = { scan, candidates, createDraft, cutoutPrompt, pickDaily };
+module.exports = { scan, candidates, createDraft, cutoutPrompt, pickDaily, codexFailure };
