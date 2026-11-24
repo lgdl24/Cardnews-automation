@@ -1,4 +1,4 @@
-// AI 디자인 카드 (1번 표지·마지막 마무리 카드): GPT 이미지(Codex CLI)가 배경·문구를 만들고, 제품은 원본 사진을 잠금
+// AI 디자인 카드 (기본은 첫·마지막, Glowif는 전체): GPT 이미지로 디자인하고 제품은 원본 사진을 잠금
 // 사용법: node scripts/ai-card.js <제품ID> [--card N] [--stale] [--tries 3]   (npm run ai-card -- <제품ID>)
 //   --stale : 아직 없거나 문구가 바뀐 카드만 (작업실이 문구·출력 작업 뒤 자동으로 부름)
 //
@@ -17,6 +17,9 @@ const { spawn } = require('child_process');
 const { paths, readJson, requireProductId } = require('./lib/common');
 const { pad, launchBrowser } = require('./lib/card-html');
 const { cardKey, staleTargets, applyAiCards, aiTargets } = require('./lib/ai-cards');
+const { glowifInfo } = require('./lib/glowif-product');
+const { topics } = require('../config/glowif.json');
+const { stampProduct } = require('./lib/ai-disclosure');
 
 const BASE = 1024; // AI에 주는 바탕 크기
 const FINAL = 1080;
@@ -25,6 +28,11 @@ const LOCK = { maxDiff: 18, maxShift: 4, search: 24, step: 2 };
 const LAYOUT = {
   cover: { h: 0.5, cx: 0.5, bottom: 0.92, maxw: 0.52, text: 'top 38% of the image, centered', role: 'card-news cover' },
   closing: { h: 0.56, cx: 0.7, bottom: 0.9, maxw: 0.42, text: 'left 50% of the image, left-aligned, vertically centered', role: 'closing card of a card-news set' },
+  'glowif-cover': { h: 0.33, cx: 0.73, bottom: 0.91, maxw: 0.39, text: 'upper half and left side; leave clear negative space' },
+  'glowif-feature': { h: 0.54, cx: 0.5, bottom: 0.79, maxw: 0.65, text: 'headline at top and product name below the hero image' },
+  'glowif-detail': { text: 'upper left; put an abstract texture study below and to the right' },
+  'glowif-usage': { text: 'headline above two clearly separate step panels, read left to right' },
+  'glowif-closing': { text: 'make the closing statement the focus with a distinct supporting answer underneath' },
 };
 
 function textLines(copy) {
@@ -33,7 +41,22 @@ function textLines(copy) {
   const t = String(copy.title || '').split('\n').filter(Boolean);
   if (t.length) out.push(`- headline (${t.length} line${t.length > 1 ? 's' : ''}):\n${t.map((x) => `    ${x}`).join('\n')}`);
   if (copy.subtitle) out.push(`- subtitle: ${copy.subtitle.replace(/\n/g, ' ')}`);
+  if (copy.caption) out.push(`- caption: ${copy.caption.replace(/\n/g, ' ')}`);
+  if (Array.isArray(copy.items)) copy.items.forEach((item) => out.push(`- text item: ${item}`));
   return out.join('\n');
+}
+
+function buildGlowifPrompt(kind, copy, topic, withProduct) {
+  const product = withProduct
+    ? 'The input contains a locked fictional product. Keep its exact position, scale, silhouette, shade, label and pump or lid. No objects, text, flourishes or highlights may overlap it.'
+    : 'Do not render a bottle, jar, package, hands or people. Use abstract textures or typography.';
+  return `$imagegen Create a square Glowif skincare carousel slide and save it as ./out.png.
+${product}
+Shared art direction for this five-slide set: take the base palette from this product description: ${topic.imageBrief}
+Use a bright milky background, dark ink, a single packaging-derived accent, generous space and a bold modern Korean sans-serif. Keep the type, light and palette consistent across the set. Use a role-specific composition: ${LAYOUT[kind].text}. Avoid generic rows of copy, repeated photos and dense boxes.
+Set only this exact approved Korean copy. Preserve spelling. Do not introduce additional claims, scores, certifications, endorsements or other words:
+${textLines(copy)}
+No people, healthcare imagery, extra products or decorative numbers. Use the image generation tool for the design. Reply with only ./out.png.`;
 }
 
 function buildPrompt(kind, copy) {
@@ -118,14 +141,19 @@ function defaultCodexBin(env = process.env, platform = process.platform, exists 
 }
 
 // image: 함께 넘길 바탕 그림(작업 폴더 기준). null이면 그림 없이 새로 만듦 (ai-bg.js 배경)
-function runCodex(cwd, prompt, timeoutSec, { image = 'base.png' } = {}) {
+function codexImageEnv(env = process.env) {
+  const allow = ['HOME', 'PATH', 'TMPDIR', 'TMP', 'TEMP', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'CODEX_HOME', 'CODEX_BIN', 'APPDATA', 'LOCALAPPDATA', 'SystemRoot'];
+  return Object.fromEntries(allow.filter((key) => env[key] !== undefined).map((key) => [key, env[key]]));
+}
+
+function runCodex(cwd, prompt, timeoutSec, { image = 'base.png', env = process.env } = {}) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const bin = defaultCodexBin();
+    const bin = defaultCodexBin(env);
     const args = ['exec', '--skip-git-repo-check', '-s', 'workspace-write', ...(image ? ['-i', image] : [])];
     // .js면 node로 실행 (Windows는 .js를 직접 실행하지 못함)
     const [cmd, cmdArgs] = /\.[cm]?js$/i.test(bin) ? [process.execPath, [bin, ...args]] : [bin, args];
-    const child = spawn(cmd, cmdArgs, { cwd, env: process.env });
+    const child = spawn(cmd, cmdArgs, { cwd, env });
     let out = '';
     child.stdout.on('data', (d) => { out += d; });
     child.stderr.on('data', (d) => { out += d; });
@@ -185,7 +213,8 @@ window.lockData = async (cut, gen, box, pad) => {
 };
 window.finalize = async (cut, gen, box) => {
   const F = ${FINAL}; const c = canvasOf(F, F); const g = c.getContext('2d');
-  g.drawImage(await loadImg(gen), 0, 0, F, F); g.drawImage(await loadImg('data:image/png;base64,' + cut), box.x, box.y, box.w, box.h);
+  g.drawImage(await loadImg(gen), 0, 0, F, F);
+  if (cut) g.drawImage(await loadImg('data:image/png;base64,' + cut), box.x, box.y, box.w, box.h);
   return toB64(c);
 };`;
 
@@ -193,23 +222,23 @@ function scaleBox(b, k) {
   return { x: Math.round(b.x * k), y: Math.round(b.y * k), w: Math.round(b.w * k), h: Math.round(b.h * k) };
 }
 
-async function makeCard({ page, id, card, kind, cut, dir, tries, timeoutSec, log }) {
-  const box = productBox(kind, cut.w, cut.h);
-  const finalBox = scaleBox(box, FINAL / BASE);
-  const prompt = buildPrompt(kind, card.copy || {});
-  const record = { no: card.no, kind, key: cardKey(card), ok: false, file: null, text_checked: false, tries: [] };
+async function makeCard({ page, card, kind, cut, dir, pdir, topic, tries, timeoutSec, log }) {
+  const box = cut && productBox(kind, cut.w, cut.h);
+  const finalBox = box && scaleBox(box, FINAL / BASE);
+  const prompt = topic ? buildGlowifPrompt(kind, card.copy || {}, topic, Boolean(cut)) : buildPrompt(kind, card.copy || {});
+  const record = { no: card.no, kind, key: cardKey(card, pdir), ok: false, file: null, text_checked: false, tries: [] };
   for (let t = 1; t <= tries; t++) {
     const cwd = path.join(dir, 'work', `card-${pad(card.no)}-try${t}`);
     fs.rmSync(cwd, { recursive: true, force: true });
     fs.mkdirSync(cwd, { recursive: true });
-    fs.writeFileSync(path.join(cwd, 'base.png'), Buffer.from(await page.evaluate(([c, b, s]) => window.makeBase(c, b, s), [cut.b64, box, BASE]), 'base64'));
+    if (cut) fs.writeFileSync(path.join(cwd, 'base.png'), Buffer.from(await page.evaluate(([c, b, s]) => window.makeBase(c, b, s), [cut.b64, box, BASE]), 'base64'));
     fs.writeFileSync(path.join(cwd, 'prompt.txt'), prompt);
     log(`  ${card.no}번 ${t}차 생성 중… (보통 1~2분)`);
-    const r = await runCodex(cwd, prompt, timeoutSec);
+    const r = await runCodex(cwd, prompt, timeoutSec, { image: cut ? 'base.png' : null, env: topic ? codexImageEnv() : process.env });
     const gen = generatedPath(r.out, cwd);
     const attempt = { try: t, sec: r.sec, exit: r.code };
     if (!gen) {
-      attempt.error = /capacity/i.test(r.out) ? 'AI 사용량 초과(잠시 뒤 다시)' : r.code === -1 ? `codex를 실행하지 못했어요: ${r.out}` : '생성된 이미지가 없어요';
+      attempt.error = /capacity|usage limit/i.test(r.out) ? 'AI 사용량 초과(잠시 뒤 다시)' : r.code === -1 ? 'Codex를 실행하지 못했어요' : '생성된 이미지가 없어요';
       record.tries.push(attempt);
       log(`  ${card.no}번 ${t}차: ${attempt.error}`);
       if (r.code === -1) break;
@@ -217,19 +246,28 @@ async function makeCard({ page, id, card, kind, cut, dir, tries, timeoutSec, log
     }
     fs.copyFileSync(gen, path.join(cwd, 'gen.png'));
     const src = 'data:image/png;base64,' + fs.readFileSync(gen).toString('base64');
-    const P = LOCK.search;
-    const d = await page.evaluate(([c, g, b, p]) => window.lockData(c, g, b, p), [cut.b64, src, finalBox, P]);
-    const score = lockScore({
-      ai: Buffer.from(d.ai, 'base64'), aw: finalBox.w + 2 * P, orig: Buffer.from(d.orig, 'base64'),
-      mask: Buffer.from(d.mask, 'base64'), w: finalBox.w, h: finalBox.h, pad: P,
-    });
-    Object.assign(attempt, score);
-    record.tries.push(attempt);
-    log(`  ${card.no}번 ${t}차: 제품 ${score.ok ? '유지' : '어긋남'} (차이 ${score.diff}, 이동 ${score.shift.join(',')})`);
-    if (!score.ok) continue;
-    const file = `card-${pad(card.no)}.png`;
-    fs.writeFileSync(path.join(dir, file), Buffer.from(await page.evaluate(([c, g, b]) => window.finalize(c, g, b), [cut.b64, src, finalBox]), 'base64'));
-    Object.assign(record, { ok: true, file });
+    try {
+      if (cut) {
+        const P = LOCK.search;
+        const d = await page.evaluate(([c, g, b, p]) => window.lockData(c, g, b, p), [cut.b64, src, finalBox, P]);
+        const score = lockScore({
+          ai: Buffer.from(d.ai, 'base64'), aw: finalBox.w + 2 * P, orig: Buffer.from(d.orig, 'base64'),
+          mask: Buffer.from(d.mask, 'base64'), w: finalBox.w, h: finalBox.h, pad: P,
+        });
+        Object.assign(attempt, score);
+        log(`  ${card.no}번 ${t}차: 제품 ${score.ok ? '유지' : '어긋남'} (차이 ${score.diff}, 이동 ${score.shift.join(',')})`);
+        if (!score.ok) continue;
+      }
+      const file = `card-${pad(card.no)}.png`;
+      const result = await page.evaluate(([c, g, b]) => window.finalize(c, g, b), [cut?.b64, src, finalBox]);
+      fs.writeFileSync(path.join(dir, file), Buffer.from(result, 'base64'));
+      Object.assign(record, { ok: true, file });
+    } catch (error) {
+      attempt.error = error.message;
+    } finally {
+      record.tries.push(attempt);
+    }
+    if (!record.ok) continue;
     break;
   }
   return record;
@@ -240,12 +278,25 @@ async function run(id, { only = null, staleOnly = false, tries = 3, log = consol
   const data = readJson(path.join(pdir, 'cards.json'));
   if (!['copy', 'approved'].includes(data.stage)) throw new Error(`문구 작업 뒤에 쓸 수 있어요 (지금 단계: ${data.stage})`);
   const cards = data.cards || [];
-  const nos = aiTargets(cards);
-  const targets = nos.map((no, i) => [cards.find((c) => c.no === no), i === 0 ? 'cover' : 'closing']);
+  const glowif = glowifInfo(pdir);
+  const topic = glowif && topics.find((item) => item.id === glowif.topic);
+  if (topic && data.stage === 'approved') throw new Error('승인한 Glowif 이미지는 다시 만들 수 없어요.');
+  const apply = () => {
+    const result = applyAiCards(pdir, cards);
+    if (topic && result.applied.length) {
+      stampProduct(pdir, { productId: id, cards, imageCards: result.applied, only: result.applied, skillVersion: readJson(paths.config('skill-version.json')).version });
+    }
+    return result;
+  };
+  const nos = aiTargets(cards, pdir);
+  const targets = nos.map((no, i) => {
+    const card = cards.find((c) => c.no === no);
+    return [card, topic ? `glowif-${card.role}` : i === 0 ? 'cover' : 'closing'];
+  });
   let list = only ? targets.filter(([c]) => c.no === only) : targets;
   if (staleOnly) { const st = staleTargets(pdir, cards); list = list.filter(([c]) => st.includes(c.no)); }
-  if (!list.length && staleOnly) return { report: null, results: [], applied: applyAiCards(pdir, cards) };
-  if (!list.length) throw new Error(only ? `${only}번은 AI 카드 대상(첫·마지막 카드)이 아니에요` : '카드가 없어요');
+  if (!list.length && staleOnly) return { report: null, results: [], applied: apply() };
+  if (!list.length) throw new Error(only ? `${only}번은 AI 카드 대상(${nos.join('·')}번)이 아니에요` : '카드가 없어요');
   const dir = path.join(pdir, 'output', 'ai-card');
   fs.mkdirSync(dir, { recursive: true });
   const reportFile = path.join(dir, 'ai-card.json');
@@ -258,22 +309,25 @@ async function run(id, { only = null, staleOnly = false, tries = 3, log = consol
     await page.setContent('<!doctype html><title>ai-card</title>');
     await page.addScriptTag({ content: PAGE_FNS });
     for (const [card, kind] of list) {
-      const imgName = card.image || (cards.find((c) => c.image) || {}).image;
-      if (!imgName) throw new Error(`${card.no}번 카드에 제품 사진이 없어요`);
-      const imgFile = path.join(pdir, 'images', imgName);
-      const mime = /\.png$/i.test(imgName) ? 'image/png' : 'image/jpeg';
-      const cut = await page.evaluate((s) => window.cutout(s), `data:${mime};base64,${fs.readFileSync(imgFile).toString('base64')}`);
-      results.push(await makeCard({ page, id, card, kind, cut, dir, tries, timeoutSec, log }));
+      const imgName = card.image || (!topic && cards.find((c) => c.image)?.image);
+      if (!imgName && !topic) throw new Error(`${card.no}번 카드에 제품 사진이 없어요`);
+      let cut = null;
+      if (imgName) {
+        const imgFile = path.join(pdir, 'images', imgName);
+        const mime = /\.png$/i.test(imgName) ? 'image/png' : 'image/jpeg';
+        cut = await page.evaluate((s) => window.cutout(s), `data:${mime};base64,${fs.readFileSync(imgFile).toString('base64')}`);
+      }
+      const result = await makeCard({ page, card, kind, cut, dir, pdir, topic, tries, timeoutSec, log });
+      results.push(result);
+      prev.cards = [...prev.cards.filter((c) => c.no !== result.no), result].sort((a, b) => a.no - b.no);
+      fs.writeFileSync(reportFile + '.tmp', JSON.stringify({ product_id: id, made_at: new Date().toISOString(), lock: LOCK, cards: prev.cards }, null, 2) + '\n');
+      fs.renameSync(reportFile + '.tmp', reportFile);
     }
   } finally {
     await browser.close();
   }
-  const merged = [...prev.cards.filter((c) => !results.some((r) => r.no === c.no)), ...results].sort((a, b) => a.no - b.no);
-  const report = { product_id: id, made_at: new Date().toISOString(), lock: LOCK, cards: merged };
-  fs.writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n');
   // 최종 카드(output/png)에 바로 넣음. 템플릿 출력은 output/ai-card/template-card-NN.png로 보관
-  const applied = applyAiCards(pdir, cards);
-  return { report, results, applied };
+  return { report: readJson(reportFile), results, applied: apply() };
 }
 
 if (require.main === module) {
@@ -291,4 +345,4 @@ if (require.main === module) {
     .catch((e) => { console.error(`[오류] ${e.message}`); process.exit(2); });
 }
 
-module.exports = { buildPrompt, textLines, defaultCodexBin, runCodex, productBox, lockScore, generatedPath, LAYOUT, LOCK, PAGE_FNS, run };
+module.exports = { buildPrompt, buildGlowifPrompt, textLines, defaultCodexBin, codexImageEnv, runCodex, productBox, lockScore, generatedPath, LAYOUT, LOCK, PAGE_FNS, run };

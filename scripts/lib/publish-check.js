@@ -2,6 +2,7 @@
 // 판정: pass(통과) · warn(사람 확인) · fail(고쳐야 함) · todo(아직 안 한 단계). fail·todo가 없으면 ready
 // 게시는 이 점검이 ready이고 사람이 최종 승인(stage approved)한 것만 — 점검 자체는 아무것도 고치지 않음
 const fs = require('fs');
+const { glowifInfo } = require('./glowif-product');
 const path = require('path');
 const { readDisclosure } = require('./ai-disclosure');
 const { appliedNumbers, readReport } = require('./ai-cards');
@@ -96,7 +97,12 @@ function publishCheck({ productDir, data, validation, caution, sourceText = '' }
   // 6) GPT 이미지가 들어간 카드: 그린 글자·사람 이미지 확인
   // 이전 실험의 생성 기록 키가 달라도 출력에 기록된 GPT 이미지 사용 여부는 유지한다.
   const metadataImages = cards.filter((c) => disclosures.get(c.no)?.parts.includes('image')).map((c) => c.no);
-  const aiCards = [...new Set([...appliedNumbers(productDir, cards), ...metadataImages])].sort((a, b) => a - b);
+  const applied = appliedNumbers(productDir, cards);
+  const aiCards = [...new Set([...applied, ...metadataImages])].sort((a, b) => a - b);
+  if (glowifInfo(productDir)) {
+    const complete = cards.length === 5 && cards.every((card) => applied.includes(card.no));
+    add('glowif_ai_cards', 'Glowif GPT 디자인', complete ? 'pass' : 'fail', complete ? '5장 모두 현재 문구의 GPT 디자인이에요' : '현재 문구로 만든 GPT 디자인 카드 5장이 필요해요');
+  }
   const bgCards = [...bgFiles(productDir, data).keys()];
   const report = readReport(productDir);
   const unchecked = aiCards.filter((no) => !(report?.cards || []).find((c) => c.no === no)?.text_checked);

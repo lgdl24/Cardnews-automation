@@ -2,6 +2,8 @@ node_modules/
 products/*/output/
 products/*/.job.json
 products/.ig-publish-locks/
+products/glowif-*/
+products/.glowif-*.lock/
 .env
 /data/
 .DS_Store

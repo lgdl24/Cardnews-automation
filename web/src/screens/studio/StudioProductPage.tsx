@@ -110,7 +110,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
 
   return (
     <div className="page studio-detail">
-      <BackLink />
+      <BackLink glowif={Boolean(p.glowif)} />
       <header className="studio-detail-head">
         <div className="studio-detail-title">
           <h1 className="page-title">{p.name}</h1>
@@ -118,6 +118,8 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
         </div>
         <span className={`pill pill-${ws.tone}`}>{ws.label}</span>
       </header>
+
+      {p.glowif && <p className="notice notice-info"><Link to="/glowif">Glowif</Link> · {p.glowif.label} · AI-Hub 리뷰 {p.glowif.reviews.toLocaleString('ko-KR')}건, 상품명 {p.glowif.products.toLocaleString('ko-KR')}개에서 관련 표현을 찾았어요.</p>}
 
       <Stepper states={steps} />
 
@@ -207,7 +209,7 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
           {p.stage === 'copy' && !a.running && (
             <ReviewBar
               waitAhead={a.wait_ahead ?? 0}
-              note={p.ai_card?.running || p.ai_bg?.running ? 'AI 이미지를 만드는 중이라 끝난 뒤 승인할 수 있어요.' : `${Math.min(seen.size, cardCount)}/${cardCount}장 확인함 · 승인하면 카드가 확정돼요.`}
+              note={p.ai_card?.running || p.ai_bg?.running ? 'AI 이미지를 만드는 중이라 끝난 뒤 승인할 수 있어요.' : a.ai_pending ? 'Glowif GPT 디자인 5장이 모두 준비되면 최종 승인할 수 있어요.' : `${Math.min(seen.size, cardCount)}/${cardCount}장 확인함 · 승인하면 카드가 확정돼요.`}
             >
               {a.can_revise_final && !revision && <button className="btn" type="button" disabled={busy} onClick={() => openRevision()}>카드 수정 요청</button>}
               <button className="btn btn-primary" type="button" disabled={!a.can_approve_final || busy} onClick={() => act(`/products/${id}/approve`, { stage: 'final' })}><Icon name="check" size={18} /> 최종 승인</button>
@@ -221,8 +223,8 @@ function StudioProduct({ id, revisionTypes }: { id: string; revisionTypes: Revis
   );
 }
 
-function BackLink() {
-  return <Link to="/studio" className="back-link"><Icon name="back" size={16} /> 작업실</Link>;
+function BackLink({ glowif = false }: { glowif?: boolean }) {
+  return <Link to={glowif ? '/glowif' : '/studio'} className="back-link"><Icon name="back" size={16} /> {glowif ? 'Glowif 목록' : '작업실'}</Link>;
 }
 
 // ── 단계 표시: 입력 → 구성안 검토 → 카드 만들기 → 카드 검토 → 승인·내보내기
@@ -934,11 +936,11 @@ function AiCardPanel({ detail, busy, onMake }: { detail: ProductDetail; busy: bo
       <summary>
         <span className="fold-title">AI 디자인 카드 · {nos.join('·')}번</span>
         <span className="fold-meta">
-          {ai.running ? <span className="pill pill-running">만드는 중</span> : failedRun ? <span className="pill pill-failed">실패</span> : missing.length ? <span className="pill pill-queued">{missing.join('·')}번 템플릿 사용 중</span> : <span className="pill pill-done">최종 카드에 적용</span>}
+          {ai.running ? <span className="pill pill-running">만드는 중</span> : failedRun ? <span className="pill pill-failed">실패</span> : missing.length ? <span className="pill pill-queued">{missing.join('·')}번 {detail.glowif ? 'GPT 디자인 필요' : '템플릿 사용 중'}</span> : <span className="pill pill-done">최종 카드에 적용</span>}
         </span>
       </summary>
       <div className="fold-body">
-        <p className="muted">첫 카드와 마지막 카드를 GPT 이미지(내 컴퓨터의 Codex)로 만들어 최종 카드에 넣어요. 제품은 원본 사진 그대로예요. 문구를 고치면 그 카드만 다시 만들어요.</p>
+        <p className="muted">{detail.glowif ? 'GPT가 1~5장 전체를 디자인해요. 제품이 나오는 장은 같은 원본 누끼를 사용해요. 그려진 글자가 검토 문구와 같은지 확인해 주세요.' : '첫 카드와 마지막 카드를 GPT 이미지(내 컴퓨터의 Codex)로 만들어 최종 카드에 넣어요. 제품은 원본 사진 그대로예요. 문구를 고치면 그 카드만 다시 만들어요.'}</p>
         {ai.running && <p className="notice notice-info" role="status">AI 디자인 카드를 만드는 중이에요 ({ai.run?.card ? `${ai.run.card}번` : `${nos.join('·')}번`}). 끝날 때까지 최종 승인·내보내기·피그마는 잠시 기다려요.</p>}
         {ai.run && (ai.running || failedRun) && ai.run.progress.length > 0 && <pre className={`ai-card-log${failedRun ? ' is-error' : ''}`}>{ai.run.progress.join('\n')}</pre>}
         {!ai.running && missing.length > 0 && (

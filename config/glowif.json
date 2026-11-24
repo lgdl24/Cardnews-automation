@@ -1,0 +1,52 @@
+{
+  "topics": [
+    {
+      "id": "sticky-finish",
+      "label": "바른 뒤 끈적임",
+      "aspects": ["흡수력", "사용감", "제형", "발림성"],
+      "pattern": "끈적",
+      "slug": "light-layer-gel",
+      "name": "라이트 레이어 젤",
+      "situation": "바르고 나서도 손이 끈적일 때",
+      "feature": "아침에 얇게 펴 바르는 물빛 젤",
+      "detail": "옅은 민트색 젤 제형",
+      "package": "옅은 민트색의 납작한 타원 용기와 흰색 펌프",
+      "imageBrief": "A low pebble-shaped frosted pale aqua oval bottle with one white pump, labeled GLOWIF and LIGHT LAYER GEL.",
+      "steps": ["펌프를 눌러 손에 덜어요", "얼굴에 얇게 펴 발라요"],
+      "closing": "끈적임이 신경 쓰이는 아침엔",
+      "closingAnswer": "물빛 젤을 얇게 펴 발라요"
+    },
+    {
+      "id": "strong-scent",
+      "label": "향이 강하게 느껴짐",
+      "aspects": ["향"],
+      "pattern": "(?:향|냄새).{0,18}(?:너무\\s*(?:강|진|독)|강[하해]|진[하해]|독[하해]|세[요서고])",
+      "slug": "quiet-cream",
+      "name": "콰이어트 크림",
+      "situation": "크림 향이 유난히 신경 쓰일 때",
+      "feature": "향을 가볍게 잡은 크림",
+      "detail": "부드럽게 펴 바르는 아이보리 크림",
+      "package": "아이보리 원형 단지와 회보라색 뚜껑",
+      "imageBrief": "A low rounded ivory cream jar with a soft gray-lavender lid, labeled GLOWIF and QUIET CREAM.",
+      "steps": ["크림을 손끝에 조금 덜어요", "얼굴에 부드럽게 펴 발라요"],
+      "closing": "크림 향이 신경 쓰이는 날엔",
+      "closingAnswer": "향을 가볍게 잡은 크림을 발라요"
+    },
+    {
+      "id": "layer-pilling",
+      "label": "바른 뒤 제형이 밀림",
+      "aspects": ["흡수력", "사용감", "제형", "발림성"],
+      "pattern": "밀리|밀림|때처럼",
+      "slug": "first-layer-lotion",
+      "name": "퍼스트 레이어 로션",
+      "situation": "바른 제형이 자꾸 밀릴 때",
+      "feature": "다음 단계 전에 얇게 바르는 로션",
+      "detail": "부드럽게 펴 바르는 묽은 로션 제형",
+      "package": "반투명 물빛 파란색 병과 흰색 펌프",
+      "imageBrief": "A translucent powder-blue slim oval bottle with one white pump, labeled GLOWIF and FIRST LAYER LOTION.",
+      "steps": ["로션을 손에 덜어요", "얼굴에 얇게 펴 발라요"],
+      "closing": "제형 밀림이 신경 쓰이는 아침엔",
+      "closingAnswer": "다음 단계 전에 로션을 얇게 발라요"
+    }
+  ]
+}

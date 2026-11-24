@@ -11,6 +11,7 @@ const {
 const { computeQuality, formatQuality, findCautions } = require('./lib/metrics');
 const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { BRAND_DESIGN, checkBrandMood } = require('./lib/brand');
+const { glowifInfo, glowifRules } = require('./lib/glowif-product');
 
 const STAGES = ['plan', 'copy', 'approved'];
 const ROLES = ['cover', 'feature', 'usage', 'detail', 'closing'];
@@ -50,6 +51,8 @@ function validate(productId) {
     report.error('SCHEMA_ERROR', 'stage', `${STAGES.join(' / ')} 중 하나여야 해요`);
   }
   const needCopy = data.stage === 'copy' || data.stage === 'approved';
+  const glowif = glowifInfo(paths.product(productId));
+  if (glowif) glowifRules(report, data, glowif);
 
   // ── design: 구성안에서 고른 디자인 묶음 (#74, 선택. 입력 무드가 '자동 추천'이면 필수)
   const autoDesign = input && moodInputOf(input).value === AUTO_DESIGN;

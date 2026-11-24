@@ -9,6 +9,9 @@
 //
 // 이 파일은 환경변수·비밀 값을 출력하거나 기록하지 않는다.
 const fs = require('fs');
+const { isDeepStrictEqual } = require('node:util');
+const { glowifInfo, glowifPlan } = require('./glowif-product');
+const { topics: glowifTopics } = require('../../config/glowif.json');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
@@ -384,7 +387,15 @@ async function runJob({
       memo: revision.memo || '(메모 없음)',
     });
   }
-  const prompt = fillPrompt({ mode, kind, vars, root, overlayDir });
+  let prompt = fillPrompt({ mode, kind, vars, root, overlayDir });
+  const glowif = mode === 'web' && glowifInfo(productDir);
+  if (glowif) {
+    prompt += '\n\n[Glowif 가상 제품 제작 기준]\n가상 제품 설정을 원문 근거로 사용하고, 효능·성분·수치·비교·사용성 시험 결과를 추가하지 않아요. 1장은 상황과 제품명·답을 담은 부제, 2장은 직접 답하는 핵심 특징, 3장은 상세 특징, 4장은 사용법, 5장은 같은 문제와 답을 한 줄로 묶어요. 5장을 질문으로 끝내지 않아요. 1·2·5장은 공통 근거를 연결하고 1·5장에 ‘AI로 만든 가상 제품’ 배지를 넣어요. 제품 사진은 main.png만 사용해요. 제품의 특징과 사용법은 자연스럽게 소개해요.';
+    if (kind === 'copy') {
+      const topic = glowifTopics.find((item) => item.id === glowif.topic);
+      prompt += `\n승인된 구성안 안에서 쓸 수 있는 문구 후보(카드 순서대로): ${JSON.stringify(glowifPlan(topic).copy)}`;
+    }
+  }
   const ws = createWorkspace({ jobId, productId, productDir, root, jobsDir, overlayDir });
   appendLines(path.join(productDir, 'log.jsonl'), [event(productId, jobId, 'job_started', { kind, executor: 'claude-cli' }, root)]);
   if (onStart) onStart({ job_id: jobId, kind, started_at: startedAt });
@@ -400,6 +411,16 @@ async function runJob({
   });
 
   const verify = verifyJob({ ...ws, productId, kind, revisionStage: revision && revision.stage });
+  if (glowif && kind === 'copy' && verify.ok) {
+    const planOf = (dir) => {
+      const { stage, cards, ...plan } = readJson(path.join(dir, 'cards.json'));
+      return { ...plan, cards: cards.map(({ copy, ...card }) => card) };
+    };
+    if (!isDeepStrictEqual(planOf(productDir), planOf(ws.wsProduct))) {
+      verify.ok = false;
+      verify.reasons.push('문구 작업에서 승인받은 Glowif 구성안이 달라졌어요');
+    }
+  }
   const report = parseResultReport(run.result && run.result.text);
   const runOk = Boolean(run.result && run.result.subtype === 'success' && !run.result.is_error && !run.crash);
   const ok = runOk && !/중단/.test(report.결과 || '') && verify.ok;

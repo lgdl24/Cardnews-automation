@@ -458,3 +458,4 @@
   .ig-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
   .ig-cards .num { left: 3px; top: 3px; min-width: 16px; height: 16px; font-size: 11px; }
 }
+.studio-tile-thumb img.glowif-product-thumb { object-fit: contain; padding: 12%; }

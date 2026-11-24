@@ -13,6 +13,7 @@ const { appendEvent, resultFields, shouldLog } = require('./lib/events');
 const { pad, buildCardHtml, buildIndexHtml, inspectPage, waitForFit, launchBrowser } = require('./lib/card-html');
 const { decideColors, colorModeOf, pickProductImage, readPixels } = require('./lib/color-mood');
 const { applyAiCards } = require('./lib/ai-cards');
+const { glowifInfo } = require('./lib/glowif-product');
 const { stampProduct } = require('./lib/ai-disclosure');
 const { BRAND_DESIGN, brandPalette, bgEntries, brandTemplate, layoutOf } = require('./lib/brand');
 
@@ -220,7 +221,7 @@ async function main() {
   const stamped = stampProduct(paths.product(id), {
     productId: id,
     cards: data.cards,
-    imageCards: [...ai.applied, ...bgs.keys()],
+    imageCards: [...ai.applied, ...bgs.keys(), ...(glowifInfo(paths.product(id)) ? data.cards.filter((card) => card.image).map((card) => card.no) : [])],
     skillVersion: readJson(paths.config('skill-version.json')).version,
     only: targets.map((c) => c.no),
   });

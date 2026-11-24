@@ -10,6 +10,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const aiCards = require('./ai-cards');
+const { glowifInfo } = require('./glowif-product');
 const brand = require('./brand');
 const { extractInput } = require('./extract-input');
 const figmaPush = require('../figma-push');
@@ -271,6 +272,7 @@ function createStudio({
 
   function productSummary(id) {
     const dir = productDir(id);
+    const glowif = glowifInfo(dir);
     const input = parseInput(fs.readFileSync(path.join(dir, 'input.md'), 'utf8'));
     const cards = readJsonSafe(path.join(dir, 'cards.json'));
     const events = readEventsFrom(logFile(id));
@@ -293,6 +295,7 @@ function createStudio({
       png_count: pngFiles.length,
       last_job: lastFinish ? { kind: lastFinish.kind || null, ok: Boolean(lastFinish.ok), error_code: lastFinish.error_code || null, ts: lastFinish.ts } : null,
       instagram: publisher.summary(id),
+      ...(glowif ? { glowif } : {}),
     };
   }
 
@@ -324,8 +327,12 @@ function createStudio({
     const lastOk = lastFinish ? lastFinish.ok : null;
     // AI 디자인 카드를 만드는 중이면 최종 카드(1·마지막)가 아직 바뀌는 중 → 승인·내보내기·피그마는 기다림
     const aiBusy = Boolean((aiRuns.get(id) || {}).running) || Boolean((bgRuns.get(id) || {}).running);
+    const dir = productDir(id);
+    const glowif = glowifInfo(dir);
+    const aiPending = Boolean(glowif && stage === 'copy' && aiCards.appliedNumbers(dir, cards.cards || []).length !== 5);
     return {
       ai_busy: aiBusy,
+      ...(glowif ? { ai_pending: aiPending } : {}),
       running,
       job_state: state,
       // 지금 작업을 누르면 앞에 기다릴 작업 수 (0이면 바로 시작)
@@ -335,13 +342,13 @@ function createStudio({
       can_plan: !running && !cards && check.errors.length === 0,
       can_approve_plan: !running && stage === 'plan' && !approvedCurrentPlan,
       can_revise_plan: !running && stage === 'plan' && !approvedCurrentPlan,
-      can_select_design: !running && stage === 'plan' && !approvedCurrentPlan,
+      can_select_design: !glowif && !running && stage === 'plan' && !approvedCurrentPlan,
       can_copy: !running && stage === 'plan' && Boolean(approvedCurrentPlan),
-      can_approve_final: !running && !aiBusy && stage === 'copy',
+      can_approve_final: !running && !aiBusy && !aiPending && stage === 'copy',
       can_revise_final: !running && !aiBusy && stage === 'copy',
       can_export: !running && !aiBusy && stage === 'approved',
       can_render: !running && (stage === 'copy' || stage === 'approved'),
-      can_ai_card: !running && (stage === 'copy' || stage === 'approved') && !(aiRuns.get(id) || {}).running,
+      can_ai_card: !running && (stage === 'copy' || (!glowif && stage === 'approved')) && !(aiRuns.get(id) || {}).running,
       can_ai_bg: !running && (stage === 'copy' || stage === 'approved') && !(bgRuns.get(id) || {}).running,
     };
   }
@@ -609,7 +616,7 @@ function createStudio({
       running: Boolean(run && run.running),
       run: run ? { card: run.card, auto: Boolean(run.auto), started_at: run.started_at, finished_at: run.finished_at, ok: run.ok, progress: run.lines.slice(-6) } : null,
       made_at: report ? report.made_at : null,
-      targets: aiCards.aiTargets(list),
+      targets: aiCards.aiTargets(list, productDir(id)),
       applied,
       stale,
       cards: report && Array.isArray(report.cards)
@@ -880,7 +887,8 @@ function createStudio({
       return send(res, 200, { ok: true, mode: 'web', claude: claudeStatus(), job: current ? publicJob(current) : null, jobs: jobsOverview(), deploy: deployStatus(), form: loadForm(), revision_types: readJson(path.join(root, 'config', 'revision-types.json')).types.map(({ code, label, example }) => ({ code, label, example })) });
     }
     if (method === 'GET' && parts[0] === 'products' && parts.length === 1) {
-      const list = listIds().map(productSummary).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+      const glowifOnly = url.searchParams.get('source') === 'glowif';
+      const list = listIds().map(productSummary).filter((p) => !glowifOnly || p.glowif).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
       return send(res, 200, { products: list });
     }
     // 인스타 연결 계정 (이름·24시간 한도만, 토큰은 보내지 않음)
@@ -983,7 +991,7 @@ function createStudio({
           return send(res, 200, { ...detail(), job: job || detail().job });
         }
         if (body.stage === 'final') {
-          if (!a.can_approve_final) throw new HttpError(409, '최종 승인할 카드가 없어요');
+          if (!a.can_approve_final) throw new HttpError(409, a.ai_pending ? 'Glowif GPT 디자인 카드 5장이 모두 준비되어야 최종 승인할 수 있어요' : '최종 승인할 카드가 없어요');
           const file = path.join(productDir(id), 'cards.json');
           const data = readJson(file);
           data.stage = 'approved';
@@ -1024,9 +1032,9 @@ function createStudio({
         if (!detail().actions.can_ai_card) throw new HttpError(409, (aiRuns.get(id) || {}).running ? 'AI 디자인 카드를 만드는 중이에요' : '문구를 만든 뒤, 작업이 없을 때 만들 수 있어요');
         const n = body && body.card != null ? Number(body.card) : null;
         const cards = (readJsonSafe(path.join(productDir(id), 'cards.json')) || {}).cards || [];
-        const allowed = [cards[0], cards[cards.length - 1]].filter(Boolean).map((c) => c.no);
-        if (n != null && !allowed.includes(n)) throw new HttpError(400, `AI 디자인 카드는 첫·마지막 카드(${allowed.join('·')}번)만 만들 수 있어요`);
-        startAiCard(id, n);
+        const allowed = aiCards.aiTargets(cards, productDir(id));
+        if (n != null && !allowed.includes(n)) throw new HttpError(400, `AI 디자인 카드 대상은 ${allowed.join('·')}번이에요`);
+        startAiCard(id, n, { stale: n == null && Boolean(glowifInfo(productDir(id))) });
         return send(res, 202, detail());
       }
       // AI 배경 올리기: ChatGPT 채팅에서 만든 이미지를 N번 배경으로 (1080px로 맞추고 다시 출력)

@@ -47,6 +47,7 @@ const router = createBrowserRouter(
             { path: 'eval', element: <EvalDashboardPage /> },
             { path: 'compare', element: <VersionComparePage /> },
             { path: 'studio', element: <StudioHomePage /> },
+            { path: 'glowif', element: <StudioHomePage glowifOnly /> },
             { path: 'studio/new', element: <ProductFormPage /> },
             { path: 'studio/:id', element: <StudioProductPage /> },
             { path: 'studio/:id/edit', element: <ProductFormPage /> },
