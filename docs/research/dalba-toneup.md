@@ -54,7 +54,7 @@
 
 - 누끼컷 주소 앞부분: `https://godomall-storage.cdn-nhncommerce.com/95803ed2b538f43d548bda9185c01365/`
 - 고시·상세 이미지 주소 앞부분: `https://cdn-saas-web-116-52.cdn-nhncommerce.com/dalbapiedmot_godomall_com/data/img/product/detail/`
-- 4장 모두 받음(2026-10-19). 저장소에는 퍼플만 `products/dalba-toneup-purple/images/main.png`로 넣음
+- 4장 모두 받음(2026-10-19). 퍼플은 `products/dalba-toneup-purple/images/main.png`로 썼음. 11.24부터 공개 저장소에서 빼고 각자 컴퓨터에만 둠(#118)
 - 블루 고시 이미지 아래에 '상세페이지에 AI로 만든 연출 이미지가 일부 포함' 안내가 있음 → 누끼컷 대신 연출 이미지를 쓰지 않도록 주의
 
 ## 퍼플 입력 (`products/dalba-toneup-purple`)

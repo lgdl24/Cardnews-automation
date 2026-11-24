@@ -8,6 +8,7 @@
 
 | 날짜 | 도구 | 이슈·브랜치 | 바뀐 점 |
 |---|---|---|---|
+| 2026-11-24 | Claude | #118 · `chore/118-remove-brand-assets` | **공개 저장소에서 실제 브랜드(달바) 자료 뺌**: 저장소는 공개 유지(이규동 결정). `products/dalba-toneup-purple/`·`eval/inputs/eval-toneup-purple/`(공식몰 누끼컷·상세 문구)은 Git 추적에서 빼고 `.gitignore`에 추가 — 각자 컴퓨터에만 둬요. 달바 사진을 합성한 시안 PNG·HTML(`docs/research/dalba-purple-redesign/`, `design-reference-review/`)은 삭제, 분석 글은 유지. 과거 이력에는 남아요(이력 재작성 안 함) |
 | 2026-11-24 | Claude | #116 · `fix/116-kt-studio-hardening` (`feat/112` 위) | **KT 작업실 보안 보강**: 제작 작업·자료 채우기의 Claude가 작업 폴더 밖을 못 읽게 `--settings`(`blockReads/WritesOutsideWorkingDirectories`, Claude Code 2.1.257+)와 로그인 정보 경로 `Read(...)` 차단을 넣고 경로 제한 없는 Read·Glob·Grep 허용을 뺐어요. Caddy 접근 기록(JSON)·HSTS, fail2ban(401 10회/10분 → 443 1시간 차단). KT에 반영·확인 완료(가짜 파일 시험, 실제 IP 기록, 차단 규칙). 자세한 내용은 `docs/kt-studio-deployment.md` 「보안 보강」 |
 | 2026-11-18 | Codex | #112 · `feat/112-kt-studio-publish` | KT 작업실과 게시 JPEG의 기준 주소를 무료 서브도메인 HTTPS로 바꿨어요. 팀원별 로그인, 비로그인 접근 차단, 게시 프로세스와 외부의 JPEG 조회를 확인했어요. |
 | 2026-11-18 | Codex | #110 · `feat/110-instagram-publish-unified` · [PR #111](https://github.com/lgdl24/Cardnews-automation/pull/111) | 사용자 승인으로 #109를 main에 병합했어요. CLI·웹 게시 관리자/기록·프로세스 잠금·불분명 상태·예약을 통합했고 실제 게시 없이 265/31 검사·빌드를 통과했어요. 사용법은 `docs/instagram-publish.md`예요. |
@@ -17,7 +18,20 @@
 | 2026-11-17 | Claude | #102 · `feat/102-web-studio-redesign` | **웹 UI 개편 2차**: 디자인 기준 `design-system/cardnews-studio/MASTER.md`(Pretendard 단일·포인트색 1개·상태색 6종 토큰, 기존 `--color-*`는 별칭). 작업실 목록 대표 카드·상태, 제작 진행 5단계·실제 진행/대기/실패 원인·다시 하기, 구성안·카드 검토 결정 막대, 입력 오류 요약·임시 저장(localStorage `cardnews-draft:*`, 이미지 제외). `GET /api/studio/products` 요약에 `thumb`·`png_count`·`card_count`·`last_job` 추가(읽기 전용). 새 검사 `tests/studio-flow-ui.test.js`. 인스타 웹 게시는 제안만 `docs/proposals/instagram-web-publish.md` |
 | 2026-11-17 | Codex | #96 · `fix/96-instagram-unified-login` (`feat/instagram` 위), PR #99 | Unified Login·게시 권한·한도 확인 지원, Bearer 헤더와 오류 토큰 숨김. 이전 실험 이미지의 GPT 사용 표시도 검토에 반영. 게시 명령의 `check` 이름 충돌 수정, Cloudflare는 연결 등록을 기다린 뒤 DNS 전파 15초 대기. 사용자 승인 후 젤크림 5장 첫 실제 게시·캡션·순서 검증 완료. 아래 게시 링크와 기록 위치 참조 |
 | 2026-11-17 | Claude | #94 · `feat/94-rules-v2` | **규칙 v2: 문제 제시 → 해결** (이용석, 11.11 멘토 피드백): `config/skill-version.json` v2. 1번 표지 제목은 원문 사용감·상황을 뒤집은 소비자 문제(뒤집은 근거 ID를 1번 `intent`·`evidence`에), 2번은 그 답, 마지막은 다시 묶음. 질환·기능성 단어를 문제로 쓰지 않고 해결 단정 금지(`docs/style-guide.md` '문제 제시 → 해결', `cardnews-content` Skill 2·3·4·5단계). 데이터 규격·검증·템플릿은 그대로라 v1과 같은 잣대로 비교. 테스트의 실행ID는 버전을 `config/skill-version.json`에서 읽음, 웹 데이터 예시 `index.json` 현재 버전 v2 |
-| 2026-11-17 | Claude | #100 · `feat/100-brand-layouts` (#93·#97 위) | **브랜드 무드 배치** (이용석): `brand_mood.layout` = panel(기존 반투명 면)·editorial(면 없이 큰 영문 세리프 단어·가는 선)·immersive(어두운 장면·흰 글자 가운데). 레퍼런스마다 `layout_id`, 구성안에서 고른 레퍼런스의 배치로 출력(`templates/brand/<배치>/`). 배치별 제품 자리·배경 구도 `scripts/lib/brand.js` BRAND_LAYOUTS(panel 아니면 배경 key에 배치 포함). 새 문구 칸 `display`(영문 장식 단어, 근거 원문 단어의 영어만). 브랜드 묶음에 Pretendard Light(300) |
+
+## 현재 작업 — 공개 저장소에서 실제 브랜드 자료 빼기 #118 (Claude, 2026-11-24)
+
+- 결정(이규동): 저장소는 공개 유지. 실제 브랜드 제품 사진·공식몰 문구만 저장소에서 뺌. 무료 플랜이라 비공개로 바꾸면 main 보호·비밀값 푸시 차단이 꺼져서 공개를 유지했어요.
+- 뺀 것: 달바 퍼플 제품 폴더와 평가 입력(로컬 전용으로 전환), 달바 사진을 합성한 시안 PNG·HTML(삭제). 바이오던스 젤크림 예시는 팀이 쓴 가상 콘셉트 문구라 유지.
+- **pull하면 로컬 사본이 지워져요.** 추적에서 빠진 파일은 다음 pull 때 작업 폴더에서도 삭제돼요. 되살리려면 저장소 루트에서 아래를 실행해요(이후에는 `.gitignore`라 커밋되지 않아요). 이규동 Mac에는 `/Users/lee/git/cardnews-private-assets/`에 사본이 있어요.
+
+```bash
+git checkout 8c5061b -- products/dalba-toneup-purple eval/inputs/eval-toneup-purple
+git restore --staged products/dalba-toneup-purple eval/inputs/eval-toneup-purple
+```
+
+- 평가: 평가 도구는 `eval/inputs/` 폴더를 자동으로 찾으므로 로컬 사본이 있으면 `eval-toneup-purple` 평가도 그대로 돌아가요.
+- 한계: 과거 커밋 이력과 이미 내려받은 사본에는 남아 있어요. 이력 재작성은 main 강제 push가 필요하고 보호 규칙으로 막혀 있어 하지 않았어요.
 
 ## 현재 작업 — KT 작업실 보안 보강 #116 (Claude, 2026-11-24)
 
