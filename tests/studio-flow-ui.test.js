@@ -138,13 +138,56 @@ test('실패: 원인·안내·다시 하기 경로, 결과는 반영하지 않�
   const requests = [];
   const job = { status: 'done', job_id: 'j3', kind: 'plan', started_at: ago(200), finished_at: ago(150), progress: [], ok: false, error_code: 'USAGE_LIMIT', crash: null, report: { 결과: '중단', 단계: 'plan', 오류: [], 알림: ['한도 안내'] }, verify: null };
   const page = await open(t, '/studio/oil-fail', { requests, product: detail({ id: 'oil-fail', stage: 'input', cards: null, job, actions: { ...baseActions, last_job_ok: false, can_plan: true, can_edit_input: true } }) });
-  await page.getByRole('heading', { name: /Claude 사용량 한도에 걸렸어요/ }).waitFor();
+  await page.getByRole('heading', { name: /Claude 사용량을 다 써서 잠시 기다려야 해요/ }).waitFor();
   assert.ok((await page.locator('.job-card').innerText()).includes('이번 작업 결과는 반영하지 않았어요'));
   assert.equal(await page.locator('.step-failed').count(), 1);
-  await page.getByRole('link', { name: '입력 고치기' }).first().waitFor();
+  assert.equal(await page.locator('.job-card').getByRole('link', { name: '입력 고치기' }).count(), 0, '한도 문제에서 입력을 고치라고 하지 않음');
+  assert.equal(await page.locator('.fail-more').evaluate((el) => el.open), false, '오류 코드·원문은 접어 둠');
   await Promise.all([page.waitForResponse((r) => r.request().method() !== 'GET'), page.getByRole('button', { name: '구성안 다시 만들기' }).click()]);
   assert.deepEqual(requests.map((r) => [r.path, r.body]), [['/api/studio/products/oil-fail/jobs', { kind: 'plan' }]]);
   await captureAll(page, 'studio-failed');
+});
+
+test('실패 안내(#125): 작업실 문제는 쉬운 말로, 원문은 「자세한 기록」에 접고 복사할 수 있다', async (t) => {
+  const report = { 결과: '중단', 단계: 'plan', 오류: ['입력 확인 실행 실패 — `npm run check -- oil-fail`가 입력 확인을 하지 못하고 끝남'], 알림: ['원인: `package.json`에 `precheck` 스크립트가 있어요.'] };
+  const job = { status: 'done', job_id: 'j5', kind: 'plan', started_at: ago(200), finished_at: ago(150), progress: [], ok: false, error_code: 'STOPPED', crash: null, report, verify: { ok: false, reasons: ['cards.json이 없어요'] } };
+  const page = await open(t, '/studio/oil-fail', { product: detail({ id: 'oil-fail', stage: 'input', cards: null, job, actions: { ...baseActions, last_job_ok: false, can_plan: true, can_edit_input: true } }) });
+  await page.getByRole('heading', { name: '작업실 프로그램 문제로 멈췄어요' }).waitFor();
+  const card = page.locator('.job-card');
+  assert.match(await card.innerText(), /입력 자료 문제가 아니에요/);
+  assert.equal(await card.getByText('npm run check', { exact: false }).isVisible(), false, '명령·파일 이름은 처음에 보이지 않음');
+  assert.equal(await card.getByRole('link', { name: '입력 고치기' }).count(), 0);
+  await card.getByRole('button', { name: '구성안 다시 만들기' }).waitFor();
+  await card.locator('.fail-more summary').click();
+  assert.equal(await card.getByText('npm run check', { exact: false }).isVisible(), true);
+  assert.match(await card.locator('.fail-more').innerText(), /STOPPED[\s\S]*cards\.json이 없어요/);
+  await card.getByRole('button', { name: '기록 복사' }).waitFor();
+  await captureAll(page, 'studio-failed-system');
+});
+
+test('실패 안내(#125): 입력 문제는 칸 이름을 눌러 입력 고치기의 그 칸으로 간다', async (t) => {
+  const job = { status: 'done', job_id: 'j6', kind: 'plan', started_at: ago(200), finished_at: ago(150), progress: [], ok: false, error_code: 'INPUT_MISSING', crash: null, report: { 결과: '중단', 단계: 'plan', 오류: ['INPUT_MISSING 사용 방법'], 알림: [] }, verify: null };
+  const product = detail({ id: 'oil-fail', stage: 'input', cards: null, job, check: { errors: [{ code: 'INPUT_MISSING', where: '# 제품 > ## 사용 방법', message: '내용이 비어 있어요' }], warnings: [], cautions: [] }, actions: { ...baseActions, last_job_ok: false, can_plan: true, can_edit_input: true } });
+  const page = await open(t, '/studio/oil-fail', { product });
+  await page.getByRole('heading', { name: '입력 자료에 빠진 항목이 있어요' }).waitFor();
+  const fix = page.locator('.job-card .fail-fix').getByRole('link', { name: /사용 방법 내용이 비어 있어요/ });
+  assert.equal(decodeURIComponent(await fix.getAttribute('href')), '/studio/oil-fail/edit?field=사용 방법');
+  const tags = await page.locator('.check-panel .issue-tag').allInnerTexts();
+  assert.deepEqual(tags, ['빠진 항목'], '입력 확인 목록도 오류 코드 대신 우리말');
+  await fix.click();
+  await page.waitForFunction(() => document.activeElement?.closest('[data-field="사용 방법"]'));
+  assert.equal(await page.locator('[data-field="사용 방법"]').evaluate((el) => el.classList.contains('is-target')), true);
+});
+
+test('실패 안내(#125): 카드 문구 문제는 카드 번호·칸을 우리말로 보여주고, 그 카드로 수정 요청을 연다', async (t) => {
+  const job = { status: 'done', job_id: 'j7', kind: 'copy', started_at: ago(100), finished_at: ago(50), progress: [], ok: false, error_code: 'CHAR_LIMIT', report: { 결과: '중단', 단계: 'copy', 오류: ['CHAR_LIMIT 3 copy.title', 'OVERFLOW 4 copy.body'], 알림: [] }, verify: null };
+  const page = await open(t, '/studio/gel-cream', { product: detail({ job, actions: { ...baseActions, last_job_ok: false, can_revise_final: true, can_approve_final: true } }) });
+  await page.getByRole('heading', { name: '카드 문구가 너무 길어요' }).waitFor();
+  assert.deepEqual(await page.locator('.job-card .fail-fix li').allInnerTexts(), ['3번 카드 제목 — 문구가 길어요', '4번 카드 본문 — 글자가 칸을 넘침']);
+  await page.getByRole('button', { name: '3·4번 카드 수정 요청' }).click();
+  assert.equal(await page.getByLabel('3번', { exact: true }).isChecked(), true);
+  assert.equal(await page.getByLabel('4번', { exact: true }).isChecked(), true);
+  assert.equal(await page.getByLabel('길이', { exact: true }).isChecked(), true);
 });
 
 test('실패한 수정 요청은 이전 요청 내용으로 다시 보낼 수 있다', async (t) => {

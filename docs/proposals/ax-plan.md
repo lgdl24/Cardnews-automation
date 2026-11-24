@@ -27,7 +27,7 @@
 | A1 | 주의 표현에 '가상 인물·전문가 추천' 묶음 추가 (약사·전문의·원장·한의사·치과의사·가상 인물·약국 입점 등) | `config/caution-expressions.json` v2 | 완료 11.10 |
 | A2 | GPT 이미지 지시문(AI 카드·브랜드 배경)에 사람·의료인·가운·병원·의료기기 금지를 명시 | `scripts/ai-card.js`, `scripts/lib/brand.js` | 완료 11.10 |
 | A3 | 출력 PNG에 AI 표시 메타데이터(XMP: IPTC `DigitalSourceType`, 만든 도구, 'AI 활용' 설명) 자동 삽입. GPT 이미지가 들어간 카드와 템플릿 카드를 구분 | `scripts/lib/ai-disclosure.js`, 출력 단계 | 완료 11.10 |
-| A4 | `npm run precheck -- <제품ID>`: 게시 전 점검표(검증 오류 0, [주의] 판단, AI 표시 메타데이터, AI 카드 글자 확인, 캡션 표시 문구) → `output/publish-check.json`. B의 게시 조건 | `scripts/precheck.js`, `scripts/lib/publish-check.js`, 작업실 '게시 전 점검' 패널 | 완료 11.10 |
+| A4 | `npm run publish-check -- <제품ID>` (#125 전 이름 `precheck`): 게시 전 점검표(검증 오류 0, [주의] 판단, AI 표시 메타데이터, AI 카드 글자 확인, 캡션 표시 문구) → `output/publish-check.json`. B의 게시 조건 | `scripts/precheck.js`, `scripts/lib/publish-check.js`, 작업실 '게시 전 점검' 패널 | 완료 11.10 |
 | A5 | 규칙 v2로 올리고(사람 결정) v2 평가 묶음 실행 → 대시보드 '규칙 버전 비교'(A5)에 v1 vs v2 | `config/skill-version.json`, 평가 결과 | A1~A4 후 |
 
 ## B. 인스타 자동 게시 (목표 11.18)

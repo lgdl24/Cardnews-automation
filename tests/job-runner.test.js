@@ -73,6 +73,17 @@ test('claude 인자: 작업 폴더 밖 읽기·쓰기를 막고 로그인 정보
   assert.equal(args[allowedEnd], '--settings');
 });
 
+test('npm 명령: 작업에 쓰는 check·validate·render 앞뒤로 npm이 자동 실행하는 pre·post 명령이 없다 (#125)', () => {
+  // 'precheck'라는 이름은 npm이 `npm run check` 전에 자동 실행해서, 제품ID 없이 게시 전 점검이 돌고 입력 확인이 실패했어요
+  const scripts = require('../package.json').scripts;
+  const used = new Set(jr.allowedTools('demo').map((t) => (t.match(/^Bash\(npm run (\S+)/) || [])[1]).filter(Boolean));
+  assert.deepEqual([...used].sort(), ['check', 'render', 'validate']);
+  for (const name of Object.keys(scripts)) {
+    const hook = name.match(/^(?:pre|post)(.+)$/);
+    assert.ok(!hook || !(hook[1] in scripts), `${name}은 npm이 ${hook?.[1]} 앞뒤로 자동 실행해요. 다른 이름을 써 주세요`);
+  }
+});
+
 test('지시문: 웹 모드 plan·copy·revise와 평가 모드를 채우고, 빠진 값은 오류', () => {
   const plan = jr.fillPrompt({ mode: 'web', kind: 'plan', vars: { product_id: ID } });
   assert.match(plan, /^\[웹 모드\] 구성안 작업/);

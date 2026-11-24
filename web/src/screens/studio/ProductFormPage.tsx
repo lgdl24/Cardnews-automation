@@ -2,7 +2,7 @@
 // 입력 폼은 config/input-form.json 정의로 그림 → 저장하면 서버가 products/<제품ID>/input.md를 만들고 입력 확인
 // 입력 부담 줄이기: 필수 먼저, 선택 글 항목은 접기 · 제출 때 오류 요약 · 글 입력은 브라우저에 임시 저장(이미지 제외)
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams, useBlocker } from 'react-router';
+import { Link, useNavigate, useParams, useBlocker, useSearchParams } from 'react-router';
 import { studioFetch, useStudioStatus, imageUrl, type ExtractResult, type FormDef, type FormField, type ProductDetail } from '../../studio/api';
 import { ErrorState, Loading } from '../../components/StateView';
 import { Icon } from '../../components/Icon';
@@ -58,6 +58,25 @@ function ProductForm({ form, editId }: { form: FormDef; editId?: string }) {
   const [dirty, setDirty] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(() => readDraft(draftKey(editId)));
   const summaryRef = useRef<HTMLDivElement>(null);
+  // 실패·입력 확인 화면에서 「이 칸 고치기」로 왔을 때(?field=제품명): 그 칸을 펼쳐 보여주고 커서를 둠 (#125)
+  const [params] = useSearchParams();
+  const target = params.get('field');
+  useEffect(() => {
+    if (loading || !target) return;
+    const raf = requestAnimationFrame(() => {
+      const isImage = target === 'images' || target === imageField?.key;
+      const box = isImage
+        ? document.getElementById('image-add-label')?.closest<HTMLElement>('.field, .form-group, fieldset') ?? document.getElementById('image-add-label')
+        : document.querySelector<HTMLElement>(`[data-field="${CSS.escape(target)}"]`);
+      if (!box) return;
+      box.closest('details')?.setAttribute('open', '');
+      box.classList.add('is-target');
+      box.scrollIntoView({ block: 'center' });
+      const input = isImage ? document.getElementById('image-add') : box.querySelector<HTMLElement>('input, textarea, select');
+      input?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [loading, target, imageField?.key]);
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && !saving && currentLocation.pathname !== nextLocation.pathname);
   useEffect(() => {
@@ -402,7 +421,7 @@ function Field({ field: f, value, onChange }: { field: FormField; value: string;
   const guide = [f.guide, f.example && f.type === 'list' ? `예: ${f.example.join(' / ')}` : ''].filter(Boolean).join(' · ');
   const lines = f.type === 'list' ? value.split('\n').filter((s) => s.trim()).length : 0;
   return (
-    <div className="field">
+    <div className="field" data-field={f.key}>
       <label className="field-label" htmlFor={id}>
         <span className="field-label-text">{f.label ?? f.key}</span> {f.required ? <em className="req">필수</em> : <em className="opt">선택</em>}
       </label>
