@@ -44,7 +44,9 @@ function codexFailure(out = '') {
     return `Codex 이미지 생성 사용량 한도에 걸렸어요${at ? ` (다시 가능: ${at[1].trim()})` : ''}. 다음 실행 때 다시 만들어요.`;
   }
   if (/not logged in|please log ?in|unauthorized|401/i.test(text)) return 'Codex 로그인이 풀렸어요. 서버에서 작업실 계정으로 codex login을 다시 해 주세요.';
-  const last = text.split('\n').map((l) => l.trim()).filter((l) => /error|fail|denied|timed? ?out/i.test(l)).slice(-2).join(' / ');
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  // 정해 둔 오류 낱말이 없으면 Codex의 마지막 말이라도 남겨요 (#140: "sandbox blocked saving"처럼)
+  const last = (lines.filter((l) => /error|fail|denied|blocked|timed? ?out/i.test(l)).slice(-2).join(' / ')) || lines.at(-1) || '';
   return `GPT 제품 누끼를 만들지 못했어요. Codex 로그인과 이미지 생성 사용량을 확인해 주세요.${last ? ` (Codex: ${last.slice(0, 300)})` : ''}`;
 }
 
@@ -107,8 +109,10 @@ async function createDraft(stats, candidate, { image, productsDir = path.dirname
     fs.mkdirSync(images, { recursive: true });
     let file = image;
     if (!file) {
-      const generation = await runCodex(lock, cutoutPrompt(topic), 360, { image: null, env: codexImageEnv() });
-      file = generatedPath(generation.out, lock);
+      const env = codexImageEnv();
+      const generation = await runCodex(lock, cutoutPrompt(topic), 360, { image: null, env });
+      // 서버에선 Codex가 저장 명령을 못 돌려도 생성 폴더에 이미지가 남아요 (#140)
+      file = generatedPath(generation.out, lock, { since: generation.started, env });
       if (!file) throw new Error(codexFailure(generation.out));
     }
     await checkCutout(file);

@@ -121,12 +121,43 @@ function lockScore({ ai, aw, orig, mask, w, h, pad: P }) {
 }
 
 // codex 출력에서 생성된 이미지 경로 (Codex가 결과를 따로 손대도 AI 원본으로 검사)
-function generatedPath(output, cwd) {
+// 찾는 순서: 출력에 적힌 경로 → 작업 폴더 out.png → Codex 생성 이미지 폴더
+// 서버 격리 실행(bwrap)이 막히면 Codex가 경로도 out.png도 못 남겨서, 이미지는 생성 폴더에만 있어요
+function generatedPath(output, cwd, { since, env = process.env } = {}) {
   // Windows 경로(C:\...\generated_images\...)도 찾음
-  const m = String(output).match(/(?:[A-Za-z]:)?[\\/][^\s"'`]*generated_images[\\/][^\s"'`]*\.png/);
+  const text = String(output);
+  const m = text.match(/(?:[A-Za-z]:)?[\\/][^\s"'`]*generated_images[\\/][^\s"'`]*\.png/);
   if (m && fs.existsSync(m[0])) return m[0];
   const out = path.join(cwd, 'out.png');
-  return fs.existsSync(out) ? out : null;
+  if (fs.existsSync(out)) return out;
+  const home = env.CODEX_HOME || (env.HOME && path.join(env.HOME, '.codex'));
+  if (!home) return null;
+  const root = path.join(home, 'generated_images');
+  const pngsIn = (dir) => {
+    try {
+      return fs.readdirSync(dir).filter((name) => /\.png$/i.test(name)).map((name) => path.join(dir, name));
+    } catch {
+      return [];
+    }
+  };
+  const newest = (files) => files
+    .map((file) => ({ file, mtime: fs.statSync(file).mtimeMs }))
+    .filter((hit) => since === undefined || hit.mtime >= since)
+    .sort((a, b) => b.mtime - a.mtime)[0]?.file || null;
+  // 이번 실행의 세션 폴더가 출력에 있으면 그 폴더만 봐요 (동시에 도는 다른 작업 이미지를 집지 않게)
+  const session = text.match(/session id:\s*([0-9a-f-]{36})/i);
+  if (session) {
+    const hit = newest(pngsIn(path.join(root, session[1])));
+    if (hit) return hit;
+  }
+  if (since === undefined) return null;
+  let dirs = [];
+  try {
+    dirs = fs.readdirSync(root, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => path.join(root, d.name));
+  } catch {
+    return null;
+  }
+  return newest(dirs.flatMap(pngsIn));
 }
 
 // 기본 codex 실행 파일: CODEX_BIN → (Windows) npm 설치 위치의 codex.js → 'codex'
@@ -162,7 +193,7 @@ function runCodex(cwd, prompt, timeoutSec, { image = 'base.png', env = process.e
     child.on('close', (code) => {
       clearTimeout(timer);
       fs.writeFileSync(path.join(cwd, 'codex.log'), out);
-      resolve({ code, out, sec: Math.round((Date.now() - started) / 1000) });
+      resolve({ code, out, started, sec: Math.round((Date.now() - started) / 1000) });
     });
     child.stdin.end(prompt);
   });

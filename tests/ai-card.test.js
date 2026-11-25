@@ -67,6 +67,33 @@ test('codex 출력에서 AI 원본 이미지 경로를 찾고, 없으면 out.png
   assert.equal(generatedPath('없음', dir), path.join(dir, 'out.png'));
 });
 
+test('경로도 out.png도 없으면 Codex 생성 이미지 폴더에서 이번 실행 이미지를 찾아요 (#140)', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-card-home-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-card-cwd-'));
+  const env = { HOME: home };
+  const root = path.join(home, '.codex', 'generated_images');
+  const old = path.join(root, 'old-session', 'exec-old.png');
+  const sid = '01a20f02-a16a-7bd2-bf4c-681cf763658e';
+  const mine = path.join(root, sid, 'exec-new.png');
+  const other = path.join(root, 'other-session', 'exec-other.png');
+  for (const file of [old, mine, other]) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, 'x');
+  }
+  const since = Date.now() - 1000;
+  fs.utimesSync(old, new Date(since - 60_000), new Date(since - 60_000));
+  fs.utimesSync(mine, new Date(since + 100), new Date(since + 100));
+  fs.utimesSync(other, new Date(since + 500), new Date(since + 500));
+  const blocked = 'The image was generated, but the workspace sandbox blocked saving it as `./out.png`.';
+  // 세션 폴더를 알면 그 폴더만 (더 새 이미지가 다른 세션에 있어도)
+  assert.equal(generatedPath(`session id: ${sid}\n${blocked}`, cwd, { since, env }), mine);
+  // 세션을 모르면 시작 뒤에 생긴 가장 새 이미지, 시작 전 이미지는 무시
+  assert.equal(generatedPath(blocked, cwd, { since, env }), other);
+  assert.equal(generatedPath(blocked, cwd, { since: since + 1000, env }), null);
+  // 시작 시각을 안 주면 예전처럼 폴더를 뒤지지 않아요
+  assert.equal(generatedPath(blocked, cwd, { env }), null);
+});
+
 test('codex 실행 파일: CODEX_BIN 우선, Windows는 npm 설치 위치의 codex.js, 없으면 codex', () => {
   const js = path.win32.join('C:\\AppData', 'npm', 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
   assert.equal(defaultCodexBin({ CODEX_BIN: 'my-codex', APPDATA: 'C:\\AppData' }, 'win32', () => true), 'my-codex');
