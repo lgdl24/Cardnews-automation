@@ -81,6 +81,9 @@ test('Glowif 매일 실행(#129): Codex 실패 이유(사용량 한도·로그�
   assert.match(codexFailure('Error: Not logged in'), /codex login을 다시/);
   assert.match(codexFailure('warning: x\nERROR: stream disconnected'), /\(Codex: ERROR: stream disconnected\)$/);
   assert.equal(codexFailure(''), 'GPT 제품 누끼를 만들지 못했어요. Codex 로그인과 이미지 생성 사용량을 확인해 주세요.');
+  // #140: 오류 낱말이 없어도 Codex의 마지막 말을 남겨요
+  assert.match(codexFailure('The image was generated, but the workspace sandbox blocked saving it.'), /\(Codex: The image was generated, but the workspace sandbox blocked saving it\.\)$/);
+  assert.match(codexFailure('codex\nAll done here'), /\(Codex: All done here\)$/);
 });
 
 test('Glowif 매일 실행(#129): 남은 주제가 없으면 이미지 생성 없이 0으로 끝나고, 잘못된 조합은 막아요', (t) => {
